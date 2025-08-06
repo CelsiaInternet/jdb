@@ -1,28 +1,55 @@
 # JDB - Go Database Library
 
-[![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)](https://golang.org)
+[![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
+[![Version](https://img.shields.io/badge/Version-v0.1.19-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.1.19-orange.svg)](version.sh)
+[![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
 JDB es una librería de Go que proporciona una interfaz unificada y simplificada para trabajar con múltiples bases de datos. Ofrece soporte para PostgreSQL, MySQL, SQLite y Oracle con una API consistente y fácil de usar.
 
 ## 🚀 Características
 
-- **Multi-driver**: Soporte para PostgreSQL, MySQL, SQLite y Oracle
+### 🗄️ Multi-Driver Support
+
+- **PostgreSQL**: Driver nativo con soporte completo para características avanzadas
+- **MySQL**: Integración con go-sql-driver/mysql para máximo rendimiento
+- **SQLite**: Soporte con modernc.org/sqlite para aplicaciones embebidas
+- **Oracle**: Driver especializado para entornos empresariales
+
+### 🏗️ Arquitectura Moderna
+
 - **API Unificada**: Interfaz consistente independientemente del motor de base de datos
-- **ORM Simplificado**: Definición de modelos y esquemas de manera declarativa
-- **Transacciones**: Soporte completo para transacciones
-- **Eventos**: Sistema de eventos para hooks antes y después de operaciones
-- **Auditoría**: Sistema de auditoría automática
-- **CQRS**: Soporte para Command Query Responsibility Segregation
-- **Core System**: Sistema de metadatos y gestión de modelos
-- **Debug Mode**: Modo de depuración para desarrollo
-- **Sistema de Daemon**: Gestión de servicios como daemon
-- **Gestión de Usuarios**: Creación y gestión de usuarios de base de datos
+- **ORM Simplificado**: Definición declarativa de modelos y esquemas
+- **CQRS Ready**: Soporte integrado para Command Query Responsibility Segregation
+- **Core System**: Sistema de metadatos y gestión automática de modelos
+
+### ⚡ Performance & Scale
+
+- **Transacciones**: Soporte completo para transacciones ACID
+- **Bulk Operations**: Operaciones masivas optimizadas
+- **Connection Pooling**: Gestión automática de conexiones
+- **Query Optimization**: Optimización automática de consultas
+
+### 🔧 Developer Experience
+
+- **Debug Mode**: Sistema de depuración avanzado para desarrollo
+- **Type Safety**: Tipado fuerte con validaciones automáticas
+- **Hot Reload**: Recarga automática de configuraciones
 - **JavaScript VM**: Integración con Goja para scripts dinámicos
-- **Sistema de Eventos Avanzado**: Emisión y manejo de eventos personalizados
-- **Gestión de PID**: Control de procesos con archivos PID
-- **Configuración Dinámica**: Configuración en tiempo de ejecución
+
+### 🛠️ DevOps Features
+
+- **Sistema de Daemon**: Gestión completa de servicios con control de ciclo de vida
+- **Gestión de PID**: Control automático de procesos
+- **Health Checks**: Verificación de estado en tiempo real
+- **Graceful Shutdown**: Cierre controlado con manejo de señales
+
+### 🔐 Security & Management
+
+- **Gestión de Usuarios**: Creación y administración de usuarios de base de datos
+- **Auditoría**: Sistema de auditoría automática para compliance
+- **Eventos**: Hooks antes y después de operaciones para logging y validación
+- **Configuration Management**: Configuración dinámica en tiempo de ejecución
 
 ## 📦 Instalación
 
@@ -30,10 +57,18 @@ JDB es una librería de Go que proporciona una interfaz unificada y simplificada
 go get github.com/celsiainternet/jdb
 ```
 
-### Dependencias
+### Dependencias Principales
 
 ```bash
+# Dependencia principal
 go get github.com/celsiainternet/elvis@v1.1.105
+
+# Drivers de base de datos incluidos
+# - PostgreSQL: github.com/lib/pq
+# - MySQL: github.com/go-sql-driver/mysql
+# - SQLite: modernc.org/sqlite
+# - JavaScript VM: github.com/dop251/goja
+# - HTTP Router: github.com/go-chi/chi/v5
 ```
 
 ## 🔧 Configuración
@@ -70,7 +105,11 @@ ORA_DB_VERSION_ORACLE=19
 package main
 
 import (
-    "github.com/celsiainternet/jdb"
+    "fmt"
+
+    "github.com/celsiainternet/elvis/et"
+    jdb "github.com/celsiainternet/jdb/jdb"
+    _ "github.com/celsiainternet/jdb/drivers/postgres" // Importar driver específico
 )
 
 func main() {
@@ -81,12 +120,12 @@ func main() {
         UserCore: true,
         NodeId:   1,
         Debug:    true,
-        Params: jdb.Json{
+        Params: et.Json{
             "host":     "localhost",
             "port":     5432,
-            "user":     "postgres",
+            "username": "postgres",
             "password": "password",
-            "dbname":   "myapp",
+            "database": "myapp",
         },
     }
 
@@ -135,11 +174,16 @@ if err != nil {
 ### Operaciones CRUD
 
 ```go
+import (
+    "github.com/celsiainternet/elvis/et"
+    jdb "github.com/celsiainternet/jdb/jdb"
+)
+
 // Insertar datos
 result, err := db.Command(&jdb.Command{
     Command: jdb.Insert,
     From:    user.GetFrom(),
-    Values: []jdb.Json{
+    Values: []et.Json{
         {
             "name":  "Juan Pérez",
             "email": "juan@example.com",
@@ -162,7 +206,7 @@ items, err := db.Select(&jdb.Ql{
 result, err := db.Command(&jdb.Command{
     Command: jdb.Update,
     From:    user.GetFrom(),
-    Values: []jdb.Json{
+    Values: []et.Json{
         {"age": 31},
     },
     QlWhere: &jdb.QlWhere{
@@ -191,7 +235,7 @@ result, err := db.Command(&jdb.Command{
 result, err := db.Command(&jdb.Command{
     Command: jdb.Bulk,
     From:    user.GetFrom(),
-    Data: []jdb.Json{
+    Data: []et.Json{
         {"name": "Ana García", "email": "ana@example.com", "age": 25},
         {"name": "Carlos López", "email": "carlos@example.com", "age": 35},
         {"name": "María Rodríguez", "email": "maria@example.com", "age": 28},
@@ -213,7 +257,7 @@ defer tx.Rollback()
 result, err := tx.Command(&jdb.Command{
     Command: jdb.Insert,
     From:    user.GetFrom(),
-    Values: []jdb.Json{
+    Values: []et.Json{
         {"name": "Usuario Transaccional", "email": "tx@example.com"},
     },
 })
@@ -227,7 +271,15 @@ if err != nil {
 
 ## 🛠️ Sistema de Daemon
 
-JDB incluye un sistema de daemon para gestionar servicios:
+JDB incluye un sistema de daemon robusto para gestionar servicios con control completo del ciclo de vida:
+
+### Características del Daemon
+
+- **Gestión de PID**: Control automático de archivos PID para evitar múltiples instancias
+- **Servidor HTTP**: Servidor web integrado con Chi router
+- **Gestión de señales**: Manejo graceful de SIGINT y SIGTERM
+- **Control de estado**: Verificación en tiempo real del estado del servicio
+- **Configuración dinámica**: Configuración en tiempo de ejecución
 
 ### Gestión del Servicio
 
@@ -235,28 +287,43 @@ JDB incluye un sistema de daemon para gestionar servicios:
 # Mostrar ayuda
 ./jdb help
 
-# Mostrar versión
+# Mostrar versión del daemon
 ./jdb version
 
-# Mostrar estado del servicio
+# Verificar estado del servicio
 ./jdb status
 
-# Configurar el servicio
+# Configurar el servicio (JSON)
 ./jdb conf '{"port": 3500, "debug": true}'
 
-# Iniciar el servicio
+# Iniciar el servicio en segundo plano
 ./jdb start
 
-# Detener el servicio
+# Detener el servicio gracefully
 ./jdb stop
 
 # Reiniciar el servicio
 ./jdb restart
 ```
 
+### Estructura del Daemon
+
+El daemon utiliza:
+
+- **Archivo PID**: `./tmp/myservice.pid` para control de procesos
+- **Interfaz HTTP**: Servidor web en el puerto configurado
+- **Logs estructurados**: Sistema de logging integrado con Elvis
+- **Configuración JSON**: Parámetros dinámicos en tiempo de ejecución
+
 ### Configuración del Daemon
 
 ```go
+// Ejemplo de configuración programática del daemon
+import (
+    "github.com/celsiainternet/elvis/et"
+    jdb "github.com/celsiainternet/jdb/cmd/jdb"
+)
+
 // Configuración del daemon
 config := et.Json{
     "port":  3500,
@@ -264,8 +331,8 @@ config := et.Json{
     "host":  "localhost",
 }
 
-// Aplicar configuración
-daemon.SetConfig(config.ToString())
+// El daemon se configura automáticamente basado en variables de entorno
+// o mediante el comando: ./jdb conf '{"port": 3500, "debug": true}'
 ```
 
 ## 👥 Gestión de Usuarios
@@ -403,15 +470,17 @@ jdb/
 ### PostgreSQL
 
 ```go
+import _ "github.com/celsiainternet/jdb/drivers/postgres"
+
 params := jdb.ConnectParams{
     Driver: "postgres",
-    Params: jdb.Json{
+    Params: et.Json{
         "host":     "localhost",
         "port":     5432,
-        "user":     "postgres",
+        "username": "postgres",
         "password": "password",
-        "dbname":   "myapp",
-        "sslmode":  "disable",
+        "database": "myapp",
+        "app":      "myapp",
     },
 }
 ```
@@ -419,14 +488,16 @@ params := jdb.ConnectParams{
 ### MySQL
 
 ```go
+import _ "github.com/celsiainternet/jdb/drivers/mysql"
+
 params := jdb.ConnectParams{
     Driver: "mysql",
-    Params: jdb.Json{
+    Params: et.Json{
         "host":     "localhost",
         "port":     3306,
-        "user":     "root",
+        "username": "root",
         "password": "password",
-        "dbname":   "myapp",
+        "database": "myapp",
     },
 }
 ```
@@ -434,10 +505,12 @@ params := jdb.ConnectParams{
 ### SQLite
 
 ```go
+import _ "github.com/celsiainternet/jdb/drivers/sqlite"
+
 params := jdb.ConnectParams{
     Driver: "sqlite",
-    Params: jdb.Json{
-        "file": "./data.db",
+    Params: et.Json{
+        "database": "./data.db",
     },
 }
 ```
@@ -445,15 +518,19 @@ params := jdb.ConnectParams{
 ### Oracle
 
 ```go
+import _ "github.com/celsiainternet/jdb/drivers/oracle"
+
 params := jdb.ConnectParams{
     Driver: "oracle",
-    Params: jdb.Json{
+    Params: et.Json{
         "host":         "localhost",
         "port":         1521,
         "username":     "system",
         "password":     "password",
+        "app":          "myapp",
         "service_name": "XE",
         "ssl":          false,
+        "ssl_verify":   false,
         "version":      19,
     },
 }
@@ -534,43 +611,65 @@ user.DefineObject("address", "addresses", map[string]string{
 ### Ejecutar en modo desarrollo
 
 ```bash
-gofmt -w . && go run --race ./cmd/jdb -port 3500
+# Compilar y ejecutar con race detection
+gofmt -w . && go run --race ./cmd/jdb
+
+# Ejecutar con parámetros específicos
+go run ./cmd/jdb status
+go run ./cmd/jdb start
 ```
 
 ### Compilar para producción
 
 ```bash
-gofmt -w . && go build --race -a -o ./jdb ./cmd/jdb
+# Compilación optimizada
+gofmt -w . && go build -a -o ./jdb ./cmd/jdb
+
+# Ejecutar el binario compilado
+./jdb help
+./jdb start
 ```
 
-### Ejecutar con configuración personalizada
+### Ejemplo con aplicación personalizada
 
 ```bash
-gofmt -w . && go run --race ./cmd/jdb -port 3600 -rpc 4600
+# Usar cmd/main.go como ejemplo base
+go run ./cmd/main.go
 ```
 
-### Gestión de Versiones
+### Gestión de Versiones Automática
 
 ```bash
-# Incrementar versión de revisión
+# Incrementar versión de revisión (X.Y.Z+1)
 ./version.sh --v
 
-# Incrementar versión menor
+# Incrementar versión menor (X.Y+1.0)
 ./version.sh --n
 
-# Incrementar versión mayor
+# Incrementar versión mayor (X+1.0.0)
 ./version.sh --m
+
+# Solo crear tag sin commit
+./version.sh --version
 ```
 
 ## 📚 API Reference
 
-### Version
+### Información de Versión
+
+**Versión Actual**: v0.1.19
+
+El sistema de versionado es automático y sigue el estándar semántico (SemVer):
+
+- **Major**: Cambios incompatibles en la API
+- **Minor**: Nuevas funcionalidades compatibles hacia atrás
+- **Patch**: Correcciones de bugs compatibles
 
 ```bash
+# Para desarrolladores: proceso de release
 git add .
-git commit -m 'Set new version'
-git push -u origin
-git tag v0.1.19
+git commit -m 'Update version'
+./version.sh --v  # Incrementa patch
 git push origin --tags
 ```
 

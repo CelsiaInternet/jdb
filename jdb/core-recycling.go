@@ -1,14 +1,15 @@
 package jdb
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/response"
-	"github.com/cgalvisleon/et/timezone"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/response"
+	"github.com/celsiainternet/elvis/timezone"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 var coreRecycling *Model
@@ -91,19 +92,19 @@ func (s *DB) upsertRecycling(tx *Tx, schema, name, sysId, statusId string) error
 **/
 func (s *DB) GetRecycling(schema, name, sysId string) (et.Item, error) {
 	if coreRecycling == nil || !coreRecycling.isInit {
-		return et.Item{}, mistake.New(MSG_DATABASE_NOT_CONCURRENT)
+		return et.Item{}, errors.New(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	if !utility.ValidName(schema) {
-		return et.Item{}, mistake.Newf(MSG_ATTRIBUTE_REQUIRED, "schema_name")
+		return et.Item{}, fmt.Errorf(MSG_ATTRIBUTE_REQUIRED, "schema_name")
 	}
 
 	if !utility.ValidName(name) {
-		return et.Item{}, mistake.Newf(MSG_ATTRIBUTE_REQUIRED, "table_name")
+		return et.Item{}, fmt.Errorf(MSG_ATTRIBUTE_REQUIRED, "table_name")
 	}
 
 	if !utility.ValidId(sysId) {
-		return et.Item{}, mistake.Newf(MSG_ATTRIBUTE_REQUIRED, cf.SystemId)
+		return et.Item{}, fmt.Errorf(MSG_ATTRIBUTE_REQUIRED, cf.SystemId)
 	}
 
 	item, err := coreRecycling.
@@ -129,11 +130,11 @@ func (s *DB) deleteRecycling(tx *Tx, schema, name, sysId string) error {
 	}
 
 	if !utility.ValidName(schema) {
-		return mistake.Newf(MSG_ATTRIBUTE_REQUIRED, "schema_name")
+		return fmt.Errorf(MSG_ATTRIBUTE_REQUIRED, "schema_name")
 	}
 
 	if !utility.ValidName(name) {
-		return mistake.Newf(MSG_ATTRIBUTE_REQUIRED, "table_name")
+		return fmt.Errorf(MSG_ATTRIBUTE_REQUIRED, "table_name")
 	}
 
 	item, err := coreRecycling.
@@ -146,7 +147,7 @@ func (s *DB) deleteRecycling(tx *Tx, schema, name, sysId string) error {
 	}
 
 	if !item.Ok {
-		return mistake.New(MSG_RECORD_NOT_FOUND)
+		return errors.New(MSG_RECORD_NOT_FOUND)
 	}
 
 	return nil
@@ -159,7 +160,7 @@ func (s *DB) deleteRecycling(tx *Tx, schema, name, sysId string) error {
 **/
 func (s *DB) QueryRecycling(search et.Json) (interface{}, error) {
 	if coreRecycling == nil || !coreRecycling.isInit {
-		return et.Item{}, mistake.New(MSG_DATABASE_NOT_CONCURRENT)
+		return et.Item{}, errors.New(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	result, err := coreRecycling.

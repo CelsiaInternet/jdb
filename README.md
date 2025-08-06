@@ -27,13 +27,13 @@ JDB es una librería de Go que proporciona una interfaz unificada y simplificada
 ## 📦 Instalación
 
 ```bash
-go get github.com/cgalvisleon/jdb
+go get github.com/celsiainternet/jdb
 ```
 
 ### Dependencias
 
 ```bash
-go get github.com/cgalvisleon/et@v0.1.15
+go get github.com/celsiainternet/elvis@v1.1.105
 ```
 
 ## 🔧 Configuración
@@ -70,7 +70,7 @@ ORA_DB_VERSION_ORACLE=19
 package main
 
 import (
-    "github.com/cgalvisleon/jdb"
+    "github.com/celsiainternet/jdb"
 )
 
 func main() {

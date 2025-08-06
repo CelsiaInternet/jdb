@@ -10,10 +10,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/envar"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/strs"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/strs"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -60,29 +59,10 @@ func (s *Systemd) Help(key string) {
 
 func (s *Systemd) SetConfig(cfg string) {
 	if cfg == "" {
-		console.Errorm(MSG_CONFIG_REQUIRED)
+		console.Alert(MSG_CONFIG_REQUIRED)
 		return
 	}
 
-	config, err := et.Object(cfg)
-	if err != nil {
-		console.Alert(err)
-		return
-	}
-
-	for k, v := range config {
-		k = strs.Uppcase(k)
-		switch val := v.(type) {
-		case string:
-			envar.SetStr(k, val)
-		case int:
-			envar.SetInt(k, val)
-		case bool:
-			envar.SetBool(k, val)
-		case float64:
-			envar.SetFloat(k, val)
-		}
-	}
 }
 
 func (s *Systemd) Status() et.Item {
@@ -137,10 +117,10 @@ func (s *Systemd) Start() et.Item {
 	s.isRunning = true
 	go func() {
 		defer s.wg.Done()
-		console.Logf(s.serviceName, `Iniciando el servidor en http://localhost:%d`, s.port)
+		console.LogF(s.serviceName, `Iniciando el servidor en http://localhost:%d`, s.port)
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			s.isRunning = false
-			console.Alert(err)
+			console.Alert(err.Error())
 		}
 	}()
 

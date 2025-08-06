@@ -1,9 +1,9 @@
 package sqlite
 
 import (
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/strs"
-	jdb "github.com/cgalvisleon/jdb/jdb"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/strs"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
 /**

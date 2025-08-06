@@ -1,6 +1,6 @@
 package jdb
 
-import "github.com/cgalvisleon/et/utility"
+import "github.com/celsiainternet/elvis/utility"
 
 /**
 * Sum

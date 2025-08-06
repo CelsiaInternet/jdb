@@ -1,6 +1,6 @@
 package jdb
 
-import "github.com/cgalvisleon/et/et"
+import "github.com/celsiainternet/elvis/et"
 
 /**
 * setFields

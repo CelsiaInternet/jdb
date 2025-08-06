@@ -1,10 +1,11 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/timezone"
+	"errors"
+
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/timezone"
 )
 
 var coreModel *Model
@@ -47,7 +48,7 @@ func (s *DB) defineModel() error {
 **/
 func (s *DB) getModel(kind, name string) (et.Item, error) {
 	if coreModel == nil || !coreModel.isInit {
-		return et.Item{}, mistake.New(MSG_DATABASE_NOT_CONCURRENT)
+		return et.Item{}, errors.New(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	return coreModel.
@@ -112,7 +113,7 @@ func (s *DB) deleteModel(kind, name string) error {
 **/
 func (s *DB) QueryModel(search et.Json) (interface{}, error) {
 	if coreModel == nil || !coreModel.isInit {
-		return nil, mistake.New(MSG_DATABASE_NOT_CONCURRENT)
+		return nil, errors.New(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	result, err := coreModel.

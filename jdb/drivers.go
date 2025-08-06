@@ -3,7 +3,7 @@ package jdb
 import (
 	"database/sql"
 
-	"github.com/cgalvisleon/et/et"
+	"github.com/celsiainternet/elvis/et"
 )
 
 const (

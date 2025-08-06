@@ -2,16 +2,17 @@ package jdb
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"runtime"
 	"slices"
 
-	"github.com/cgalvisleon/et/config"
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/response"
-	"github.com/cgalvisleon/et/strs"
+	"github.com/celsiainternet/elvis/config"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/response"
+	"github.com/celsiainternet/elvis/strs"
 )
 
 type JDB struct {
@@ -70,19 +71,19 @@ func (s *ConnectParams) Json() et.Json {
 **/
 func (s *ConnectParams) validate() error {
 	if conn == nil {
-		return mistake.New(MSG_JDB_NOT_DEFINED)
+		return errors.New(MSG_JDB_NOT_DEFINED)
 	}
 
 	if s.Driver == "" {
-		return mistake.New(MSG_DRIVER_NOT_DEFINED)
+		return errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	if s.Name == "" {
-		return mistake.New(MSG_DATABASE_NOT_DEFINED)
+		return errors.New(MSG_DATABASE_NOT_DEFINED)
 	}
 
 	if _, ok := conn.Drivers[s.Driver]; !ok {
-		return mistake.New(MSG_DRIVER_NOT_DEFINED)
+		return errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return nil
@@ -192,7 +193,7 @@ func ConnectTo(params ConnectParams) (*DB, error) {
 func Load() (*DB, error) {
 	driver := config.String("DB_DRIVER", SqliteDriver)
 	if driver == "" {
-		return nil, mistake.New(MSG_DRIVER_NOT_DEFINED)
+		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	params := conn.Params[driver]
@@ -313,19 +314,19 @@ func define(params et.Json) (et.Json, error) {
 	for name := range params {
 		param := params.Json(name)
 		if param.IsEmpty() {
-			return et.Json{}, mistake.New(help.ToString())
+			return et.Json{}, errors.New(help.ToString())
 		}
 
 		schemaName := param.ValStr("jdb", "schema")
 		schema := GetSchema(schemaName)
 		if schema == nil {
-			return et.Json{}, mistake.Newf(MSG_SCHEMA_NOT_FOUND, schemaName)
+			return et.Json{}, fmt.Errorf(MSG_SCHEMA_NOT_FOUND, schemaName)
 		}
 
 		version := param.ValInt(1, "version")
 		model := NewModel(schema, name, version)
 		if model == nil {
-			return et.Json{}, mistake.Newf(MSG_MODEL_NOT_FOUND, name)
+			return et.Json{}, fmt.Errorf(MSG_MODEL_NOT_FOUND, name)
 		}
 
 		integrity := param.ValBool(false, "integrity")
@@ -362,28 +363,28 @@ func describe(kind, name string) (et.Json, error) {
 	}
 
 	if kind == "" {
-		return help, mistake.New(MSG_KIND_NOT_DEFINED)
+		return help, errors.New(MSG_KIND_NOT_DEFINED)
 	}
 
 	switch kind {
 	case "db":
 		result := GetDB(name)
 		if result == nil {
-			return et.Json{}, mistake.Newf(MSG_DATABASE_NOT_FOUND, name)
+			return et.Json{}, fmt.Errorf(MSG_DATABASE_NOT_FOUND, name)
 		}
 
 		return result.Describe(), nil
 	case "schema":
 		result := GetSchema(name)
 		if result == nil {
-			return et.Json{}, mistake.Newf(MSG_SCHEMA_NOT_FOUND, name)
+			return et.Json{}, fmt.Errorf(MSG_SCHEMA_NOT_FOUND, name)
 		}
 
 		return result.Describe(), nil
 	case "model":
 		result := GetModel(name)
 		if result == nil {
-			return et.Json{}, mistake.Newf(MSG_MODEL_NOT_FOUND, name)
+			return et.Json{}, fmt.Errorf(MSG_MODEL_NOT_FOUND, name)
 		}
 
 		return result.Describe(), nil
@@ -394,17 +395,17 @@ func describe(kind, name string) (et.Json, error) {
 				"message": MSG_INVALID_NAME,
 				"help":    "It is required at least two parts in the name of the field, first part is the name of model and second is field name.",
 				"example": "model.field",
-			}, mistake.New(MSG_INVALID_NAME)
+			}, errors.New(MSG_INVALID_NAME)
 		}
 
 		model := GetModel(list[0])
 		if model == nil {
-			return et.Json{}, mistake.Newf(MSG_MODEL_NOT_FOUND, list[0])
+			return et.Json{}, fmt.Errorf(MSG_MODEL_NOT_FOUND, list[0])
 		}
 
 		field := model.getField(list[1], false)
 		if field == nil {
-			return et.Json{}, mistake.Newf(MSG_FIELD_NOT_FOUND, list[1])
+			return et.Json{}, fmt.Errorf(MSG_FIELD_NOT_FOUND, list[1])
 		}
 
 		return field.Describe(), nil
@@ -422,7 +423,7 @@ func queryTx(tx *Tx, params et.Json) (interface{}, error) {
 	from := params.Str("from")
 	model := GetModel(from)
 	if model == nil {
-		return nil, mistake.Newf(MSG_MODEL_NOT_FOUND, from)
+		return nil, fmt.Errorf(MSG_MODEL_NOT_FOUND, from)
 	}
 
 	return From(model).
@@ -452,12 +453,12 @@ func commandsTx(tx *Tx, params et.Json) (et.Items, error) {
 	for name := range params {
 		model := GetModel(name)
 		if model == nil {
-			return et.Items{}, mistake.Newf(MSG_MODEL_NOT_FOUND, name)
+			return et.Items{}, fmt.Errorf(MSG_MODEL_NOT_FOUND, name)
 		}
 
 		param := params.Json(name)
 		if param.IsEmpty() {
-			return et.Items{}, mistake.New(help.ToString())
+			return et.Items{}, errors.New(help.ToString())
 		}
 
 		debug := param.ValBool(false, "debug")

@@ -3,8 +3,8 @@ package jdb
 import (
 	"fmt"
 
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 type Connector int

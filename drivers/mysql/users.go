@@ -1,10 +1,10 @@
 package mysql
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/cgalvisleon/et/mistake"
-	jdb "github.com/cgalvisleon/jdb/jdb"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
 /**
@@ -30,7 +30,7 @@ func (s *Mysql) GrantPrivileges(username, database string) error {
 **/
 func (s *Mysql) CreateUser(username, password, confirmation string) error {
 	if password != confirmation {
-		return mistake.New("password do not match!")
+		return errors.New("password do not match!")
 	}
 
 	query := fmt.Sprintf("CREATE USER %s WITH PASSWORD '%s';", username, password)
@@ -49,7 +49,7 @@ func (s *Mysql) CreateUser(username, password, confirmation string) error {
 **/
 func (s *Mysql) ChangePassword(username, password, confirmation string) error {
 	if password != confirmation {
-		return mistake.New("password do not match!")
+		return errors.New("password do not match!")
 	}
 
 	query := fmt.Sprintf("ALTER USER %s WITH PASSWORD '%s';", username, password)

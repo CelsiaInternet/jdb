@@ -1,8 +1,10 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
+	"errors"
+	"fmt"
+
+	"github.com/celsiainternet/elvis/et"
 )
 
 /**
@@ -65,7 +67,7 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 		}
 	case Sync:
 		if len(s.Data) == 0 {
-			return et.Items{}, mistake.Newf(MSG_NOT_DATA, s.Command.Str(), s.From.Name)
+			return et.Items{}, fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), s.From.Name)
 		}
 
 		err := s.sync()
@@ -73,7 +75,7 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 			return et.Items{}, err
 		}
 	default:
-		return et.Items{}, mistake.New(MSG_NOT_COMMAND)
+		return et.Items{}, errors.New(MSG_NOT_COMMAND)
 	}
 
 	return s.Result, nil

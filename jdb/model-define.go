@@ -6,9 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/strs"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/strs"
 )
 
 type TypeDefinition int
@@ -116,7 +115,7 @@ func toTypeData(val interface{}) (TypeData, error) {
 		return TypeData(i), nil
 	}
 
-	return TypeDataNone, mistake.Newf("invalid type: %T to TypeData", val)
+	return TypeDataNone, fmt.Errorf("invalid type: %T to TypeData", val)
 }
 
 /**
@@ -139,7 +138,7 @@ func toArrayString(val interface{}) ([]string, error) {
 		return strings.Split(v, ","), nil
 	}
 
-	return nil, mistake.Newf("invalid type: %T to []string", val)
+	return nil, fmt.Errorf("invalid type: %T to []string", val)
 }
 
 /**
@@ -159,7 +158,7 @@ func toMapString(val interface{}) (map[string]string, error) {
 		return result, nil
 	}
 
-	return nil, mistake.Newf("invalid type: %T to map[string]string", val)
+	return nil, fmt.Errorf("invalid type: %T to map[string]string", val)
 }
 
 /**

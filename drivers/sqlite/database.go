@@ -2,13 +2,13 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
 )
 
 func (s *SqlLite) connectTo(connStr string) (*sql.DB, error) {
@@ -34,9 +34,9 @@ func (s *SqlLite) connectTo(connStr string) (*sql.DB, error) {
 * @return error
 **/
 func (s *SqlLite) Connect(params et.Json) (*sql.DB, error) {
-	database := params.String("database")
+	database := params.Str("database")
 	if database == "" {
-		return nil, mistake.New("database is required")
+		return nil, errors.New("database is required")
 	}
 
 	db, err := s.connectTo(database)
@@ -50,7 +50,7 @@ func (s *SqlLite) Connect(params et.Json) (*sql.DB, error) {
 	s.connected = s.db != nil
 	s.getVersion()
 
-	console.Logf(s.name, `Connected to %s:%s`, params.Str("host"), database)
+	console.LogF(s.name, `Connected to %s:%s`, params.Str("host"), database)
 
 	return s.db, nil
 }
@@ -101,7 +101,7 @@ func (s *SqlLite) getVersion() int {
 	}
 
 	if v < 3 {
-		console.Alert(fmt.Errorf(MSG_VERSION_NOT_SUPPORTED, version))
+		console.Alert(fmt.Sprintf(MSG_VERSION_NOT_SUPPORTED, version))
 	}
 
 	s.version = v

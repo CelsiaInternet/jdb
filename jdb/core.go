@@ -1,6 +1,6 @@
 package jdb
 
-import "github.com/cgalvisleon/et/mistake"
+import "errors"
 
 var coreSchema *Schema
 
@@ -10,7 +10,7 @@ var coreSchema *Schema
 **/
 func (s *DB) createCore() error {
 	if s.driver == nil {
-		return mistake.New(MSG_DRIVER_NOT_DEFINED)
+		return errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
 	if err := s.defineAudit(); err != nil {
 		return err
@@ -50,7 +50,7 @@ func (s *DB) defineSchema() error {
 	coreSchema = NewSchema(s, "core")
 	coreSchema.isCore = true
 	if coreSchema == nil {
-		return mistake.New(MSG_SCHEMA_NOT_FOUND)
+		return errors.New(MSG_SCHEMA_NOT_FOUND)
 	}
 
 	return nil

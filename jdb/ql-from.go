@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/strs"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/strs"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 func helpQl(model *Model) et.Json {

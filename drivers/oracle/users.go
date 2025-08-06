@@ -1,10 +1,10 @@
 package oracle
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/cgalvisleon/et/mistake"
-	jdb "github.com/cgalvisleon/jdb/jdb"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
 /**
@@ -58,7 +58,7 @@ func (s *Oracle) grantPrivileges(username, database string) error {
 **/
 func (s *Oracle) createUser(username, password, confirmation string) error {
 	if password != confirmation {
-		return mistake.New("password do not match!")
+		return errors.New("password do not match!")
 	}
 
 	query := fmt.Sprintf("CREATE ROLE %s WITH LOGIN PASSWORD '%s';", username, password)
@@ -83,7 +83,7 @@ func (s *Oracle) createUser(username, password, confirmation string) error {
 **/
 func (s *Oracle) changePassword(username, password, confirmation string) error {
 	if password != confirmation {
-		return mistake.New("password do not match!")
+		return errors.New("password do not match!")
 	}
 
 	query := fmt.Sprintf("ALTER ROLE %s WITH PASSWORD '%s';", username, password)

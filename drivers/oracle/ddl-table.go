@@ -3,10 +3,10 @@ package oracle
 import (
 	"slices"
 
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/strs"
-	"github.com/cgalvisleon/et/utility"
-	jdb "github.com/cgalvisleon/jdb/jdb"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/strs"
+	"github.com/celsiainternet/elvis/utility"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
 /**

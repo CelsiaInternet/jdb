@@ -1,9 +1,9 @@
 package postgres
 
 import (
-	"github.com/cgalvisleon/et/strs"
-	"github.com/cgalvisleon/et/utility"
-	jdb "github.com/cgalvisleon/jdb/jdb"
+	"github.com/celsiainternet/elvis/strs"
+	"github.com/celsiainternet/elvis/utility"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
 /**

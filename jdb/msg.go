@@ -1,6 +1,7 @@
 package jdb
 
 const (
+	MSG_NOT_DRIVER_DB            = "Not driver db"
 	MSG_KIND_NOT_DEFINED         = "Kind not defined"
 	MSG_INVALID_NAME             = "Invalid name (%s)"
 	MSG_JDB_NOT_DEFINED          = "JDB not defined"

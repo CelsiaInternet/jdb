@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/timezone"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/timezone"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 type TypeColumn int

@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/utility"
 	"github.com/dop251/goja"
 )
 

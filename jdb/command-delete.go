@@ -1,8 +1,9 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
+	"errors"
+
+	"github.com/celsiainternet/elvis/et"
 )
 
 func (s *Command) deleted() error {
@@ -27,7 +28,7 @@ func (s *Command) deleted() error {
 
 	s.Result = results
 	if !results.Ok {
-		return mistake.New(MSG_NOT_DELETE_DATA)
+		return errors.New(MSG_NOT_DELETE_DATA)
 	}
 
 	s.ResultMap, err = model.getMapResultByPk(s.Result.Result)

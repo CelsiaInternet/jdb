@@ -1,9 +1,10 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/config"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
+	"errors"
+
+	"github.com/celsiainternet/elvis/config"
+	"github.com/celsiainternet/elvis/et"
 )
 
 /**
@@ -13,7 +14,7 @@ import (
 **/
 func (s *Ql) List(page, rows int) (et.List, error) {
 	if s.Db == nil {
-		return et.List{}, mistake.New(MSG_DATABASE_NOT_FOUND)
+		return et.List{}, errors.New(MSG_DATABASE_NOT_FOUND)
 	}
 
 	all, err := s.Db.Count(s)

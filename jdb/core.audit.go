@@ -1,10 +1,10 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/envar"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/envar"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 var coreAudit *Model

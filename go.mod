@@ -1,16 +1,18 @@
-module github.com/cgalvisleon/jdb
+module github.com/celsiainternet/jdb
 
 go 1.23.0
 
 require (
-	github.com/cgalvisleon/et v0.1.15
+	github.com/celsiainternet/elvis v1.1.105
 	github.com/dop251/goja v0.0.0-20250309171923-bcd7cc6bf64c
 	github.com/go-chi/chi/v5 v5.2.1
-	github.com/go-sql-driver/mysql v1.9.2
+	github.com/go-sql-driver/mysql v1.9.3
 	modernc.org/sqlite v1.37.1
 )
 
 require (
+	github.com/matoous/go-nanoid/v2 v2.1.0 // indirect
+	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 )

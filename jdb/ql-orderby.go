@@ -1,7 +1,7 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/et"
+	"github.com/celsiainternet/elvis/et"
 )
 
 type QlOrder struct {

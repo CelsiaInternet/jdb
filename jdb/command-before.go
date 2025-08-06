@@ -1,10 +1,11 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/reg"
-	"github.com/cgalvisleon/et/utility"
+	"errors"
+
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/reg"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 /**
@@ -14,7 +15,7 @@ import (
 **/
 func (s *Command) beforeInsertDefault(tx *Tx, data et.Json) error {
 	if s.From == nil {
-		return mistake.New(MSG_MODEL_REQUIRED)
+		return errors.New(MSG_MODEL_REQUIRED)
 	}
 
 	model := s.From
@@ -46,7 +47,7 @@ func (s *Command) beforeInsertDefault(tx *Tx, data et.Json) error {
 **/
 func (s *Command) beforeUpdateDefault(tx *Tx, data et.Json) error {
 	if s.From == nil {
-		return mistake.New(MSG_MODEL_REQUIRED)
+		return errors.New(MSG_MODEL_REQUIRED)
 	}
 
 	now := utility.Now()
@@ -69,7 +70,7 @@ func (s *Command) beforeUpdateDefault(tx *Tx, data et.Json) error {
 **/
 func (s *Command) beforeDeleteDefault(tx *Tx, data et.Json) error {
 	if s.From == nil {
-		return mistake.New(MSG_MODEL_REQUIRED)
+		return errors.New(MSG_MODEL_REQUIRED)
 	}
 
 	return nil

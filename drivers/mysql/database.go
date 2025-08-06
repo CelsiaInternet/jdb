@@ -6,13 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/msg"
-	"github.com/cgalvisleon/et/strs"
-	"github.com/cgalvisleon/et/utility"
-	jdb "github.com/cgalvisleon/jdb/jdb"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/strs"
+	"github.com/celsiainternet/elvis/utility"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
 /**
@@ -28,23 +26,23 @@ func (s *Mysql) chain(params et.Json) (string, error) {
 	database := params.Str("database")
 
 	if !utility.ValidStr(username, 0, []string{""}) {
-		return "", mistake.Newf(jdb.MSS_PARAM_REQUIRED, "username")
+		return "", fmt.Errorf(jdb.MSS_PARAM_REQUIRED, "username")
 	}
 
 	if !utility.ValidStr(password, 0, []string{""}) {
-		return "", mistake.Newf(jdb.MSS_PARAM_REQUIRED, "password")
+		return "", fmt.Errorf(jdb.MSS_PARAM_REQUIRED, "password")
 	}
 
 	if !utility.ValidStr(host, 0, []string{""}) {
-		return "", mistake.Newf(jdb.MSS_PARAM_REQUIRED, "host")
+		return "", fmt.Errorf(jdb.MSS_PARAM_REQUIRED, "host")
 	}
 
 	if port == 0 {
-		return "", mistake.Newf(jdb.MSS_PARAM_REQUIRED, "port")
+		return "", fmt.Errorf(jdb.MSS_PARAM_REQUIRED, "port")
 	}
 
 	if !utility.ValidStr(database, 0, []string{""}) {
-		return "", mistake.Newf(jdb.MSS_PARAM_REQUIRED, "database")
+		return "", fmt.Errorf(jdb.MSS_PARAM_REQUIRED, "database")
 	}
 
 	result := strs.Format(`%s:%s@tcp(%s:%d)/%s?parseTime=true`, username, password, host, port, database)
@@ -134,7 +132,7 @@ func (s *Mysql) existDatabase(name string) (bool, error) {
 **/
 func (s *Mysql) createDatabase(name string) error {
 	if s.db == nil {
-		return mistake.Newf(msg.NOT_DRIVER_DB)
+		return fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
 	}
 
 	exist, err := s.existDatabase(name)
@@ -153,7 +151,7 @@ func (s *Mysql) createDatabase(name string) error {
 		return err
 	}
 
-	console.Logf(s.name, `Database %s created`, name)
+	console.LogF(s.name, `Database %s created`, name)
 
 	return nil
 }
@@ -165,7 +163,7 @@ func (s *Mysql) createDatabase(name string) error {
 **/
 func (s *Mysql) DropDatabase(name string) error {
 	if s.db == nil {
-		return mistake.Newf(msg.NOT_DRIVER_DB)
+		return fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
 	}
 
 	exist, err := s.existDatabase(name)
@@ -183,7 +181,7 @@ func (s *Mysql) DropDatabase(name string) error {
 		return err
 	}
 
-	console.Logf(s.name, `Database %s droped`, name)
+	console.LogF(s.name, `Database %s droped`, name)
 
 	return nil
 }
@@ -218,7 +216,7 @@ func (s *Mysql) getVersion() int {
 	}
 
 	if v < 8 {
-		console.Alert(fmt.Errorf(MSG_VERSION_NOT_SUPPORTED, version))
+		console.Alert(fmt.Sprintf(MSG_VERSION_NOT_SUPPORTED, version))
 	}
 
 	s.version = v
@@ -249,7 +247,7 @@ func (s *Mysql) Connect(params et.Json) (*sql.DB, error) {
 		return nil, err
 	}
 
-	console.Logf(s.name, `Connected to %s:%s`, params.Str("host"), database)
+	console.LogF(s.name, `Connected to %s:%s`, params.Str("host"), database)
 
 	return s.db, nil
 }

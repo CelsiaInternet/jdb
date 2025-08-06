@@ -3,7 +3,7 @@ package jdb
 import (
 	"database/sql"
 
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 type Tx struct {

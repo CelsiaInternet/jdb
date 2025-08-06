@@ -4,8 +4,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/strs"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/strs"
 )
 
 type TypeSelect int

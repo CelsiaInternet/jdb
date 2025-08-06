@@ -1,12 +1,10 @@
 package jdb
 
-import (
-	"github.com/cgalvisleon/et/mistake"
-)
+import "errors"
 
 func (s *Command) upsert() error {
 	if len(s.Data) != 1 {
-		return mistake.New(MSG_MANY_INSERT_DATA)
+		return errors.New(MSG_MANY_INSERT_DATA)
 	}
 
 	model := s.From

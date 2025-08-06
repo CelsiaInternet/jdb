@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/cgalvisleon/et/et"
+	"github.com/celsiainternet/elvis/et"
 )
 
 type QlHaving struct {

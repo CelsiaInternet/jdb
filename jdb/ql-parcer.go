@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/strs"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/strs"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 /**

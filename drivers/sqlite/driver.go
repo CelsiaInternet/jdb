@@ -3,10 +3,9 @@ package sqlite
 import (
 	"database/sql"
 
-	"github.com/cgalvisleon/et/config"
-	"github.com/cgalvisleon/et/envar"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/jdb/jdb"
+	"github.com/celsiainternet/elvis/envar"
+	"github.com/celsiainternet/elvis/et"
+	jdb "github.com/celsiainternet/jdb/jdb"
 	_ "modernc.org/sqlite"
 )
 
@@ -33,13 +32,13 @@ func (s *SqlLite) Name() string {
 
 func init() {
 	jdb.Register(jdb.SqliteDriver, newDriver, jdb.ConnectParams{
-		Id:       config.String("DB_ID", "jdb"),
+		Id:       envar.GetStr("jdb", "DB_ID"),
 		Driver:   jdb.SqliteDriver,
-		Name:     config.String("DB_NAME", "jdb"),
+		Name:     envar.GetStr("jdb", "DB_NAME"),
 		UserCore: true,
-		Debug:    envar.Bool("DEBUG"),
+		Debug:    envar.GetBool(true, "DEBUG"),
 		Params: et.Json{
-			"database": config.String("DB_NAME", "jdb"),
+			"database": envar.GetStr("jdb", "DB_NAME"),
 		},
 		Validate: []string{
 			"DB_NAME",

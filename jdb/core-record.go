@@ -1,14 +1,14 @@
 package jdb
 
 import (
+	"errors"
 	"net/http"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/reg"
-	"github.com/cgalvisleon/et/response"
-	"github.com/cgalvisleon/et/timezone"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/reg"
+	"github.com/celsiainternet/elvis/response"
+	"github.com/celsiainternet/elvis/timezone"
 )
 
 var coreRecords *Model
@@ -77,7 +77,7 @@ func (s *DB) upsertRecord(tx *Tx, schema, name, sysid, option string) error {
 **/
 func (s *DB) QueryRecords(query et.Json) (interface{}, error) {
 	if coreRecords == nil || !coreRecords.isInit {
-		return nil, mistake.New(MSG_DATABASE_NOT_CONCURRENT)
+		return nil, errors.New(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	result, err := coreRecords.

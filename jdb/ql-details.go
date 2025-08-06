@@ -3,8 +3,8 @@ package jdb
 import (
 	"slices"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
 )
 
 /**

@@ -1,9 +1,10 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
+	"errors"
+
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
 )
 
 /**
@@ -13,7 +14,7 @@ import (
 **/
 func (s *Ql) FirstTx(tx *Tx, n int) (et.Items, error) {
 	if s.Db == nil {
-		return et.Items{}, mistake.New(MSG_DATABASE_NOT_FOUND)
+		return et.Items{}, errors.New(MSG_DATABASE_NOT_FOUND)
 	}
 
 	s.setTx(tx)
@@ -79,7 +80,7 @@ func (s *Ql) RowsTx(tx *Tx, val int) (et.Items, error) {
 **/
 func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 	if s.Db == nil {
-		return false, mistake.New(MSG_DATABASE_NOT_FOUND)
+		return false, errors.New(MSG_DATABASE_NOT_FOUND)
 	}
 
 	s.setTx(tx)
@@ -99,7 +100,7 @@ func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 **/
 func (s *Ql) CountedTx(tx *Tx) (int, error) {
 	if s.Db == nil {
-		return 0, mistake.New(MSG_DATABASE_NOT_FOUND)
+		return 0, errors.New(MSG_DATABASE_NOT_FOUND)
 	}
 
 	s.setTx(tx)

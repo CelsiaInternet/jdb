@@ -1,13 +1,14 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
+	"errors"
+
+	"github.com/celsiainternet/elvis/et"
 )
 
 func (s *Command) exists(model *Model, where et.Json) (bool, error) {
 	if model == nil {
-		return false, mistake.New(MSG_MODEL_REQUIRED)
+		return false, errors.New(MSG_MODEL_REQUIRED)
 	}
 
 	ql := From(model)

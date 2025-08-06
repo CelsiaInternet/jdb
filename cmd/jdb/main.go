@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
 )
 
 const PackageName = "jdb"
@@ -81,7 +81,7 @@ func main() {
 		if result.Ok {
 			console.Log(PackageName, result.Str("message"))
 		} else {
-			console.Alertm(result.Str("message"))
+			console.Alert(result.Str("message"))
 		}
 	case CMD_Start:
 		result := _app.Start()
@@ -89,21 +89,21 @@ func main() {
 		if result.Ok {
 			console.Log(PackageName, result.Str("message"))
 		} else {
-			console.Alertm(message)
+			console.Alert(message)
 		}
 	case CMD_Stop:
 		result := _app.Stop()
 		if result.Ok {
 			console.Log(PackageName, result.Str("message"))
 		} else {
-			console.Alertm(result.Str("message"))
+			console.Alert(result.Str("message"))
 		}
 	case CMD_Restart:
 		result := _app.Restart()
 		if result.Ok {
 			console.Log(PackageName, result.Str("message"))
 		} else {
-			console.Alertm(result.Str("message"))
+			console.Alert(result.Str("message"))
 		}
 	}
 }

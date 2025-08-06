@@ -1,7 +1,7 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/console"
+	"github.com/celsiainternet/elvis/console"
 )
 
 /**

@@ -1,13 +1,15 @@
 package jdb
 
 import (
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/mistake"
+	"errors"
+	"fmt"
+
+	"github.com/celsiainternet/elvis/et"
 )
 
 func (s *Command) inserted() error {
 	if len(s.Data) == 0 {
-		return mistake.Newf(MSG_NOT_DATA, s.Command.Str(), s.From.Name)
+		return fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), s.From.Name)
 	}
 
 	if err := s.prepare(); err != nil {
@@ -31,7 +33,7 @@ func (s *Command) inserted() error {
 
 	s.Result = results
 	if !s.Result.Ok {
-		return mistake.New(MSG_NOT_INSERT_DATA)
+		return errors.New(MSG_NOT_INSERT_DATA)
 	}
 
 	s.ResultMap, err = model.getMapResultByPk(s.Result.Result)

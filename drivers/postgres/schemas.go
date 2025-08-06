@@ -1,10 +1,10 @@
 package postgres
 
 import (
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/msg"
-	jdb "github.com/cgalvisleon/jdb/jdb"
+	"fmt"
+
+	"github.com/celsiainternet/elvis/console"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
 /**
@@ -14,7 +14,7 @@ import (
 **/
 func (s *Postgres) loadSchema(name string) error {
 	if s.db == nil {
-		return mistake.Newf(msg.NOT_DRIVER_DB)
+		return fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
 	}
 
 	exist, err := s.existSchema(name)
@@ -32,7 +32,7 @@ func (s *Postgres) loadSchema(name string) error {
 		return err
 	}
 
-	console.Logf(s.name, `Schema %s created`, name)
+	console.LogF(s.name, `Schema %s created`, name)
 
 	return nil
 }
@@ -44,7 +44,7 @@ func (s *Postgres) loadSchema(name string) error {
 **/
 func (s *Postgres) DropSchema(name string) error {
 	if s.db == nil {
-		return mistake.Newf(msg.NOT_DRIVER_DB)
+		return fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
 	}
 
 	sql := jdb.SQLDDL(`DROP SCHEMA IF EXISTS $1 CASCADE`, name)
@@ -53,7 +53,7 @@ func (s *Postgres) DropSchema(name string) error {
 		return err
 	}
 
-	console.Logf(s.name, `Schema %s droped`, name)
+	console.LogF(s.name, `Schema %s droped`, name)
 
 	return nil
 }
@@ -65,7 +65,7 @@ func (s *Postgres) DropSchema(name string) error {
 **/
 func (s *Postgres) existSchema(name string) (bool, error) {
 	if s.db == nil {
-		return false, mistake.Newf(msg.NOT_DRIVER_DB)
+		return false, fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
 	}
 
 	sql := jdb.SQLDDL(`SELECT 1 FROM pg_namespace WHERE nspname = '$1';`, name)

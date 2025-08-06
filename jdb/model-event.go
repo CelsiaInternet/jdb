@@ -3,10 +3,10 @@ package jdb
 import (
 	"fmt"
 
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/event"
-	"github.com/cgalvisleon/et/strs"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/event"
+	"github.com/celsiainternet/elvis/strs"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 const EVENT_MODEL_ERROR = "model:error"

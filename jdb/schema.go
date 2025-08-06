@@ -5,10 +5,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/timezone"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/timezone"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 type Schema struct {
@@ -100,7 +100,7 @@ func loadSchema(db *DB, name string) (*Schema, error) {
 		db.addSchema(result)
 	}
 
-	console.Logf("schema", `Schema %s loaded`, name)
+	console.LogF("schema", `Schema %s loaded`, name)
 
 	return result, nil
 }

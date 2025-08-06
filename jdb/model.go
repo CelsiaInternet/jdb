@@ -7,13 +7,12 @@ import (
 	"slices"
 	"time"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/event"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/reg"
-	"github.com/cgalvisleon/et/strs"
-	"github.com/cgalvisleon/et/timezone"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/event"
+	"github.com/celsiainternet/elvis/reg"
+	"github.com/celsiainternet/elvis/strs"
+	"github.com/celsiainternet/elvis/timezone"
 	"github.com/dop251/goja"
 	"github.com/google/uuid"
 )
@@ -176,7 +175,7 @@ func NewModel(schema *Schema, name string, version int) *Model {
 
 	newModel := func() *Model {
 		if !schema.isCore {
-			console.Logf("model", `Model %s new`, name)
+			console.LogF("model", `Model %s new`, name)
 		}
 
 		now := timezone.NowTime()
@@ -259,7 +258,7 @@ func loadModel(schema *Schema, model *Model) (*Model, error) {
 	}
 
 	if !schema.isCore {
-		console.Logf("model", `Model %s load`, model.Name)
+		console.LogF("model", `Model %s load`, model.Name)
 	}
 
 	schema.addModel(model)
@@ -530,7 +529,7 @@ func (s *Model) CheckRequired(data et.Json) error {
 	for name, required := range s.Required {
 		if required {
 			if data[name] == nil {
-				return mistake.Newf(MSG_REQUIRED_FIELD_REQUIRED, name)
+				return fmt.Errorf(MSG_REQUIRED_FIELD_REQUIRED, name)
 			}
 		}
 	}
@@ -547,7 +546,7 @@ func (s *Model) CheckForeignKeys(data et.Json) error {
 	for name, relation := range s.ForeignKeys {
 		with := relation.With
 		if with == nil {
-			return mistake.Newf(MSG_RELATION_WITH_REQUIRED, name)
+			return fmt.Errorf(MSG_RELATION_WITH_REQUIRED, name)
 		}
 
 		where := relation.GetWhere(data)
@@ -561,7 +560,7 @@ func (s *Model) CheckForeignKeys(data et.Json) error {
 		}
 
 		if !exist {
-			return mistake.Newf(MSG_FOREIGN_KEY_NOT_EXIST, name, where.ToString())
+			return fmt.Errorf(MSG_FOREIGN_KEY_NOT_EXIST, name, where.ToString())
 		}
 	}
 
@@ -606,7 +605,7 @@ func (s *Model) getKeyByPk(data et.Json) (string, error) {
 	for name := range s.PrimaryKeys {
 		val := data.Get(name)
 		if val == nil {
-			return "", mistake.Newf(MSG_PRIMARY_KEY_REQUIRED, name, s.Name)
+			return "", fmt.Errorf(MSG_PRIMARY_KEY_REQUIRED, name, s.Name)
 		}
 
 		result = strs.Append(result, fmt.Sprintf(`%v`, val), ":")
@@ -666,7 +665,7 @@ func (s *Model) GetWhereByRequired(data et.Json) (et.Json, error) {
 	for name := range s.Required {
 		val := data.Get(name)
 		if val == nil {
-			return et.Json{}, mistake.Newf(MSG_FIELD_REQUIRED, name, s.Name)
+			return et.Json{}, fmt.Errorf(MSG_FIELD_REQUIRED, name, s.Name)
 		}
 
 		col := s.getColumn(name)
@@ -707,7 +706,7 @@ func (s *Model) GetWhereByPrimaryKeys(data et.Json) (et.Json, error) {
 	for name := range s.PrimaryKeys {
 		val := data.Get(name)
 		if val == nil {
-			return et.Json{}, mistake.Newf(MSG_PRIMARY_KEY_REQUIRED, name, s.Name)
+			return et.Json{}, fmt.Errorf(MSG_PRIMARY_KEY_REQUIRED, name, s.Name)
 		}
 
 		col := s.getColumn(name)

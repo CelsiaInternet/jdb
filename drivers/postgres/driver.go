@@ -3,10 +3,9 @@ package postgres
 import (
 	"database/sql"
 
-	"github.com/cgalvisleon/et/config"
-	"github.com/cgalvisleon/et/envar"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/jdb/jdb"
+	"github.com/celsiainternet/elvis/envar"
+	"github.com/celsiainternet/elvis/et"
+	jdb "github.com/celsiainternet/jdb/jdb"
 	_ "github.com/lib/pq"
 )
 
@@ -33,18 +32,18 @@ func (s *Postgres) Name() string {
 
 func init() {
 	jdb.Register(jdb.PostgresDriver, newDriver, jdb.ConnectParams{
-		Id:       config.String("DB_ID", "jdb"),
+		Id:       envar.GetStr("jdb", "DB_ID"),
 		Driver:   jdb.PostgresDriver,
-		Name:     config.String("DB_NAME", "jdb"),
+		Name:     envar.GetStr("jdb", "DB_NAME"),
 		UserCore: true,
-		Debug:    envar.Bool("DEBUG"),
+		Debug:    envar.GetBool(true, "DEBUG"),
 		Params: et.Json{
-			"database": config.String("DB_NAME", "jdb"),
-			"host":     config.String("DB_HOST", "localhost"),
-			"port":     config.Int("DB_PORT", 5432),
-			"username": config.String("DB_USER", "admin"),
-			"password": config.String("DB_PASSWORD", "admin"),
-			"app":      config.App.Name,
+			"database": envar.GetStr("jdb", "DB_NAME"),
+			"host":     envar.GetStr("localhost", "DB_HOST"),
+			"port":     envar.GetInt(5432, "DB_PORT"),
+			"username": envar.GetStr("admin", "DB_USER"),
+			"password": envar.GetStr("admin", "DB_PASSWORD"),
+			"app":      envar.GetStr("jdb", "APP_NAME"),
 		},
 		Validate: []string{
 			"DB_NAME",

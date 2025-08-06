@@ -3,9 +3,9 @@ package oracle
 import (
 	"database/sql"
 
-	"github.com/cgalvisleon/et/config"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/jdb/jdb"
+	"github.com/celsiainternet/elvis/envar"
+	"github.com/celsiainternet/elvis/et"
+	jdb "github.com/celsiainternet/jdb/jdb"
 	_ "github.com/lib/pq"
 )
 
@@ -32,20 +32,20 @@ func (s *Oracle) Name() string {
 
 func init() {
 	jdb.Register(jdb.OracleDriver, newDriver, jdb.ConnectParams{
-		Id:     config.String("DB_ID", "jdb"),
+		Id:     envar.GetStr("jdb", "DB_ID"),
 		Driver: jdb.OracleDriver,
-		Name:   config.String("DB_NAME", "jdb"),
+		Name:   envar.GetStr("jdb", "DB_NAME"),
 		Params: et.Json{
-			"database":     config.String("DB_NAME", "jdb"),
-			"host":         config.String("DB_HOST", "localhost"),
-			"port":         config.Int("DB_PORT", 5432),
-			"username":     config.String("DB_USER", "admin"),
-			"password":     config.String("DB_PASSWORD", "admin"),
-			"app":          config.App.Name,
-			"service_name": config.String("ORA_DB_SERVICE_NAME_ORACLE", "jdb"),
-			"ssl":          config.Bool("ORA_DB_SSL_ORACLE", false),
-			"ssl_verify":   config.Bool("ORA_DB_SSL_VERIFY_ORACLE", false),
-			"version":      config.Int("ORA_DB_VERSION_ORACLE", 19),
+			"database":     envar.GetStr("jdb", "DB_NAME"),
+			"host":         envar.GetStr("localhost", "DB_HOST"),
+			"port":         envar.GetInt(5432, "DB_PORT"),
+			"username":     envar.GetStr("admin", "DB_USER"),
+			"password":     envar.GetStr("admin", "DB_PASSWORD"),
+			"app":          envar.GetStr("jdb", "APP_NAME"),
+			"service_name": envar.GetStr("jdb", "ORA_DB_SERVICE_NAME_ORACLE"),
+			"ssl":          envar.GetBool(false, "ORA_DB_SSL_ORACLE"),
+			"ssl_verify":   envar.GetBool(false, "ORA_DB_SSL_VERIFY_ORACLE"),
+			"version":      envar.GetInt(19, "ORA_DB_VERSION_ORACLE"),
 		},
 		UserCore: true,
 		Validate: []string{

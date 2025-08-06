@@ -3,12 +3,11 @@ package jdb
 import (
 	"fmt"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
-	"github.com/cgalvisleon/et/event"
-	"github.com/cgalvisleon/et/mistake"
-	"github.com/cgalvisleon/et/timezone"
-	"github.com/cgalvisleon/et/utility"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/event"
+	"github.com/celsiainternet/elvis/timezone"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 /**
@@ -49,7 +48,7 @@ func (s *Model) On(channel string, handler event.Handler) *Model {
 **/
 func (s *Model) Emit(channel string, data et.Json) *Model {
 	if s.eventEmiterChannel == nil {
-		console.Alert(mistake.Newf("event channel not found (%s)", channel))
+		console.Alert(fmt.Errorf("event channel not found (%s)", channel))
 	}
 
 	message := event.Message{

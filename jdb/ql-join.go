@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/cgalvisleon/et/console"
-	"github.com/cgalvisleon/et/et"
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
 )
 
 type TypeJoin int

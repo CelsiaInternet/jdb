@@ -1,10 +1,10 @@
 package postgres
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/cgalvisleon/et/mistake"
-	jdb "github.com/cgalvisleon/jdb/jdb"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
 /**
@@ -58,7 +58,7 @@ func (s *Postgres) GrantPrivileges(username, database string) error {
 **/
 func (s *Postgres) CreateUser(username, password, confirmation string) error {
 	if password != confirmation {
-		return mistake.New("password do not match!")
+		return errors.New("password do not match!")
 	}
 
 	query := fmt.Sprintf("CREATE ROLE %s WITH LOGIN PASSWORD '%s';", username, password)
@@ -83,7 +83,7 @@ func (s *Postgres) CreateUser(username, password, confirmation string) error {
 **/
 func (s *Postgres) ChangePassword(username, password, confirmation string) error {
 	if password != confirmation {
-		return mistake.New("password do not match!")
+		return errors.New("password do not match!")
 	}
 
 	query := fmt.Sprintf("ALTER ROLE %s WITH PASSWORD '%s';", username, password)

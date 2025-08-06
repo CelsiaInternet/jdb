@@ -63,7 +63,7 @@ func audit(command string, query string) {
 				return err
 			}
 
-			limit := envar.GetInt("AUDIT_LIMIT", 10000)
+			limit := envar.GetInt(10000, "AUDIT_LIMIT")
 			if count > limit {
 				item, err := coreAudit.
 					Where("command").Neg("exec").
@@ -86,10 +86,10 @@ func audit(command string, query string) {
 		}).
 		Exec()
 	if err != nil {
-		console.Alert(err)
+		console.Alert(err.Error())
 	}
 
-	debug := envar.Bool("DEBUG")
+	debug := envar.GetBool(true, "DEBUG")
 
 	if debug {
 		console.Debug("Audit:", query)

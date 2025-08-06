@@ -28,7 +28,7 @@ func QueryTx(tx *Tx, db *sql.DB, sql string, arg ...any) (et.Items, error) {
 				err = fmt.Errorf("error on rollback: %w: %s", errRollback, err)
 			}
 
-			return et.Items{}, console.QueryError(err, sql)
+			return et.Items{}, console.Alert(fmt.Sprintf("QueryTx error: %s", err.Error()))
 		}
 		defer rows.Close()
 
@@ -40,7 +40,7 @@ func QueryTx(tx *Tx, db *sql.DB, sql string, arg ...any) (et.Items, error) {
 	rows, err := db.Query(sql, arg...)
 	if err != nil {
 		sql = SQLParse(sql, arg...)
-		return et.Items{}, console.QueryError(err, sql)
+		return et.Items{}, console.Alert(fmt.Sprintf("Query error: %s", err.Error()))
 	}
 	defer rows.Close()
 
@@ -94,7 +94,7 @@ func DataTx(tx *Tx, db *sql.DB, sourceFiled, sql string, arg ...any) (et.Items, 
 				err = fmt.Errorf("error on rollback: %w: %s", errRollback, err)
 			}
 
-			return et.Items{}, console.QueryError(err, sql)
+			return et.Items{}, console.Alert(fmt.Sprintf("DataTx error: %s", err.Error()))
 		}
 		defer rows.Close()
 
@@ -106,7 +106,7 @@ func DataTx(tx *Tx, db *sql.DB, sourceFiled, sql string, arg ...any) (et.Items, 
 	rows, err := db.Query(sql, arg...)
 	if err != nil {
 		sql = SQLParse(sql, arg...)
-		return et.Items{}, console.QueryError(err, sql)
+		return et.Items{}, console.Alert(fmt.Sprintf("Data error: %s", err.Error()))
 	}
 	defer rows.Close()
 

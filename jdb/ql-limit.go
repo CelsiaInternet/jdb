@@ -3,7 +3,7 @@ package jdb
 import (
 	"errors"
 
-	"github.com/celsiainternet/elvis/config"
+	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 )
 
@@ -46,7 +46,7 @@ func (s *Ql) Page(val int) *Ql {
 * @return *Ql
 **/
 func (s *Ql) calcOffset() *Ql {
-	max := config.Int("DB_RECORD_LIMIT", 1000)
+	max := envar.GetInt(1000, "DB_RECORD_LIMIT")
 	if s.Limit > max {
 		s.Limit = max
 	}

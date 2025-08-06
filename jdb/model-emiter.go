@@ -14,14 +14,14 @@ import (
 * eventEmiter
 * @param message event.Message
 **/
-func (s *Model) eventEmiter(message event.Message) {
+func (s *Model) eventEmiter(message event.EvenMessage) {
 	if s.eventsEmiter == nil {
 		s.eventsEmiter = make(map[string]event.Handler)
 	}
 
 	eventEmiter, ok := s.eventsEmiter[message.Channel]
 	if !ok {
-		console.Alert(fmt.Errorf(MSG_EVENT_NOT_FOUND, message.Channel, s.Name))
+		console.Alert(fmt.Sprintf(MSG_EVENT_NOT_FOUND, message.Channel, s.Name))
 		return
 	}
 
@@ -48,15 +48,15 @@ func (s *Model) On(channel string, handler event.Handler) *Model {
 **/
 func (s *Model) Emit(channel string, data et.Json) *Model {
 	if s.eventEmiterChannel == nil {
-		console.Alert(fmt.Errorf("event channel not found (%s)", channel))
+		console.Alert(fmt.Sprintf("event channel not found (%s)", channel))
 	}
 
-	message := event.Message{
-		CreatedAt: timezone.NowTime(),
-		FromId:    s.Db.Id,
-		Id:        utility.UUID(),
-		Channel:   channel,
-		Data:      data,
+	message := event.EvenMessage{
+		Created_at: timezone.NowTime(),
+		FromId:     s.Db.Id,
+		Id:         utility.UUID(),
+		Channel:    channel,
+		Data:       data,
 	}
 
 	s.eventEmiterChannel <- message

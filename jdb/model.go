@@ -80,7 +80,7 @@ type Model struct {
 	eventsInsert       []Event                  `json:"-"`
 	eventsUpdate       []Event                  `json:"-"`
 	eventsDelete       []Event                  `json:"-"`
-	eventEmiterChannel chan event.Message       `json:"-"`
+	eventEmiterChannel chan event.EvenMessage   `json:"-"`
 	eventsEmiter       map[string]event.Handler `json:"-"`
 	IsDebug            bool                     `json:"-"`
 	isLocked           bool                     `json:"-"`
@@ -135,7 +135,7 @@ func NewTable(db *DB, table string) *Model {
 		Joins:              make(map[string]*Join),
 		Required:           make(map[string]bool),
 		TpId:               TpULId,
-		eventEmiterChannel: make(chan event.Message),
+		eventEmiterChannel: make(chan event.EvenMessage),
 		eventsEmiter:       make(map[string]event.Handler),
 		eventError:         make([]EventError, 0),
 		eventsInsert:       make([]Event, 0),
@@ -200,7 +200,7 @@ func NewModel(schema *Schema, name string, version int) *Model {
 			Joins:              make(map[string]*Join),
 			Required:           make(map[string]bool),
 			TpId:               TpULId,
-			eventEmiterChannel: make(chan event.Message),
+			eventEmiterChannel: make(chan event.EvenMessage),
 			eventsEmiter:       make(map[string]event.Handler),
 			eventError:         make([]EventError, 0),
 			eventsInsert:       make([]Event, 0),
@@ -274,7 +274,7 @@ func loadModel(schema *Schema, model *Model) (*Model, error) {
 	model.RelationsFrom = make(map[string]*Relation)
 	model.Required = make(map[string]bool)
 	/* Event */
-	model.eventEmiterChannel = make(chan event.Message)
+	model.eventEmiterChannel = make(chan event.EvenMessage)
 	model.eventsEmiter = make(map[string]event.Handler)
 	model.eventError = make([]EventError, 0)
 	model.eventsInsert = make([]Event, 0)

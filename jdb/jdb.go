@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"slices"
 
-	"github.com/celsiainternet/elvis/config"
 	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/response"
 	"github.com/celsiainternet/elvis/strs"
@@ -191,17 +191,12 @@ func ConnectTo(params ConnectParams) (*DB, error) {
 * @return *DB, error
 **/
 func Load() (*DB, error) {
-	driver := config.String("DB_DRIVER", SqliteDriver)
+	driver := envar.GetStr(SqliteDriver, "DB_DRIVER")
 	if driver == "" {
 		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	params := conn.Params[driver]
-	err := config.Validate(params.Validate)
-	if err != nil {
-		return nil, err
-	}
-
 	return ConnectTo(params)
 }
 

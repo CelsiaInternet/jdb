@@ -159,7 +159,7 @@ func eventDeleteDefault(tx *Tx, model *Model, before et.Json, after et.Json) err
 * eventSyncDefault
 * @param message event.Message
 **/
-func eventSyncDefault(message event.Message) {
+func eventSyncDefault(message event.EvenMessage) {
 	data := message.Data
 	db := data.Str("db")
 	schema := data.Str("schema")

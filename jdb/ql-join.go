@@ -63,14 +63,14 @@ func (s *QlJoin) Serialize() ([]byte, error) {
 func (s *QlJoin) Describe() et.Json {
 	definition, err := s.Serialize()
 	if err != nil {
-		console.Errorf("QlJoin error: %s", err.Error())
+		console.Alert(fmt.Sprintf("QlJoin error: %s", err.Error()))
 		return et.Json{}
 	}
 
 	result := et.Json{}
 	err = json.Unmarshal(definition, &result)
 	if err != nil {
-		console.Errorf("QlJoin error: %s", err.Error())
+		console.Alert(fmt.Sprintf("QlJoin error: %s", err.Error()))
 		return et.Json{}
 	}
 

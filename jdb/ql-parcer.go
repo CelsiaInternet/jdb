@@ -2,6 +2,7 @@ package jdb
 
 import (
 	"database/sql"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -150,38 +151,38 @@ func SourceToItem(source string, rows *sql.Rows) et.Item {
 * @return interface{}
 **/
 func JsonQuote(val interface{}) interface{} {
-	fmt := `'%v'`
+	f := `'%v'`
 	switch v := val.(type) {
 	case string:
 		v = strs.Format(`"%s"`, v)
-		return strs.Format(fmt, v)
+		return strs.Format(f, v)
 	case int:
-		return strs.Format(fmt, v)
+		return strs.Format(f, v)
 	case float64:
-		return strs.Format(fmt, v)
+		return strs.Format(f, v)
 	case float32:
-		return strs.Format(fmt, v)
+		return strs.Format(f, v)
 	case int16:
-		return strs.Format(fmt, v)
+		return strs.Format(f, v)
 	case int32:
-		return strs.Format(fmt, v)
+		return strs.Format(f, v)
 	case int64:
-		return strs.Format(fmt, v)
+		return strs.Format(f, v)
 	case bool:
-		return strs.Format(fmt, v)
+		return strs.Format(f, v)
 	case time.Time:
-		return strs.Format(fmt, v.Format("2006-01-02 15:04:05"))
+		return strs.Format(f, v.Format("2006-01-02 15:04:05"))
 	case et.Json:
-		return strs.Format(fmt, v.ToString())
+		return strs.Format(f, v.ToString())
 	case map[string]interface{}:
-		return strs.Format(fmt, et.Json(v).ToString())
+		return strs.Format(f, et.Json(v).ToString())
 	case []string:
 		var r string
 		for _, s := range v {
 			r = strs.Append(r, strs.Format(`"%s"`, s), ", ")
 		}
 		r = strs.Format(`[%s]`, r)
-		return strs.Format(fmt, r)
+		return strs.Format(f, r)
 	case []interface{}:
 		var r string
 		for _, _v := range v {
@@ -189,13 +190,13 @@ func JsonQuote(val interface{}) interface{} {
 			r = strs.Append(r, strs.Format(`%v`, q), ", ")
 		}
 		r = strs.Format(`[%s]`, r)
-		return strs.Format(fmt, r)
+		return strs.Format(f, r)
 	case []uint8:
-		return strs.Format(fmt, string(v))
+		return strs.Format(f, string(v))
 	case nil:
 		return strs.Format(`%s`, "NULL")
 	default:
-		console.Errorf("Not quoted type:%v value:%v", reflect.TypeOf(v), v)
+		console.Alert(fmt.Sprintf("Not quoted type:%v value:%v", reflect.TypeOf(v), v))
 		return val
 	}
 }

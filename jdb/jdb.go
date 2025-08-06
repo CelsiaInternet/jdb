@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/cgalvisleon/et/config"
+	"github.com/cgalvisleon/et/console"
 	"github.com/cgalvisleon/et/et"
 	"github.com/cgalvisleon/et/mistake"
 	"github.com/cgalvisleon/et/response"
@@ -308,6 +309,7 @@ func define(params et.Json) (et.Json, error) {
 		},
 	}
 
+	console.Debug(params.ToString())
 	for name := range params {
 		param := params.Json(name)
 		if param.IsEmpty() {
@@ -540,7 +542,12 @@ func commandsTx(tx *Tx, params et.Json) (et.Items, error) {
 * @param r *http.Request
 **/
 func ModelDefine(w http.ResponseWriter, r *http.Request) {
-	body, _ := response.GetBody(r)
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	params := body.Json("params")
 	result, err := define(params)
 	if err != nil {

@@ -37,76 +37,6 @@ func init() {
 	}
 }
 
-type ConnectParams struct {
-	Id       string   `json:"id"`
-	Driver   string   `json:"driver"`
-	Name     string   `json:"name"`
-	UserCore bool     `json:"user_core"`
-	NodeId   int      `json:"node_id"`
-	Debug    bool     `json:"debug"`
-	Validate []string `json:"validate"`
-	Params   et.Json  `json:"params"`
-}
-
-/**
-* Json
-* @return et.Json
-**/
-func (s *ConnectParams) Json() et.Json {
-	return et.Json{
-		"id":        s.Id,
-		"driver":    s.Driver,
-		"name":      s.Name,
-		"user_core": s.UserCore,
-		"node_id":   s.NodeId,
-		"debug":     s.Debug,
-		"validate":  s.Validate,
-		"params":    s.Params,
-	}
-}
-
-/**
-* Validate
-* @return error
-**/
-func (s *ConnectParams) validate() error {
-	if conn == nil {
-		return errors.New(MSG_JDB_NOT_DEFINED)
-	}
-
-	if s.Driver == "" {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
-	}
-
-	if s.Name == "" {
-		return errors.New(MSG_DATABASE_NOT_DEFINED)
-	}
-
-	if _, ok := conn.Drivers[s.Driver]; !ok {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
-	}
-
-	return nil
-}
-
-/**
-* ToConnectParams
-* @param params et.Json
-* @return *ConnectParams
-**/
-func ToConnectParams(params et.Json) *ConnectParams {
-	return &ConnectParams{
-		Id:       params.Str("id"),
-		Driver:   params.Str("driver"),
-		Name:     params.Str("name"),
-		UserCore: params.Bool("user_core"),
-		NodeId:   params.Int("node_id"),
-		Debug:    params.Bool("debug"),
-		Validate: params.ArrayStr("validate"),
-		Params:   params.Json("params"),
-	}
-}
-
 /**
 * Serialize
 * @return []byte, error
@@ -154,24 +84,24 @@ func (s *JDB) Describe() et.Json {
 
 /**
 * ConnectTo
-* @param params et.Json
+* @param connection ConnectParams
 * @return *DB, error
 **/
-func ConnectTo(params ConnectParams) (*DB, error) {
-	err := params.validate()
+func ConnectTo(connection ConnectParams) (*DB, error) {
+	err := connection.Params.Validate()
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := NewDatabase(params.Id, params.Name, params.Driver)
+	result, err := NewDatabase(connection.Id, connection.Name, connection.Driver)
 	if err != nil {
 		return nil, err
 	}
 
-	result.IsDebug = params.Debug
-	result.UseCore = params.UserCore
-	result.NodeId = params.NodeId
-	err = result.Conected(params.Params)
+	result.IsDebug = connection.Debug
+	result.UseCore = connection.UserCore
+	result.NodeId = connection.NodeId
+	err = result.Conected(connection)
 	if err != nil {
 		return nil, err
 	}

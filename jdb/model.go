@@ -13,7 +13,6 @@ import (
 	"github.com/celsiainternet/elvis/reg"
 	"github.com/celsiainternet/elvis/strs"
 	"github.com/celsiainternet/elvis/timezone"
-	"github.com/dop251/goja"
 	"github.com/google/uuid"
 )
 
@@ -88,10 +87,6 @@ type Model struct {
 	isCore             bool                     `json:"-"`
 	isAudit            bool                     `json:"-"`
 	needMutate         bool                     `json:"-"`
-	vm                 *goja.Runtime            `json:"-"`
-	FuncInsert         []string                 `json:"func_insert"`
-	FuncUpdate         []string                 `json:"func_update"`
-	FuncDelete         []string                 `json:"func_delete"`
 }
 
 /**
@@ -143,10 +138,6 @@ func NewTable(db *DB, table string) *Model {
 		eventsDelete:       make([]Event, 0),
 		Version:            1,
 		isCore:             false,
-		vm:                 goja.New(),
-		FuncInsert:         make([]string, 0),
-		FuncUpdate:         make([]string, 0),
-		FuncDelete:         make([]string, 0),
 		IsDebug:            db.IsDebug,
 	}
 	result.DefineEventError(eventErrorDefault)
@@ -154,8 +145,6 @@ func NewTable(db *DB, table string) *Model {
 	result.DefineEvent(EventUpdate, eventUpdateDefault)
 	result.DefineEvent(EventDelete, eventDeleteDefault)
 	result.On(EVENT_MODEL_SYNC, eventSyncDefault)
-	result.vm.Set("model", result)
-	result.vm.Set("db", db)
 	result.isInit = true
 	db.tables = append(db.tables, result)
 
@@ -175,7 +164,7 @@ func NewModel(schema *Schema, name string, version int) *Model {
 
 	newModel := func() *Model {
 		if !schema.isCore {
-			console.LogF("model", `Model %s new`, name)
+			console.LogKF("model", `Model %s new`, name)
 		}
 
 		now := timezone.NowTime()
@@ -208,10 +197,6 @@ func NewModel(schema *Schema, name string, version int) *Model {
 			eventsDelete:       make([]Event, 0),
 			Version:            version,
 			isCore:             schema.isCore,
-			vm:                 goja.New(),
-			FuncInsert:         make([]string, 0),
-			FuncUpdate:         make([]string, 0),
-			FuncDelete:         make([]string, 0),
 			IsDebug:            schema.Db.IsDebug,
 		}
 		result.DefineEventError(eventErrorDefault)
@@ -219,9 +204,6 @@ func NewModel(schema *Schema, name string, version int) *Model {
 		result.DefineEvent(EventUpdate, eventUpdateDefault)
 		result.DefineEvent(EventDelete, eventDeleteDefault)
 		result.On(EVENT_MODEL_SYNC, eventSyncDefault)
-		result.vm.Set("model", result)
-		result.vm.Set("schema", schema)
-		result.vm.Set("db", schema.Db)
 
 		schema.addModel(result)
 		return result
@@ -258,7 +240,7 @@ func loadModel(schema *Schema, model *Model) (*Model, error) {
 	}
 
 	if !schema.isCore {
-		console.LogF("model", `Model %s load`, model.Name)
+		console.LogKF("model", `Model %s load`, model.Name)
 	}
 
 	schema.addModel(model)
@@ -281,19 +263,12 @@ func loadModel(schema *Schema, model *Model) (*Model, error) {
 	model.eventsUpdate = make([]Event, 0)
 	model.eventsDelete = make([]Event, 0)
 	model.isCore = schema.isCore
-	model.vm = goja.New()
-	model.FuncInsert = make([]string, 0)
-	model.FuncUpdate = make([]string, 0)
-	model.FuncDelete = make([]string, 0)
 	model.IsDebug = schema.Db.IsDebug
 	model.DefineEventError(eventErrorDefault)
 	model.DefineEvent(EventInsert, eventInsertDefault)
 	model.DefineEvent(EventUpdate, eventUpdateDefault)
 	model.DefineEvent(EventDelete, eventDeleteDefault)
 	model.On(EVENT_MODEL_SYNC, eventSyncDefault)
-	model.vm.Set("model", model)
-	model.vm.Set("schema", schema)
-	model.vm.Set("db", schema.Db)
 	/* Define columns */
 	for name := range model.Definitions {
 		definition := model.Definitions.Json(name)

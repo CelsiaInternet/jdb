@@ -180,10 +180,10 @@ func (s *DB) Debug() {
 
 /**
 * Conected
-* @param params et.Json
+* @param connection ConnectParams
 * @return bool
 **/
-func (s *DB) Conected(params et.Json) error {
+func (s *DB) Conected(connection ConnectParams) error {
 	if s.driver == nil {
 		return errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
@@ -192,7 +192,7 @@ func (s *DB) Conected(params et.Json) error {
 		return nil
 	}
 
-	db, err := s.driver.Connect(params)
+	db, err := s.driver.Connect(connection)
 	if err != nil {
 		return err
 	}

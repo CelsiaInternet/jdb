@@ -100,7 +100,7 @@ func loadSchema(db *DB, name string) (*Schema, error) {
 		db.addSchema(result)
 	}
 
-	console.LogF("schema", `Schema %s loaded`, name)
+	console.LogKF("schema", `Schema %s loaded`, name)
 
 	return result, nil
 }

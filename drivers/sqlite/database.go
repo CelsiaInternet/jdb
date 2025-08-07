@@ -3,20 +3,18 @@ package sqlite
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/celsiainternet/elvis/console"
-	"github.com/celsiainternet/elvis/et"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
-func (s *SqlLite) connectTo(connStr string) (*sql.DB, error) {
-	if !strings.HasSuffix(connStr, ".db") {
-		connStr = connStr + ".db"
+func (s *SqlLite) connectTo(database string) (*sql.DB, error) {
+	if !strings.HasSuffix(database, ".db") {
+		database = database + ".db"
 	}
 
-	db, err := sql.Open(s.name, connStr)
+	db, err := sql.Open(s.name, database)
 	if err != nil {
 		return nil, err
 	}
@@ -30,27 +28,23 @@ func (s *SqlLite) connectTo(connStr string) (*sql.DB, error) {
 
 /**
 * Connect
-* @param params et.Json
+* @param connection jdb.ConnectParams
 * @return error
 **/
-func (s *SqlLite) Connect(params et.Json) (*sql.DB, error) {
-	database := params.Str("database")
+func (s *SqlLite) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
+	database := connection.Params.(*Connection).Database
 	if database == "" {
 		return nil, errors.New("database is required")
 	}
 
-	db, err := s.connectTo(database)
+	var err error
+	s.db, err = s.connectTo(database)
 	if err != nil {
 		return nil, err
 	}
 
-	s.db = db
-	s.params = params
-	s.connStr = database
 	s.connected = s.db != nil
-	s.getVersion()
-
-	console.LogF(s.name, `Connected to %s:%s`, params.Str("host"), database)
+	console.LogKF(s.name, `Connected to %s`, database)
 
 	return s.db, nil
 }
@@ -69,42 +63,4 @@ func (s *SqlLite) Disconnect() error {
 	}
 
 	return nil
-}
-
-/**
-* getVersion
-* @return int
-**/
-func (s *SqlLite) getVersion() int {
-	if !s.connected {
-		return 0
-	}
-
-	if s.db == nil {
-		return 0
-	}
-
-	if s.version != 0 {
-		return s.version
-	}
-
-	var version string
-	err := s.db.QueryRow("SELECT sqlite_version();").Scan(&version)
-	if err != nil {
-		return 0
-	}
-
-	split := strings.Split(version, ".")
-	v, err := strconv.Atoi(split[0])
-	if err != nil {
-		v = 0
-	}
-
-	if v < 3 {
-		console.Alert(fmt.Sprintf(MSG_VERSION_NOT_SUPPORTED, version))
-	}
-
-	s.version = v
-
-	return s.version
 }

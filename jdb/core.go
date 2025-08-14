@@ -12,10 +12,10 @@ func (s *DB) createCore() error {
 	if s.driver == nil {
 		return errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
-	if err := s.defineAudit(); err != nil {
+	if err := s.defineRecords(); err != nil {
 		return err
 	}
-	if err := s.defineRecords(); err != nil {
+	if err := s.defineTables(); err != nil {
 		return err
 	}
 	if err := s.defineModel(); err != nil {
@@ -25,10 +25,6 @@ func (s *DB) createCore() error {
 		return err
 	}
 
-	s.isInit = true
-	if err := coreSchema.Save(); err != nil {
-		return err
-	}
 	if err := coreRecords.Save(); err != nil {
 		return err
 	}
@@ -39,6 +35,8 @@ func (s *DB) createCore() error {
 		return err
 	}
 
+	s.isInit = true
+
 	return nil
 }
 
@@ -48,7 +46,6 @@ func (s *DB) defineSchema() error {
 	}
 
 	coreSchema = NewSchema(s, "core")
-	coreSchema.isCore = true
 	if coreSchema == nil {
 		return errors.New(MSG_SCHEMA_NOT_FOUND)
 	}

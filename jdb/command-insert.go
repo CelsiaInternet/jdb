@@ -1,7 +1,6 @@
 package jdb
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/celsiainternet/elvis/et"
@@ -19,21 +18,13 @@ func (s *Command) inserted() error {
 	model := s.From
 	results, err := s.Db.Command(s)
 	if err != nil {
-		for _, event := range model.eventError {
-			event(model, et.Json{
-				"command": "insert",
-				"sql":     s.Sql,
-				"data":    s.Data,
-				"error":   err.Error(),
-			})
-		}
-
+		publishError(model, s.Sql, err)
 		return err
 	}
 
 	s.Result = results
 	if !s.Result.Ok {
-		return errors.New(MSG_NOT_INSERT_DATA)
+		return fmt.Errorf(MSG_NOT_INSERT_DATA)
 	}
 
 	s.ResultMap, err = model.getMapResultByPk(s.Result.Result)
@@ -42,18 +33,7 @@ func (s *Command) inserted() error {
 	}
 
 	if !s.isSync && model.UseCore {
-		model.Emit(EVENT_MODEL_SYNC, et.Json{
-			"command": "insert",
-			"db":      model.Db.Name,
-			"schema":  model.Schema,
-			"model":   model.Name,
-			"sql":     s.Sql,
-			"values":  s.Values,
-		})
-	}
-
-	if !model.isAudit {
-		audit("insert", s.Sql)
+		publishInsert(model, s.Sql)
 	}
 
 	for _, after := range s.ResultMap {
@@ -63,7 +43,6 @@ func (s *Command) inserted() error {
 				return err
 			}
 		}
-
 	}
 
 	for _, data := range s.Data {
@@ -73,7 +52,6 @@ func (s *Command) inserted() error {
 				return err
 			}
 		}
-
 	}
 
 	return nil

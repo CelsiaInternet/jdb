@@ -50,21 +50,8 @@ func (s *DB) defineRecycling() error {
 * @param tx *Tx, schema, name, sysId, statusId string
 * @return error
 **/
-func (s *DB) upsertRecycling(tx *Tx, schema, name, sysId, statusId string) error {
+func (s *DB) upsertRecycling(tx *Tx, schema, name, sysId string) error {
 	if coreRecycling == nil || !coreRecycling.isInit {
-		return nil
-	}
-
-	if statusId != utility.FOR_DELETE {
-		_, err := coreRecycling.
-			Delete("schema_name").Eq(schema).
-			And("table_name").Eq(name).
-			And(cf.SystemId).Eq(sysId).
-			ExecTx(tx)
-		if err != nil {
-			return err
-		}
-
 		return nil
 	}
 

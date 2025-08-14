@@ -1,7 +1,6 @@
 package jdb
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/celsiainternet/elvis/et"
@@ -19,22 +18,13 @@ func (s *Command) updated() error {
 	model := s.From
 	results, err := s.Db.Command(s)
 	if err != nil {
-		for _, event := range model.eventError {
-			event(model, et.Json{
-				"command": "update",
-				"sql":     s.Sql,
-				"data":    s.Data,
-				"where":   s.getWheres(),
-				"error":   err.Error(),
-			})
-		}
-
+		publishError(model, s.Sql, err)
 		return err
 	}
 
 	s.Result = results
 	if !s.Result.Ok {
-		return errors.New(MSG_NOT_UPDATE_DATA)
+		return fmt.Errorf(MSG_NOT_UPDATE_DATA)
 	}
 
 	s.ResultMap, err = model.getMapResultByPk(s.Result.Result)
@@ -43,19 +33,7 @@ func (s *Command) updated() error {
 	}
 
 	if !s.isSync && model.UseCore {
-		model.Emit(EVENT_MODEL_SYNC, et.Json{
-			"command": "update",
-			"db":      model.Db.Name,
-			"schema":  model.Schema,
-			"model":   model.Name,
-			"sql":     s.Sql,
-			"values":  s.Values,
-			"where":   s.getWheres(),
-		})
-	}
-
-	if !model.isAudit {
-		audit("update", s.Sql)
+		publishUpdate(model, s.Sql)
 	}
 
 	for key, after := range s.ResultMap {
@@ -75,7 +53,6 @@ func (s *Command) updated() error {
 				return err
 			}
 		}
-
 	}
 
 	for _, data := range s.Data {
@@ -85,7 +62,6 @@ func (s *Command) updated() error {
 				return err
 			}
 		}
-
 	}
 
 	return nil

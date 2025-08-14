@@ -7,7 +7,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/event"
 	"github.com/celsiainternet/elvis/reg"
@@ -75,7 +74,6 @@ type Model struct {
 	FullTextField      *Column                  `json:"-"`
 	ProjectField       *Column                  `json:"-"`
 	Version            int                      `json:"version"`
-	eventError         []EventError             `json:"-"`
 	eventsInsert       []Event                  `json:"-"`
 	eventsUpdate       []Event                  `json:"-"`
 	eventsDelete       []Event                  `json:"-"`
@@ -84,8 +82,6 @@ type Model struct {
 	IsDebug            bool                     `json:"-"`
 	isLocked           bool                     `json:"-"`
 	isInit             bool                     `json:"-"`
-	isCore             bool                     `json:"-"`
-	isAudit            bool                     `json:"-"`
 	needMutate         bool                     `json:"-"`
 }
 
@@ -132,20 +128,15 @@ func NewTable(db *DB, table string) *Model {
 		TpId:               TpULId,
 		eventEmiterChannel: make(chan event.EvenMessage),
 		eventsEmiter:       make(map[string]event.Handler),
-		eventError:         make([]EventError, 0),
 		eventsInsert:       make([]Event, 0),
 		eventsUpdate:       make([]Event, 0),
 		eventsDelete:       make([]Event, 0),
 		Version:            1,
-		isCore:             false,
 		IsDebug:            db.IsDebug,
 	}
-	result.DefineEventError(eventErrorDefault)
 	result.DefineEvent(EventInsert, eventInsertDefault)
 	result.DefineEvent(EventUpdate, eventUpdateDefault)
 	result.DefineEvent(EventDelete, eventDeleteDefault)
-	result.On(EVENT_MODEL_SYNC, eventSyncDefault)
-	result.isInit = true
 	db.tables = append(db.tables, result)
 
 	return result
@@ -163,10 +154,6 @@ func NewModel(schema *Schema, name string, version int) *Model {
 	}
 
 	newModel := func() *Model {
-		if !schema.isCore {
-			console.LogKF("model", `Model %s new`, name)
-		}
-
 		now := timezone.NowTime()
 		result := &Model{
 			Db:                 schema.Db,
@@ -191,19 +178,15 @@ func NewModel(schema *Schema, name string, version int) *Model {
 			TpId:               TpULId,
 			eventEmiterChannel: make(chan event.EvenMessage),
 			eventsEmiter:       make(map[string]event.Handler),
-			eventError:         make([]EventError, 0),
 			eventsInsert:       make([]Event, 0),
 			eventsUpdate:       make([]Event, 0),
 			eventsDelete:       make([]Event, 0),
 			Version:            version,
-			isCore:             schema.isCore,
 			IsDebug:            schema.Db.IsDebug,
 		}
-		result.DefineEventError(eventErrorDefault)
 		result.DefineEvent(EventInsert, eventInsertDefault)
 		result.DefineEvent(EventUpdate, eventUpdateDefault)
 		result.DefineEvent(EventDelete, eventDeleteDefault)
-		result.On(EVENT_MODEL_SYNC, eventSyncDefault)
 
 		schema.addModel(result)
 		return result
@@ -239,10 +222,6 @@ func loadModel(schema *Schema, model *Model) (*Model, error) {
 		return schema.Db.models[idx], nil
 	}
 
-	if !schema.isCore {
-		console.LogKF("model", `Model %s load`, model.Name)
-	}
-
 	schema.addModel(model)
 	model.schema = schema
 	model.Db = schema.Db
@@ -258,17 +237,13 @@ func loadModel(schema *Schema, model *Model) (*Model, error) {
 	/* Event */
 	model.eventEmiterChannel = make(chan event.EvenMessage)
 	model.eventsEmiter = make(map[string]event.Handler)
-	model.eventError = make([]EventError, 0)
 	model.eventsInsert = make([]Event, 0)
 	model.eventsUpdate = make([]Event, 0)
 	model.eventsDelete = make([]Event, 0)
-	model.isCore = schema.isCore
 	model.IsDebug = schema.Db.IsDebug
-	model.DefineEventError(eventErrorDefault)
 	model.DefineEvent(EventInsert, eventInsertDefault)
 	model.DefineEvent(EventUpdate, eventUpdateDefault)
 	model.DefineEvent(EventDelete, eventDeleteDefault)
-	model.On(EVENT_MODEL_SYNC, eventSyncDefault)
 	/* Define columns */
 	for name := range model.Definitions {
 		definition := model.Definitions.Json(name)
@@ -298,11 +273,7 @@ func LoadModel(db *DB, name string) (*Model, error) {
 	}
 
 	if result != nil {
-		schema, err := loadSchema(db, result.Schema)
-		if err != nil {
-			return nil, err
-		}
-
+		schema := NewSchema(db, result.Schema)
 		return loadModel(schema, result)
 	}
 
@@ -442,12 +413,6 @@ func (s *Model) Empty() {
 * @return error
 **/
 func (s *Model) Init() error {
-	go func() {
-		for message := range s.eventEmiterChannel {
-			s.eventEmiter(message)
-		}
-	}()
-
 	if s.isInit {
 		return nil
 	}
@@ -473,6 +438,12 @@ func (s *Model) Init() error {
 		}
 	}
 
+	go func() {
+		for message := range s.eventEmiterChannel {
+			s.eventEmiter(message)
+		}
+	}()
+
 	if s.needMutate {
 		err := s.Db.MutateModel(s)
 		if err != nil {
@@ -485,12 +456,12 @@ func (s *Model) Init() error {
 		}
 	}
 
+	s.isInit = true
+
 	err := s.Save()
 	if err != nil {
 		return err
 	}
-
-	s.isInit = true
 
 	return nil
 }

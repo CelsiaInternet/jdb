@@ -17,7 +17,6 @@ const (
 	Delete
 	Upsert
 	Delsert
-	Sync
 )
 
 func (s TypeCommand) Str() string {
@@ -32,8 +31,6 @@ func (s TypeCommand) Str() string {
 		return "upsert"
 	case Delsert:
 		return "delsert"
-	case Sync:
-		return "sync"
 	default:
 		return "No command"
 	}

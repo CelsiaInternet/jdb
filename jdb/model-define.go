@@ -1172,16 +1172,6 @@ func (s *Model) DefineEvent(tp TypeEvent, event Event) *Model {
 }
 
 /**
-* DefineEventError
-* @param event EventError
-* @return Model
-**/
-func (s *Model) DefineEventError(event EventError) *Model {
-	s.eventError = append(s.eventError, event)
-	return s
-}
-
-/**
 * defineFields
 * @param fields et.Json
 **/

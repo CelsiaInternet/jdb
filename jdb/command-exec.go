@@ -2,7 +2,6 @@ package jdb
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/celsiainternet/elvis/et"
 )
@@ -62,15 +61,6 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 		}
 	case Delsert:
 		err := s.delsert()
-		if err != nil {
-			return et.Items{}, err
-		}
-	case Sync:
-		if len(s.Data) == 0 {
-			return et.Items{}, fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), s.From.Name)
-		}
-
-		err := s.sync()
 		if err != nil {
 			return et.Items{}, err
 		}

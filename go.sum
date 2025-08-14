@@ -4,6 +4,8 @@ github.com/bwmarrin/snowflake v0.3.0 h1:xm67bEhkKh6ij1790JB83OujPR5CzNe8QuQqAgIS
 github.com/bwmarrin/snowflake v0.3.0/go.mod h1:NdZxfVWX+oR6y2K0o6qAYv6gIOP9rjG0/E9WsDpxqwE=
 github.com/celsiainternet/elvis v1.1.105 h1:TNvJbAzqqC2NZxgcaiaqlo8ZgmtNPe6Ck8PyZxlubww=
 github.com/celsiainternet/elvis v1.1.105/go.mod h1:DieroeU1tM+Sjnm+obVGP1vKTV+bS1G0SSHEhdLHnds=
+github.com/celsiainternet/elvis v1.1.108 h1:JT2xsDbKypYDh3FDKF+Vx3Dfxu0QhpdwmXY8S3TT1ps=
+github.com/celsiainternet/elvis v1.1.108/go.mod h1:DieroeU1tM+Sjnm+obVGP1vKTV+bS1G0SSHEhdLHnds=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/rVNCu3HqELle0jiPLLBs70cWOduZpkS1E78=

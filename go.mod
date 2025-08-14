@@ -3,8 +3,8 @@ module github.com/celsiainternet/jdb
 go 1.23.0
 
 require (
-	github.com/celsiainternet/elvis v1.1.108
-	github.com/go-chi/chi/v5 v5.2.1
+	github.com/celsiainternet/elvis v1.1.109
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-sql-driver/mysql v1.9.3
 	modernc.org/sqlite v1.37.1
 )
@@ -31,7 +31,7 @@ require (
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
-	github.com/redis/go-redis/v9 v9.7.3 // indirect
+	github.com/redis/go-redis/v9 v9.12.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect

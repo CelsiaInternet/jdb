@@ -125,7 +125,7 @@ func NewTable(db *DB, table string) *Model {
 		RelationsFrom:      make(map[string]*Relation),
 		Joins:              make(map[string]*Join),
 		Required:           make(map[string]bool),
-		TpId:               TpULId,
+		TpId:               TpUUId,
 		eventEmiterChannel: make(chan event.EvenMessage),
 		eventsEmiter:       make(map[string]event.Handler),
 		eventsInsert:       make([]Event, 0),

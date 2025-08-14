@@ -7,7 +7,6 @@ import (
 
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/timezone"
-	"github.com/celsiainternet/elvis/utility"
 )
 
 type TypeColumn int
@@ -706,7 +705,7 @@ func (s *Column) DefaultValue() interface{} {
 **/
 func (s *Column) DefaultQuote() interface{} {
 	result := s.DefaultValue()
-	result = utility.Quote(result)
+	result = Quote(result)
 
 	return result
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/strs"
-	"github.com/celsiainternet/elvis/utility"
 )
 
 /**
@@ -60,7 +59,7 @@ func SQLParse(sql string, args ...any) string {
 
 	for i, arg := range args {
 		old := strs.Format(`{$%d}`, i+1)
-		new := strs.Format(`%v`, utility.Quote(arg))
+		new := strs.Format(`%v`, Quote(arg))
 		sql = strings.ReplaceAll(sql, old, new)
 	}
 

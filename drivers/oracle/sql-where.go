@@ -2,7 +2,6 @@ package oracle
 
 import (
 	"github.com/celsiainternet/elvis/strs"
-	"github.com/celsiainternet/elvis/utility"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
@@ -77,7 +76,7 @@ func whereValue(val interface{}) string {
 		}
 		return result
 	default:
-		return strs.Format(`%v`, utility.Quote(v))
+		return strs.Format(`%v`, jdb.Quote(v))
 	}
 }
 

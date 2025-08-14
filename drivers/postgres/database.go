@@ -46,7 +46,10 @@ func (s *Postgres) ExistDatabase(name string) (bool, error) {
 		return false, nil
 	}
 
-	return items.Bool(0, "exists"), nil
+	first := items.Result[0]
+	result := first.Bool("exists")
+
+	return result, nil
 }
 
 /**
@@ -75,7 +78,7 @@ func (s *Postgres) CreateDatabase(name string) error {
 		return err
 	}
 
-	console.LogF(s.name, `Database %s created`, name)
+	console.LogKF(s.name, `Database %s created`, name)
 
 	return nil
 }
@@ -105,7 +108,7 @@ func (s *Postgres) DropDatabase(name string) error {
 		return err
 	}
 
-	console.LogF(s.name, `Database %s droped`, name)
+	console.LogKF(s.name, `Database %s droped`, name)
 
 	return nil
 }
@@ -113,21 +116,33 @@ func (s *Postgres) DropDatabase(name string) error {
 /**
 * Connect
 * @param connection jdb.ConnectParams
-* @return error
+* @return *sql.DB, error
 **/
 func (s *Postgres) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
-	chain, err := s.connection.defaultChain()
+	defaultChain, err := s.connection.defaultChain()
 	if err != nil {
 		return nil, err
 	}
 
-	s.db, err = s.connectTo(chain)
+	s.db, err = s.connectTo(defaultChain)
 	if err != nil {
 		return nil, err
 	}
 
 	params := connection.Params.(*Connection)
 	err = s.CreateDatabase(params.Database)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.db != nil {
+		err := s.db.Close()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	chain, err := s.connection.Chain()
 	if err != nil {
 		return nil, err
 	}

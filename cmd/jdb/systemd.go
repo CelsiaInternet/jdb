@@ -117,7 +117,7 @@ func (s *Systemd) Start() et.Item {
 	s.isRunning = true
 	go func() {
 		defer s.wg.Done()
-		console.LogF(s.serviceName, `Iniciando el servidor en http://localhost:%d`, s.port)
+		console.LogKF(s.serviceName, `Iniciando el servidor en http://localhost:%d`, s.port)
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			s.isRunning = false
 			console.Alert(err.Error())

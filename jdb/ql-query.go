@@ -196,10 +196,6 @@ func (s *Ql) Query(params et.Json) (et.Json, error) {
 * @return et.Items, error
 **/
 func (s *Ql) queryTx(tx *Tx, params et.Json) (et.Json, error) {
-	if len(params) == 0 {
-		return s.Help, nil
-	}
-
 	selects := params.Array("select")
 	console.Pong()
 	joins := params.ArrayJson("join")

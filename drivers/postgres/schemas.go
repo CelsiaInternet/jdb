@@ -32,7 +32,7 @@ func (s *Postgres) loadSchema(name string) error {
 		return err
 	}
 
-	console.LogF(s.name, `Schema %s created`, name)
+	console.LogKF(s.name, `Schema %s created`, name)
 
 	return nil
 }
@@ -53,7 +53,7 @@ func (s *Postgres) DropSchema(name string) error {
 		return err
 	}
 
-	console.LogF(s.name, `Schema %s droped`, name)
+	console.LogKF(s.name, `Schema %s droped`, name)
 
 	return nil
 }

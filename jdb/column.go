@@ -262,19 +262,18 @@ func StrToKindType(strs string) (TypeColumn, TypeData) {
 }
 
 type ColumnFields struct {
-	Key        string
-	Index      string
-	Source     string
-	ProjectId  string
-	CreatedAt  string
-	UpdatedAt  string
-	StatusId   string
-	SystemId   string
-	CreatedTo  string
-	UpdatedTo  string
-	Fulltext   string
-	Historical string
-	Checked    string
+	Key       string
+	Index     string
+	Source    string
+	ProjectId string
+	CreatedAt string
+	UpdatedAt string
+	StatusId  string
+	SystemId  string
+	CreatedTo string
+	UpdatedTo string
+	Fulltext  string
+	Checked   string
 }
 
 /**
@@ -294,7 +293,6 @@ func (s *ColumnFields) Json() et.Json {
 		"created_to": s.CreatedTo,
 		"updated_to": s.UpdatedTo,
 		"fulltext":   s.Fulltext,
-		"historical": s.Historical,
 		"checked":    s.Checked,
 	}
 }
@@ -319,19 +317,18 @@ var (
 
 func init() {
 	cf = &ColumnFields{
-		Key:        "id",
-		Index:      "idx",
-		Source:     "source",
-		ProjectId:  "project_id",
-		CreatedAt:  "created_at",
-		UpdatedAt:  "updated_at",
-		StatusId:   "status_id",
-		SystemId:   "jdb_id",
-		CreatedTo:  "created_to",
-		UpdatedTo:  "updated_to",
-		Fulltext:   "fulltext",
-		Historical: "historical",
-		Checked:    "checked",
+		Key:       "_id",
+		Index:     "idx",
+		Source:    "_data",
+		ProjectId: "project_id",
+		CreatedAt: "created_at",
+		UpdatedAt: "updated_at",
+		StatusId:  "status_id",
+		SystemId:  "jdbid",
+		CreatedTo: "created_to",
+		UpdatedTo: "updated_to",
+		Fulltext:  "fulltext",
+		Checked:   "checked",
 	}
 
 	SetColumnFields(cf)
@@ -355,7 +352,6 @@ func SetColumnFields(fields *ColumnFields) {
 	CREATED_TO = cf.CreatedTo
 	UPDATED_TO = cf.UpdatedTo
 	FULLTEXT = cf.Fulltext
-	HISTORYCAL = cf.Historical
 	CHECKED = cf.Checked
 }
 

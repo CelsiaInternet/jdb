@@ -1,11 +1,19 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v0.1.20-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v0.0.3-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
 JDB es una librería de Go que proporciona una interfaz unificada y simplificada para trabajar con múltiples bases de datos. Ofrece soporte para PostgreSQL, MySQL, SQLite y Oracle con una API consistente y fácil de usar.
+
+## 🆕 Últimas Actualizaciones (v0.0.3)
+
+- **Dependencias actualizadas**: Elvis v1.1.111, Chi router v5.2.2
+- **Drivers mejorados**: MySQL v1.9.3, PostgreSQL v1.10.9, SQLite v1.37.1
+- **Performance**: Optimizaciones en el manejo de conexiones
+- **Estabilidad**: Correcciones de bugs y mejoras en el sistema de daemon
+- **Compatibilidad**: Soporte completo para Go 1.23.0+
 
 ## 🚀 Características
 
@@ -51,6 +59,14 @@ JDB es una librería de Go que proporciona una interfaz unificada y simplificada
 - **Eventos**: Hooks antes y después de operaciones para logging y validación
 - **Configuration Management**: Configuración dinámica en tiempo de ejecución
 
+### 🔧 Utilidades Integradas
+
+- **ID Generation**: Soporte para ULID, UUID, XID y Snowflake IDs
+- **Cache & Redis**: Integración con Redis para caching distribuido
+- **Message Queue**: Soporte para NATS messaging
+- **Compression**: Algoritmos de compresión integrados
+- **Cryptography**: Funciones criptográficas avanzadas
+
 ## 📦 Instalación
 
 ```bash
@@ -61,14 +77,14 @@ go get github.com/celsiainternet/jdb
 
 ```bash
 # Dependencia principal
-go get github.com/celsiainternet/elvis@v1.1.109
+go get github.com/celsiainternet/elvis@v1.1.111
 
 # Drivers de base de datos incluidos
-# - PostgreSQL: github.com/lib/pq
-# - MySQL: github.com/go-sql-driver/mysql
-# - SQLite: modernc.org/sqlite
-# - JavaScript VM: github.com/dop251/goja
-# - HTTP Router: github.com/go-chi/chi/v5
+# - PostgreSQL: github.com/lib/pq v1.10.9
+# - MySQL: github.com/go-sql-driver/mysql v1.9.3
+# - SQLite: modernc.org/sqlite v1.37.1
+# - HTTP Router: github.com/go-chi/chi/v5 v5.2.2
+# - Utilidades adicionales: ULID, UUID, Redis, NATS
 ```
 
 ## 🔧 Configuración
@@ -657,7 +673,7 @@ go run ./cmd/main.go
 
 ### Información de Versión
 
-**Versión Actual**: v0.1.20
+**Versión Actual**: v0.0.3
 
 El sistema de versionado es automático y sigue el estándar semántico (SemVer):
 

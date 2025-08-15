@@ -35,10 +35,7 @@ func (s *Postgres) existTable(schema, name string) (bool, error) {
 		return false, nil
 	}
 
-	exists := items.Bool(0, "exists")
-	console.LogF(`existTable %s.%s: %v`, schema, name, exists)
-
-	return exists, nil
+	return items.Bool(0, "exists"), nil
 }
 
 /**

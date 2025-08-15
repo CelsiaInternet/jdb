@@ -148,7 +148,6 @@ func (s *Postgres) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 		return nil, err
 	}
 
-	console.Debug(chain)
 	s.db, err = s.connectTo(chain)
 	if err != nil {
 		return nil, err

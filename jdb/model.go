@@ -175,7 +175,7 @@ func NewModel(schema *Schema, name string, version int) *Model {
 			RelationsFrom:      make(map[string]*Relation),
 			Joins:              make(map[string]*Join),
 			Required:           make(map[string]bool),
-			TpId:               TpULId,
+			TpId:               TpUUId,
 			eventEmiterChannel: make(chan event.EvenMessage),
 			eventsEmiter:       make(map[string]event.Handler),
 			eventsInsert:       make([]Event, 0),
@@ -529,7 +529,7 @@ func (s *Model) GetId(id string) string {
 	case TpULId:
 		return strs.Format(`%s:%s`, s.Name, reg.ULID())
 	default:
-		return strs.Format(`%s:%s`, s.Name, uuid.NewString())
+		return strs.Format(`%s`, uuid.NewString())
 	}
 }
 

@@ -130,6 +130,7 @@ func (s *Postgres) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 	}
 
 	params := connection.Params.(*Connection)
+	params.Database = connection.Name
 	err = s.CreateDatabase(params.Database)
 	if err != nil {
 		return nil, err

@@ -141,6 +141,27 @@ func Load() (*DB, error) {
 }
 
 /**
+* LoadTo
+* @param database string
+* @return *DB, error
+**/
+func LoadTo(database string) (*DB, error) {
+	driverName := envar.GetStr(database, "DB_DRIVER")
+	if driverName == "" {
+		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+	}
+
+	params, ok := conn.Params[driverName]
+	if !ok {
+		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+	}
+
+	params.Name = database
+
+	return ConnectTo(params)
+}
+
+/**
 * Jdb
 * @return *JDB
 **/

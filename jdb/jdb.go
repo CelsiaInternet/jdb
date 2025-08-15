@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"slices"
 
+	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/response"
@@ -86,6 +87,24 @@ func (s *JDB) Describe() et.Json {
 }
 
 /**
+* Load
+* @return *ConnectParams, error
+**/
+func load() (*ConnectParams, error) {
+	driverName := envar.GetStr(PostgresDriver, "DB_DRIVER")
+	if driverName == "" {
+		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+	}
+
+	params, ok := conn.Params[driverName]
+	if !ok {
+		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+	}
+
+	return &params, nil
+}
+
+/**
 * ConnectTo
 * @param connection *ConnectParams
 * @return *DB, error
@@ -114,10 +133,13 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 		return result, nil
 	}
 
+	console.Log(result.Name, `Creating core`)
 	err = result.createCore()
 	if err != nil {
 		return nil, err
 	}
+
+	result.isInit = true
 
 	return result, nil
 }
@@ -127,17 +149,12 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 * @return *DB, error
 **/
 func Load() (*DB, error) {
-	driverName := envar.GetStr(PostgresDriver, "DB_DRIVER")
-	if driverName == "" {
-		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+	params, err := load()
+	if err != nil {
+		return nil, err
 	}
 
-	params, ok := conn.Params[driverName]
-	if !ok {
-		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
-	}
-
-	return ConnectTo(params)
+	return ConnectTo(*params)
 }
 
 /**
@@ -146,19 +163,14 @@ func Load() (*DB, error) {
 * @return *DB, error
 **/
 func LoadTo(database string) (*DB, error) {
-	driverName := envar.GetStr(database, "DB_DRIVER")
-	if driverName == "" {
-		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
-	}
-
-	params, ok := conn.Params[driverName]
-	if !ok {
-		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+	params, err := load()
+	if err != nil {
+		return nil, err
 	}
 
 	params.Name = database
 
-	return ConnectTo(params)
+	return ConnectTo(*params)
 }
 
 /**

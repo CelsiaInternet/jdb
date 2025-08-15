@@ -131,7 +131,6 @@ func (s *Postgres) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 
 	params := connection.Params.(*Connection)
 	params.Database = connection.Name
-	connection.Params = params
 	err = s.CreateDatabase(params.Database)
 	if err != nil {
 		return nil, err
@@ -144,7 +143,7 @@ func (s *Postgres) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 		}
 	}
 
-	chain, err := s.connection.Chain()
+	chain, err := params.Chain()
 	if err != nil {
 		return nil, err
 	}

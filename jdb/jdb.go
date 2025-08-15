@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"slices"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/response"
@@ -133,7 +132,6 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 		return result, nil
 	}
 
-	console.Log(result.Name, `Creating core`)
 	err = result.createCore()
 	if err != nil {
 		return nil, err

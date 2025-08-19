@@ -18,7 +18,6 @@ func (s *Command) inserted() error {
 	model := s.From
 	results, err := s.Db.Command(s)
 	if err != nil {
-		publishError(model, s.Sql, err)
 		return err
 	}
 
@@ -30,10 +29,6 @@ func (s *Command) inserted() error {
 	s.ResultMap, err = model.getMapResultByPk(s.Result.Result)
 	if err != nil {
 		return err
-	}
-
-	if !s.isSync && model.UseCore {
-		publishInsert(model, s.Sql)
 	}
 
 	for _, after := range s.ResultMap {

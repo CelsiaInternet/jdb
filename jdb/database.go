@@ -410,7 +410,15 @@ func (s *DB) Command(command *Command) (et.Items, error) {
 		return et.Items{}, errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
 
-	return s.driver.Command(command)
+	result, err := s.driver.Command(command)
+	if err != nil {
+		publishError(command.From, command.Sql, err)
+		return et.Items{}, err
+	}
+
+	publishCommand(command)
+
+	return result, nil
 }
 
 /**

@@ -13,10 +13,8 @@ func (s *Command) current(where et.Json) error {
 
 	model := s.From
 	columns := model.getColumnsByType(TpColumn)
-	mainWhere := s.getWheres()
 	ql := From(model)
 	ql.setWheres(where)
-	ql.setWheres(mainWhere)
 	ql.setSelects(columns)
 	current, err := ql.
 		setDebug(s.IsDebug).

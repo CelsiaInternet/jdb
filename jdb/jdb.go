@@ -537,8 +537,13 @@ func ModelDefine(w http.ResponseWriter, r *http.Request) {
 * @param r *http.Request
 **/
 func ModelQuery(w http.ResponseWriter, r *http.Request) {
-	params, _ := response.GetBody(r)
-	result, err := queryTx(nil, params)
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := queryTx(nil, body)
 	if err != nil {
 		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
 		return
@@ -553,8 +558,13 @@ func ModelQuery(w http.ResponseWriter, r *http.Request) {
 * @param r *http.Request
 **/
 func ModelCommand(w http.ResponseWriter, r *http.Request) {
-	params, _ := response.GetBody(r)
-	result, err := commandsTx(nil, params)
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := commandsTx(nil, body)
 	if err != nil {
 		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
 		return
@@ -569,7 +579,12 @@ func ModelCommand(w http.ResponseWriter, r *http.Request) {
 * @param r *http.Request
 **/
 func ModelDescribe(w http.ResponseWriter, r *http.Request) {
-	body, _ := response.GetBody(r)
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	kind := body.Str("kind")
 	name := body.Str("name")
 	result, err := describe(kind, name)
@@ -587,7 +602,12 @@ func ModelDescribe(w http.ResponseWriter, r *http.Request) {
 * @param r *http.Request
 **/
 func JSQL(w http.ResponseWriter, r *http.Request) {
-	body, _ := response.GetBody(r)
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	result := body
 
 	response.JSON(w, r, http.StatusOK, result)

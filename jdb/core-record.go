@@ -103,7 +103,12 @@ func (s *DB) QueryRecords(query et.Json) (interface{}, error) {
 * @param r *http.Request
 **/
 func (s *DB) HandlerQueryRecords(w http.ResponseWriter, r *http.Request) {
-	body, _ := response.GetBody(r)
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	result, err := s.QueryRecords(body)
 	if err != nil {
 		response.HTTPError(w, r, http.StatusBadRequest, err.Error())

@@ -316,7 +316,7 @@ var (
 
 func init() {
 	cf = &ColumnFields{
-		Key:       "_id",
+		Key:       "id",
 		Index:     "idx",
 		Source:    "_data",
 		ProjectId: "project_id",

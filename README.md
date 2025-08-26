@@ -78,7 +78,7 @@ go get github.com/celsiainternet/jdb@v0.0.16
 
 ```bash
 # Dependencia principal
-go get github.com/celsiainternet/elvis@v1.1.114
+go get github.com/celsiainternet/elvis@v1.1.115
 
 # Drivers de base de datos incluidos
 # - PostgreSQL: github.com/lib/pq v1.10.9
@@ -96,7 +96,7 @@ go get github.com/celsiainternet/elvis@v1.1.114
 # Configuración básica
 NODEID=1
 DB_NAME=myapp
-DB_DRIVER=postgres  # postgres, mysql, sqlite, oracle
+DB_DRIVER=ostgres  # postgres, mysql, sqlite, oracle
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres

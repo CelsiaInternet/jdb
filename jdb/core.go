@@ -1,6 +1,8 @@
 package jdb
 
-import "errors"
+import (
+	"errors"
+)
 
 var coreSchema *Schema
 

@@ -19,14 +19,12 @@ func tableName(model *jdb.Model) string {
 * @return bool, error
 **/
 func (s *Postgres) existTable(schema, name string) (bool, error) {
-	sql := `
+	items, err := jdb.Query(s.db, `
 	SELECT EXISTS(
 		SELECT 1
 		FROM information_schema.tables
 		WHERE UPPER(table_schema) = UPPER($1)
-		AND UPPER(table_name) = UPPER($2));`
-
-	items, err := jdb.QueryTx(nil, s.db, sql, schema, name)
+		AND UPPER(table_name) = UPPER($2));`, schema, name)
 	if err != nil {
 		return false, err
 	}
@@ -66,6 +64,8 @@ func (s *Postgres) LoadModel(model *jdb.Model) error {
 		if err != nil {
 			return err
 		}
+
+		console.LogKF("Model", "Create %s", tableName(model))
 
 		return nil
 	}

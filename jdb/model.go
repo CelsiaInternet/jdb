@@ -449,7 +449,7 @@ func (s *Model) Init() error {
 		if err != nil {
 			return err
 		}
-	} else if !s.isInit {
+	} else {
 		err := s.Db.LoadModel(s)
 		if err != nil {
 			return err

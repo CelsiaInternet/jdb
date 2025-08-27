@@ -68,11 +68,19 @@ func (s *Postgres) existSchema(name string) (bool, error) {
 		return false, fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
 	}
 
-	sql := jdb.SQLDDL(`SELECT 1 FROM pg_namespace WHERE nspname = '$1';`, name)
-	items, err := jdb.Query(s.db, sql)
+	items, err := jdb.Query(s.db, `
+	SELECT EXISTS(
+		SELECT 1
+		FROM information_schema.schemata
+		WHERE UPPER(schema_name) = UPPER($1)
+	);`, name)
 	if err != nil {
 		return false, err
 	}
 
-	return items.Ok, nil
+	if items.Count == 0 {
+		return false, nil
+	}
+
+	return items.Bool(0, "exists"), nil
 }

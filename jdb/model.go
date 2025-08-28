@@ -281,6 +281,31 @@ func LoadModel(db *DB, name string) (*Model, error) {
 }
 
 /**
+* Collection
+* @param db *DB, name string
+* @return *Model, error
+**/
+func Collection(db *DB, name string) (*Model, error) {
+	result, err := LoadModel(db, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if result != nil {
+		return result, nil
+	}
+
+	schema := NewSchema(db, "collections")
+	result = NewModel(schema, name, 1)
+	result.DefineProjectModel()
+	if err := result.Init(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+/**
 * GetModel
 * @param name string
 * @return *Model

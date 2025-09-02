@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"time"
 
@@ -851,7 +852,8 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 		return result.GetField()
 	}
 
-	list := strs.Split(name, ":")
+	re := regexp.MustCompile(`(?i)\s*AS\s*`)
+	list := re.Split(name, -1)
 	alias := ""
 	if len(list) > 1 {
 		name = list[0]

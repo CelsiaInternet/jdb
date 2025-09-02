@@ -828,8 +828,8 @@ func (s *Model) getColumnsArray(names ...string) []string {
 * @param name string, isCreate bool
 * @return *Field
 **/
-func (s *Model) getField(name string, isCreate bool) *Field {
-	getField := func(name string, isCreate bool) *Field {
+func (s *Model) getField(name string) *Field {
+	getField := func(name string) *Field {
 		col := s.getColumn(name)
 		if col != nil {
 			return col.GetField()
@@ -843,13 +843,14 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 			return nil
 		}
 
-		if !isCreate {
-			return nil
-		}
-
 		result := newAtribute(s, name, TypeDataText)
 
 		return result.GetField()
+	}
+
+	result := getField(name)
+	if result != nil {
+		return result
 	}
 
 	re := regexp.MustCompile(`(?i)\s*AS\s*`)
@@ -863,7 +864,7 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 	list = strs.Split(name, ".")
 	switch len(list) {
 	case 1:
-		result := getField(list[0], isCreate)
+		result := getField(list[0])
 		if result != nil && alias != "" {
 			result.Alias = alias
 		}
@@ -874,7 +875,7 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 			return nil
 		}
 
-		result := getField(list[1], isCreate)
+		result := getField(list[1])
 		if result != nil && alias != "" {
 			result.Alias = alias
 		}
@@ -889,7 +890,7 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 			return nil
 		}
 
-		result := getField(list[2], isCreate)
+		result := getField(list[2])
 		if result != nil && alias != "" {
 			result.Alias = alias
 		}

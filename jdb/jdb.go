@@ -375,7 +375,7 @@ func describe(kind, name string) (et.Json, error) {
 			return et.Json{}, fmt.Errorf(MSG_MODEL_NOT_FOUND, list[0])
 		}
 
-		field := model.getField(list[1], false)
+		field := model.getField(list[1])
 		if field == nil {
 			return et.Json{}, fmt.Errorf(MSG_FIELD_NOT_FOUND, list[1])
 		}

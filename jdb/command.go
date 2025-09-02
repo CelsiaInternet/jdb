@@ -154,7 +154,7 @@ func (s *Command) Describe() et.Json {
 * @return *Field
 **/
 func (s *Command) getField(name string) *Field {
-	return s.From.getField(name, false)
+	return s.From.getField(name)
 }
 
 /**

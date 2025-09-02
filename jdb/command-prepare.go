@@ -42,7 +42,7 @@ func (s *Command) prepare() error {
 		}
 
 		for k, v := range data {
-			field := model.getField(k, true)
+			field := model.getField(k)
 			if field == nil {
 				continue
 			}

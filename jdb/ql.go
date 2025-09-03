@@ -152,7 +152,7 @@ func (s *Ql) getColumnField(name string) *Field {
 func (s *Ql) getField(name string) *Field {
 	findField := func(name string) *Field {
 		for _, from := range s.Froms.Froms {
-			field := from.getField(name)
+			field := from.getField(name, false)
 			if field != nil {
 				field.As = from.As
 				return field

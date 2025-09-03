@@ -828,7 +828,7 @@ func (s *Model) getColumnsArray(names ...string) []string {
 * @param name string, isCreate bool
 * @return *Field
 **/
-func (s *Model) getField(name string) *Field {
+func (s *Model) getField(name string, isCreate bool) *Field {
 	getField := func(name string) *Field {
 		col := s.getColumn(name)
 		if col != nil {
@@ -840,6 +840,10 @@ func (s *Model) getField(name string) *Field {
 		}
 
 		if s.SourceField == nil {
+			return nil
+		}
+
+		if !isCreate {
 			return nil
 		}
 

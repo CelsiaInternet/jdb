@@ -322,7 +322,7 @@ func init() {
 		ProjectId: "project_id",
 		CreatedAt: "created_at",
 		UpdatedAt: "updated_at",
-		StatusId:  "status_id",
+		StatusId:  "_status",
 		SystemId:  "jdbid",
 		CreatedTo: "created_to",
 		UpdatedTo: "updated_to",

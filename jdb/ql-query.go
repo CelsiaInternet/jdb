@@ -3,7 +3,6 @@ package jdb
 import (
 	"errors"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 )
 
@@ -197,7 +196,6 @@ func (s *Ql) Query(params et.Json) (et.Json, error) {
 **/
 func (s *Ql) queryTx(tx *Tx, params et.Json) (et.Json, error) {
 	selects := params.Array("select")
-	console.Pong()
 	joins := params.ArrayJson("join")
 	where := params.Json("where")
 	groups := params.ArrayStr("group_by")

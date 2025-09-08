@@ -78,7 +78,7 @@ func Quote(val interface{}) any {
 	case []et.Json, []interface{}, []map[string]interface{}:
 		bt, err := json.Marshal(v)
 		if err != nil {
-			logs.Errorf("Quote type:%v, value:%v, error marshalling array: %v", reflect.TypeOf(v), v, err)
+			logs.Errorf("Quote", "type:%v, value:%v, error marshalling array: %v", reflect.TypeOf(v), v, err)
 			return strs.Format(fmt, `[]`)
 		}
 		return strs.Format(fmt, string(bt))
@@ -87,7 +87,7 @@ func Quote(val interface{}) any {
 	case nil:
 		return strs.Format(`%s`, "NULL")
 	default:
-		logs.Errorf("Quote type:%v, value:%v", reflect.TypeOf(v), v)
+		logs.Errorf("Quote", "type:%v, value:%v", reflect.TypeOf(v), v)
 		return val
 	}
 }

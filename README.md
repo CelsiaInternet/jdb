@@ -1,65 +1,65 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v0.0.31-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v0.0.32-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
 JDB es una librería de Go que proporciona una interfaz unificada y simplificada para trabajar con múltiples bases de datos. Ofrece soporte para PostgreSQL, MySQL, SQLite y Oracle con una API consistente y fácil de usar.
 
-## 🆕 Últimas Actualizaciones (v0.0.31)
+## Últimas Actualizaciones (v0.0.32)
 
-- **Dependencias actualizadas**: Elvis v1.1.111, Chi router v5.2.2
+- **Dependencias actualizadas**: Elvis v1.1.127, Chi router v5.2.2
 - **Drivers mejorados**: MySQL v1.9.3, PostgreSQL v1.10.9, SQLite v1.37.1
 - **Performance**: Optimizaciones en el manejo de conexiones
 - **Estabilidad**: Correcciones de bugs y mejoras en el sistema de daemon
 - **Compatibilidad**: Soporte completo para Go 1.23.0+
 
-## 🚀 Características
+## Características
 
-### 🗄️ Multi-Driver Support
+### Multi-Driver Support
 
 - **PostgreSQL**: Driver nativo con soporte completo para características avanzadas
 - **MySQL**: Integración con go-sql-driver/mysql para máximo rendimiento
 - **SQLite**: Soporte con modernc.org/sqlite para aplicaciones embebidas
 - **Oracle**: Driver especializado para entornos empresariales
 
-### 🏗️ Arquitectura Moderna
+### Arquitectura Moderna
 
 - **API Unificada**: Interfaz consistente independientemente del motor de base de datos
 - **ORM Simplificado**: Definición declarativa de modelos y esquemas
 - **CQRS Ready**: Soporte integrado para Command Query Responsibility Segregation
 - **Core System**: Sistema de metadatos y gestión automática de modelos
 
-### ⚡ Performance & Scale
+### Performance & Scale
 
 - **Transacciones**: Soporte completo para transacciones ACID
 - **Bulk Operations**: Operaciones masivas optimizadas
 - **Connection Pooling**: Gestión automática de conexiones
 - **Query Optimization**: Optimización automática de consultas
 
-### 🔧 Developer Experience
+### Developer Experience
 
 - **Debug Mode**: Sistema de depuración avanzado para desarrollo
 - **Type Safety**: Tipado fuerte con validaciones automáticas
 - **Hot Reload**: Recarga automática de configuraciones
 - **JavaScript VM**: Integración con Goja para scripts dinámicos
 
-### 🛠️ DevOps Features
+### DevOps Features
 
 - **Sistema de Daemon**: Gestión completa de servicios con control de ciclo de vida
 - **Gestión de PID**: Control automático de procesos
 - **Health Checks**: Verificación de estado en tiempo real
 - **Graceful Shutdown**: Cierre controlado con manejo de señales
 
-### 🔐 Security & Management
+### Security & Management
 
 - **Gestión de Usuarios**: Creación y administración de usuarios de base de datos
 - **Auditoría**: Sistema de auditoría automática para compliance
 - **Eventos**: Hooks antes y después de operaciones para logging y validación
 - **Configuration Management**: Configuración dinámica en tiempo de ejecución
 
-### 🔧 Utilidades Integradas
+### Utilidades Integradas
 
 - **ID Generation**: Soporte para ULID, UUID, XID y Snowflake IDs
 - **Cache & Redis**: Integración con Redis para caching distribuido
@@ -67,11 +67,11 @@ JDB es una librería de Go que proporciona una interfaz unificada y simplificada
 - **Compression**: Algoritmos de compresión integrados
 - **Cryptography**: Funciones criptográficas avanzadas
 
-## 📦 Instalación
+## Instalación
 
 ```bash
 go get github.com/celsiainternet/jdb
-go get github.com/celsiainternet/jdb@v0.0.31
+go get github.com/celsiainternet/jdb@v0.0.32
 ```
 
 ### Dependencias Principales
@@ -88,7 +88,7 @@ go get github.com/celsiainternet/elvis@v1.1.127
 # - Utilidades adicionales: ULID, UUID, Redis, NATS
 ```
 
-## 🔧 Configuración
+## Configuración
 
 ### Variables de Entorno
 
@@ -114,7 +114,7 @@ ORA_DB_SSL_VERIFY_ORACLE=false
 ORA_DB_VERSION_ORACLE=19
 ```
 
-## 📖 Uso Básico
+## Uso Básico
 
 ### Conexión a Base de Datos
 
@@ -286,7 +286,7 @@ if err != nil {
 }
 ```
 
-## 🛠️ Sistema de Daemon
+## Sistema de Daemon
 
 JDB incluye un sistema de daemon robusto para gestionar servicios con control completo del ciclo de vida:
 
@@ -352,7 +352,7 @@ config := et.Json{
 // o mediante el comando: ./jdb conf '{"port": 3500, "debug": true}'
 ```
 
-## 👥 Gestión de Usuarios
+## Gestión de Usuarios
 
 JDB proporciona funcionalidades para gestionar usuarios de base de datos:
 
@@ -388,7 +388,7 @@ err := db.GrantPrivileges("nuevo_usuario", "myapp")
 err := db.DeleteUser("nuevo_usuario")
 ```
 
-## 🎯 Nuevas Funcionalidades
+## Nuevas Funcionalidades
 
 ### JavaScript VM Integration
 
@@ -449,7 +449,7 @@ items, err := db.Select(&jdb.Ql{
 })
 ```
 
-## 🏗️ Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 jdb/
@@ -483,7 +483,7 @@ jdb/
     └── main.go         # Ejemplo de uso
 ```
 
-## 🔌 Drivers Soportados
+## Drivers Soportados
 
 ### PostgreSQL
 
@@ -554,7 +554,7 @@ params := jdb.ConnectParams{
 }
 ```
 
-## 🎯 Ejemplos Avanzados
+## Ejemplos Avanzados
 
 ### Consultas Complejas
 
@@ -624,7 +624,7 @@ user.DefineObject("address", "addresses", map[string]string{
 }, []string{"street", "city", "country"})
 ```
 
-## 🚀 Compilación y Ejecución
+## Compilación y Ejecución
 
 ### Ejecutar en modo desarrollo
 
@@ -671,11 +671,11 @@ go run ./cmd/main.go
 ./version.sh --version
 ```
 
-## 📚 API Reference
+## API Reference
 
 ### Información de Versión
 
-**Versión Actual**: v0.0.31
+**Versión Actual**: v0.0.32
 
 El sistema de versionado es automático y sigue el estándar semántico (SemVer):
 
@@ -690,77 +690,3 @@ git commit -m 'Update version'
 ./version.sh --v  # Incrementa patch
 git push origin --tags
 ```
-
-### Tipos de Datos Soportados
-
-- `TypeDataText` - VARCHAR(250)
-- `TypeDataShortText` - VARCHAR(80)
-- `TypeDataMemo` - TEXT
-- `TypeDataInt` - INTEGER
-- `TypeDataNumber` - DECIMAL(18,2)
-- `TypeDataBool` - BOOLEAN
-- `TypeDataTime` - TIMESTAMP
-- `TypeDataObject` - JSONB
-- `TypeDataArray` - JSONB
-- `TypeDataKey` - VARCHAR(80)
-- `TypeDataState` - VARCHAR(20)
-- `TypeDataSerie` - BIGINT
-- `TypeDataPrecision` - DOUBLE PRECISION
-- `TypeDataBytes` - BYTEA
-- `TypeDataGeometry` - JSONB
-- `TypeDataFullText` - TSVECTOR
-
-### Tipos de ID Soportados
-
-- `TpNodeId` - ID de nodo
-- `TpUUId` - UUID
-- `TpULId` - ULID
-- `TpXId` - XID
-
-### Operadores de Consulta
-
-- `Eq` - Igual
-- `Ne` - No igual
-- `Gt` - Mayor que
-- `Gte` - Mayor o igual que
-- `Lt` - Menor que
-- `Lte` - Menor o igual que
-- `Like` - Como
-- `ILike` - Como (case insensitive)
-- `In` - En
-- `NotIn` - No en
-- `IsNull` - Es nulo
-- `IsNotNull` - No es nulo
-
-### Comandos del Sistema
-
-- `Insert` - Insertar
-- `Update` - Actualizar
-- `Delete` - Eliminar
-- `Bulk` - Inserción masiva
-- `Upsert` - Insertar o actualizar
-- `Delsert` - Eliminar e insertar
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
-
-## 🆘 Soporte
-
-Si tienes alguna pregunta o necesitas ayuda, por favor:
-
-1. Revisa la documentación
-2. Busca en los issues existentes
-3. Crea un nuevo issue con detalles del problema
-
----
-
-**JDB** - Simplificando el acceso a bases de datos en Go 🚀

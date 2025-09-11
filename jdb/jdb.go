@@ -9,18 +9,17 @@ import (
 	"runtime"
 	"slices"
 
-	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/response"
 	"github.com/celsiainternet/elvis/strs"
 )
 
 type JDB struct {
-	Os       string                   `json:"os"`
-	HostName string                   `json:"host_name"`
-	Drivers  map[string]func() Driver `json:"-"`
-	Params   map[string]ConnectParams `json:"-"`
-	DBS      []*DB                    `json:"-"`
+	Os       string                         `json:"os"`
+	HostName string                         `json:"host_name"`
+	Drivers  map[string]func(db *DB) Driver `json:"-"`
+	Params   map[string]ConnectParams       `json:"-"`
+	DBS      []*DB                          `json:"-"`
 }
 
 var conn *JDB
@@ -34,7 +33,7 @@ func init() {
 	conn = &JDB{
 		Os:       runtime.GOOS,
 		HostName: hostName,
-		Drivers:  map[string]func() Driver{},
+		Drivers:  map[string]func(db *DB) Driver{},
 		Params:   map[string]ConnectParams{},
 		DBS:      make([]*DB, 0),
 	}
@@ -83,24 +82,6 @@ func (s *JDB) Describe() et.Json {
 	result["dbs"] = dbs
 
 	return result
-}
-
-/**
-* Load
-* @return *ConnectParams, error
-**/
-func load() (*ConnectParams, error) {
-	driverName := envar.GetStr(PostgresDriver, "DB_DRIVER")
-	if driverName == "" {
-		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
-	}
-
-	params, ok := conn.Params[driverName]
-	if !ok {
-		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
-	}
-
-	return &params, nil
 }
 
 /**
@@ -387,22 +368,6 @@ func describe(kind, name string) (et.Json, error) {
 }
 
 /**
-* queryTx
-* @param tx *Tx, params et.Json
-* @return interface{}, error
-**/
-func queryTx(tx *Tx, params et.Json) (interface{}, error) {
-	from := params.Str("from")
-	model := GetModel(from)
-	if model == nil {
-		return nil, fmt.Errorf(MSG_MODEL_NOT_FOUND, from)
-	}
-
-	return From(model).
-		queryTx(tx, params)
-}
-
-/**
 * commandsTx
 * @param tx *Tx, params et.Json
 * @return interface{}, error
@@ -543,7 +508,15 @@ func ModelQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := queryTx(nil, body)
+	from := body.Str("from")
+	model := GetModel(from)
+	if model == nil {
+		response.HTTPError(w, r, http.StatusBadRequest, fmt.Errorf(MSG_MODEL_NOT_FOUND, from).Error())
+		return
+	}
+
+	result, err := From(model).
+		queryTx(nil, body)
 	if err != nil {
 		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
 		return

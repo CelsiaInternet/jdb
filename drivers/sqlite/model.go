@@ -24,7 +24,7 @@ func (s *SqlLite) existTable(name string) (bool, error) {
 	WHERE type='table'
 	AND name=?;`
 
-	items, err := jdb.Query(s.db, sql, name)
+	items, err := jdb.Query(s.jdb, sql, name)
 	if err != nil {
 		return false, err
 	}
@@ -52,7 +52,7 @@ func (s *SqlLite) LoadModel(model *jdb.Model) error {
 			console.Debug(sql)
 		}
 
-		_, err = jdb.Exec(s.db, sql)
+		err = jdb.Ddl(s.jdb, sql)
 		if err != nil {
 			return err
 		}
@@ -71,7 +71,7 @@ func (s *SqlLite) LoadModel(model *jdb.Model) error {
     256 AS size
 	FROM pragma_table_info(?);`
 
-	items, err := jdb.Query(s.db, sql, table)
+	items, err := jdb.Query(s.jdb, sql, table)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (s *SqlLite) DropModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
+	err := jdb.Ddl(s.jdb, sql)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (s *SqlLite) EmptyModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
+	err := jdb.Ddl(s.jdb, sql)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (s *SqlLite) MutateModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
+	_, err := jdb.Query(s.jdb, sql)
 	if err != nil {
 		return err
 	}

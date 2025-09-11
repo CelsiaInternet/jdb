@@ -38,7 +38,7 @@ const (
 	MSG_MODEL_NOT_USING_CORE     = "Model is not using core"
 	MSG_ATTRIBUTE_REQUIRED       = "Attribute required (%s)"
 	MSG_FIELD_REQUIRED           = "Field required (%s) model:%s"
-	MSG_PRIMARY_KEY_REQUIRED     = "Primary key required (%s) model:%s"
+	MSG_PRIMARY_KEY_REQUIRED     = "Primary key required (%s) model:%s data:%s"
 	MSG_RECORD_NOT_FOUND         = "Record not found"
 	MSG_INVALID_MODEL_PARAM      = "Invalid model params"
 	MSG_ROLLBACK_ERROR           = "Rollback error: (%s)"

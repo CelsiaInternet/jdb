@@ -13,8 +13,8 @@ import (
 * @return error
 **/
 func (s *Postgres) loadSchema(name string) error {
-	if s.db == nil {
-		return fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
+	if s.jdb == nil {
+		return fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
 
 	exist, err := s.existSchema(name)
@@ -27,7 +27,7 @@ func (s *Postgres) loadSchema(name string) error {
 	}
 
 	sql := jdb.SQLDDL(`CREATE SCHEMA IF NOT EXISTS $1`, name)
-	_, err = jdb.Exec(s.db, sql)
+	err = jdb.Ddl(s.jdb, sql)
 	if err != nil {
 		return err
 	}
@@ -43,12 +43,12 @@ func (s *Postgres) loadSchema(name string) error {
 * @return error
 **/
 func (s *Postgres) DropSchema(name string) error {
-	if s.db == nil {
-		return fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
+	if s.jdb == nil {
+		return fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
 
 	sql := jdb.SQLDDL(`DROP SCHEMA IF EXISTS $1 CASCADE`, name)
-	_, err := jdb.Query(s.db, sql)
+	err := jdb.Ddl(s.jdb, sql)
 	if err != nil {
 		return err
 	}
@@ -64,11 +64,11 @@ func (s *Postgres) DropSchema(name string) error {
 * @return bool, error
 **/
 func (s *Postgres) existSchema(name string) (bool, error) {
-	if s.db == nil {
-		return false, fmt.Errorf(jdb.MSG_NOT_DRIVER_DB)
+	if s.jdb == nil {
+		return false, fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
 
-	items, err := jdb.Query(s.db, `
+	items, err := jdb.Query(s.jdb, `
 	SELECT EXISTS(
 		SELECT 1
 		FROM information_schema.schemata

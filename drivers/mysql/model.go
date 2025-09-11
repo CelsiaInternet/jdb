@@ -25,7 +25,7 @@ func (s *Mysql) existTable(db, name string) (bool, error) {
 		WHERE UPPER(table_schema) = UPPER($1)
 		AND UPPER(table_name) = UPPER($2));`
 
-	items, err := jdb.QueryTx(nil, s.db, sql, db, name)
+	items, err := jdb.Query(s.jdb, sql, db, name)
 	if err != nil {
 		return false, err
 	}
@@ -57,7 +57,7 @@ func (s *Mysql) LoadModel(model *jdb.Model) error {
 			console.Debug(sql)
 		}
 
-		_, err = jdb.Exec(s.db, sql)
+		err = jdb.Ddl(s.jdb, sql)
 		if err != nil {
 			return err
 		}
@@ -87,7 +87,7 @@ func (s *Mysql) LoadModel(model *jdb.Model) error {
 	AND a.attnum > 0
 	AND NOT a.attisdropped;`
 
-	items, err := jdb.Query(s.db, sql, model.Schema, model.Table)
+	items, err := jdb.Query(s.jdb, sql, model.Schema, model.Table)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (s *Mysql) DropModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
+	_, err := jdb.Query(s.jdb, sql)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (s *Mysql) EmptyModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
+	_, err := jdb.Query(s.jdb, sql)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (s *Mysql) MutateModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
+	_, err := jdb.Query(s.jdb, sql)
 	if err != nil {
 		return err
 	}

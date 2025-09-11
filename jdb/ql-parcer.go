@@ -91,26 +91,20 @@ func RowsToItems(rows *sql.Rows) et.Items {
 * @return et.Item
 **/
 func RowsToItem(rows *sql.Rows) et.Item {
-	var result = et.Item{Result: et.Json{}}
-	for rows.Next() {
-		var item et.Json
-		item.ScanRows(rows)
-
-		result.Ok = true
-		result.Result = item
-		break
+	result := RowsToItems(rows)
+	if result.Count == 0 {
+		return et.Item{}
 	}
 
-	return result
+	return result.First()
 }
 
 /**
-* SourceToItems return a items from a sql rows and source field
-* @param source string
-* @param rows *sql.Rows
+* RowsToSourceItem return a items from a sql rows and source field
+* @param rows *sql.Rows, source string
 * @return et.Items
 **/
-func RowsToSource(source string, rows *sql.Rows) et.Items {
+func RowsToSourceItem(rows *sql.Rows, source string) et.Items {
 	var result = et.Items{Result: []et.Json{}}
 	for rows.Next() {
 		var item et.Json
@@ -119,26 +113,6 @@ func RowsToSource(source string, rows *sql.Rows) et.Items {
 		result.Ok = true
 		result.Count++
 		result.Result = append(result.Result, item.Json(source))
-	}
-
-	return result
-}
-
-/**
-* SourceToItem return a item from a sql rows and source field
-* @param source string
-* @param rows *sql.Rows
-* @return et.Items
-**/
-func SourceToItem(source string, rows *sql.Rows) et.Item {
-	var result = et.Item{Result: et.Json{}}
-	for rows.Next() {
-		var item et.Json
-		item.ScanRows(rows)
-
-		result.Ok = true
-		result.Result = item.Json(source)
-		break
 	}
 
 	return result

@@ -1,6 +1,11 @@
 package jdb
 
-import "github.com/celsiainternet/elvis/et"
+import (
+	"errors"
+
+	"github.com/celsiainternet/elvis/envar"
+	"github.com/celsiainternet/elvis/et"
+)
 
 type Connected interface {
 	Chain() (string, error)
@@ -32,4 +37,22 @@ func (s *ConnectParams) ToJson() et.Json {
 		"debug":     s.Debug,
 		"params":    s.Params.ToJson(),
 	}
+}
+
+/**
+* Load
+* @return *ConnectParams, error
+**/
+func load() (*ConnectParams, error) {
+	driverName := envar.GetStr(PostgresDriver, "DB_DRIVER")
+	if driverName == "" {
+		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+	}
+
+	params, ok := conn.Params[driverName]
+	if !ok {
+		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+	}
+
+	return &params, nil
 }

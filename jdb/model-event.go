@@ -6,12 +6,6 @@ import (
 	"github.com/celsiainternet/elvis/utility"
 )
 
-const EVENT_MODEL_ERROR = "model:error"
-const EVENT_MODEL_INSERT = "model:insert"
-const EVENT_MODEL_UPDATE = "model:update"
-const EVENT_MODEL_DELETE = "model:delete"
-const EVENT_MODEL_SYNC = "model:sync"
-
 /**
 * publishError
 * @param model *Model, sql string, err error

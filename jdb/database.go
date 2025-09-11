@@ -21,8 +21,8 @@ type DB struct {
 	Description string    `json:"description"`
 	UseCore     bool      `json:"use_core"`
 	NodeId      int       `json:"node_id"`
-	driver      Driver    `json:"-"`
 	db          *sql.DB   `json:"-"`
+	driver      Driver    `json:"-"`
 	schemas     []*Schema `json:"-"`
 	models      []*Model  `json:"-"`
 	tables      []*Model  `json:"-"`
@@ -55,13 +55,30 @@ func NewDatabase(id, name, driver string) (*DB, error) {
 		UpdateAt:  now,
 		Id:        id,
 		Name:      name,
-		driver:    conn.Drivers[driver](),
 		schemas:   make([]*Schema, 0),
 		models:    make([]*Model, 0),
 	}
+	result.driver = conn.Drivers[driver](result)
 	conn.DBS = append(conn.DBS, result)
 
 	return result, nil
+}
+
+/**
+* HealthCheck
+* @return bool
+**/
+func (s *DB) HealthCheck() bool {
+	if s.db == nil {
+		return false
+	}
+
+	err := s.db.Ping()
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 /**
@@ -207,11 +224,11 @@ func (s *DB) Conected(connection ConnectParams) error {
 * @return error
 **/
 func (s *DB) Disconected() error {
-	if s.driver == nil {
+	if s.db == nil {
 		return errors.New(MSG_DRIVER_NOT_DEFINED)
 	}
 
-	return s.driver.Disconnect()
+	return s.db.Close()
 }
 
 /**
@@ -431,7 +448,7 @@ func (s *DB) Query(sql string, arg ...any) (et.Items, error) {
 		return et.Items{}, errors.New(MSG_DATABASE_NOT_CONNECTED)
 	}
 
-	return Query(s.db, sql, arg...)
+	return Query(s, sql, arg...)
 }
 
 /**

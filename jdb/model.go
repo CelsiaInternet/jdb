@@ -577,7 +577,7 @@ func (s *Model) getKeyByPk(data et.Json) (string, error) {
 	for name := range s.PrimaryKeys {
 		val := data.Get(name)
 		if val == nil {
-			return "", fmt.Errorf(MSG_PRIMARY_KEY_REQUIRED, name, s.Name)
+			return "", fmt.Errorf(MSG_PRIMARY_KEY_REQUIRED, name, s.Name, data.ToString())
 		}
 
 		result = strs.Append(result, fmt.Sprintf(`%v`, val), ":")
@@ -613,7 +613,6 @@ func (s *Model) getMapByPk(data []et.Json) (map[string]et.Json, error) {
 func (s *Model) getMapResultByPk(data []et.Json) (map[string]et.Json, error) {
 	result := map[string]et.Json{}
 	for _, item := range data {
-		item = item.Json("result")
 		key, err := s.getKeyByPk(item)
 		if err != nil {
 			return nil, err
@@ -678,7 +677,7 @@ func (s *Model) GetWhereByPrimaryKeys(data et.Json) (et.Json, error) {
 	for name := range s.PrimaryKeys {
 		val := data.Get(name)
 		if val == nil {
-			return et.Json{}, fmt.Errorf(MSG_PRIMARY_KEY_REQUIRED, name, s.Name)
+			return et.Json{}, fmt.Errorf("GetWhereByPrimaryKeys:"+MSG_PRIMARY_KEY_REQUIRED, name, s.Name, data.ToString())
 		}
 
 		col := s.getColumn(name)

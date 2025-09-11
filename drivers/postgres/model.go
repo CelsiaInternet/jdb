@@ -14,12 +14,11 @@ func tableName(model *jdb.Model) string {
 
 /**
 * existTable
-* @param schema string
-* @param name string
+* @param schema, name string
 * @return bool, error
 **/
 func (s *Postgres) existTable(schema, name string) (bool, error) {
-	items, err := jdb.Query(s.db, `
+	items, err := jdb.Query(s.jdb, `
 	SELECT EXISTS(
 		SELECT 1
 		FROM information_schema.tables
@@ -60,7 +59,7 @@ func (s *Postgres) LoadModel(model *jdb.Model) error {
 			console.Debug(sql)
 		}
 
-		_, err = jdb.Exec(s.db, sql)
+		err = jdb.Ddl(s.jdb, sql)
 		if err != nil {
 			return err
 		}
@@ -92,7 +91,7 @@ func (s *Postgres) LoadModel(model *jdb.Model) error {
 	AND a.attnum > 0
 	AND NOT a.attisdropped;`
 
-	items, err := jdb.Query(s.db, sql, model.Schema, model.Table)
+	items, err := jdb.Query(s.jdb, sql, model.Schema, model.Table)
 	if err != nil {
 		return err
 	}
@@ -119,12 +118,7 @@ func (s *Postgres) DropModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return jdb.Ddl(s.jdb, sql)
 }
 
 /**
@@ -138,9 +132,7 @@ func (s *Postgres) EmptyModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
-
-	return err
+	return jdb.Ddl(s.jdb, sql)
 }
 
 /**
@@ -160,10 +152,5 @@ func (s *Postgres) MutateModel(model *jdb.Model) error {
 		console.Debug(sql)
 	}
 
-	_, err := jdb.Query(s.db, sql)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return jdb.Ddl(s.jdb, sql)
 }

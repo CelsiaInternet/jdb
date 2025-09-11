@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"database/sql"
 	"errors"
 
 	"github.com/celsiainternet/elvis/envar"
@@ -90,15 +89,16 @@ func (s *Connection) Validate() error {
 }
 
 type Postgres struct {
-	db         *sql.DB
+	jdb        *jdb.DB
 	name       string
 	version    int
 	connected  bool
 	connection Connection
 }
 
-func newDriver() jdb.Driver {
+func newDriver(db *jdb.DB) jdb.Driver {
 	return &Postgres{
+		jdb:  db,
 		name: jdb.PostgresDriver,
 		connection: Connection{
 			Database: envar.GetStr("test", "DB_NAME"),

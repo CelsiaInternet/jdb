@@ -26,6 +26,9 @@ func (s *DB) createCore() error {
 	if err := s.defineRecycling(); err != nil {
 		return err
 	}
+	if err := s.defineSeries(); err != nil {
+		return err
+	}
 
 	if err := coreRecords.Save(); err != nil {
 		return err
@@ -34,6 +37,9 @@ func (s *DB) createCore() error {
 		return err
 	}
 	if err := coreRecycling.Save(); err != nil {
+		return err
+	}
+	if err := coreSeries.Save(); err != nil {
 		return err
 	}
 

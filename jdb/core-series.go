@@ -42,11 +42,11 @@ func (s *DB) defineSeries() error {
 }
 
 /**
-* getSeries
+* GetSeries
 * @param kind, tag string
 * @return string, error
 **/
-func (s *DB) GetSeries(kind, tag string) (string, error) {
+func GetSeries(kind, tag string) (string, error) {
 	if coreSeries == nil {
 		return "", errors.New(MSG_DATABASE_NOT_CONCURRENT)
 	}
@@ -84,7 +84,7 @@ func (s *DB) GetSeries(kind, tag string) (string, error) {
 * @param kind, tag, format string
 * @return error
 **/
-func (s *DB) SetSeries(kind, tag, format string, lastValue int) error {
+func SetSeries(kind, tag, format string, lastValue int) error {
 	if coreSeries == nil {
 		return errors.New(MSG_DATABASE_NOT_CONCURRENT)
 	}

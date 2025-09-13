@@ -37,7 +37,6 @@ func (s *SqlLite) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 		return nil, errors.New("database is required")
 	}
 
-	var err error
 	db, err := s.connectTo(database)
 	if err != nil {
 		return nil, err

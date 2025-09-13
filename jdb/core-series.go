@@ -57,6 +57,7 @@ func GetSeries(kind, tag string) (string, error) {
 			"tag":  tag,
 		}).
 		BeforeInsert(func(tx *Tx, data et.Json) error {
+			data.Set("format", "%08d")
 			data.Set("value", 1)
 			return nil
 		}).
@@ -69,9 +70,10 @@ func GetSeries(kind, tag string) (string, error) {
 		Return("value", "format").
 		One()
 	if err != nil {
-		return "", err
+		return "", console.Debug(err.Error())
 	}
 
+	console.Debug("GetSeries:", item.Result.ToString())
 	value := item.Int("value")
 	format := item.Str("format")
 	result := fmt.Sprintf(format, value)

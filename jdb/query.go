@@ -32,7 +32,7 @@ func queryTx(db *sql.DB, tx *Tx, sourceFiled, sql string, arg ...any) (et.Items,
 		defer rows.Close()
 
 		if sourceFiled != "" {
-			return RowsToSourceItem(rows, sourceFiled), nil
+			return RowsToSourceItems(rows, sourceFiled), nil
 		}
 
 		return RowsToItems(rows), nil
@@ -45,7 +45,7 @@ func queryTx(db *sql.DB, tx *Tx, sourceFiled, sql string, arg ...any) (et.Items,
 	defer rows.Close()
 
 	if sourceFiled != "" {
-		return RowsToSourceItem(rows, sourceFiled), nil
+		return RowsToSourceItems(rows, sourceFiled), nil
 	}
 
 	return RowsToItems(rows), nil

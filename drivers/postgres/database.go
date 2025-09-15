@@ -67,8 +67,8 @@ func (s *Postgres) CreateDatabase(db *sql.DB, name string) error {
 		return nil
 	}
 
-	sql := `CREATE DATABASE $1;`
-	_, err = db.Exec(sql, name)
+	sql := fmt.Sprintf(`CREATE DATABASE %s;`, name)
+	_, err = db.Exec(sql)
 	if err != nil {
 		return err
 	}
@@ -93,8 +93,8 @@ func (s *Postgres) DropDatabase(db *sql.DB, name string) error {
 		return nil
 	}
 
-	sql := `DROP DATABASE $1;`
-	_, err = db.Exec(sql, name)
+	sql := fmt.Sprintf(`DROP DATABASE %s;`, name)
+	_, err = db.Exec(sql)
 	if err != nil {
 		return err
 	}

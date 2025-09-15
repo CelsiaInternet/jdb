@@ -3,11 +3,8 @@ package jdb
 import (
 	"database/sql"
 	"fmt"
-	"reflect"
 	"strings"
-	"time"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/strs"
 )
@@ -36,8 +33,8 @@ func SQLDDL(sql string, args ...any) string {
 	sql = strings.TrimSpace(sql)
 
 	for i, arg := range args {
-		old := strs.Format(`$%d`, i+1)
-		new := strs.Format(`%v`, arg)
+		old := fmt.Sprintf(`$%d`, i+1)
+		new := fmt.Sprintf(`%v`, arg)
 		sql = strings.ReplaceAll(sql, old, new)
 	}
 
@@ -52,14 +49,14 @@ func SQLDDL(sql string, args ...any) string {
 **/
 func SQLParse(sql string, args ...any) string {
 	for i := range args {
-		old := strs.Format(`$%d`, i+1)
-		new := strs.Format(`{$%d}`, i+1)
+		old := fmt.Sprintf(`$%d`, i+1)
+		new := fmt.Sprintf(`{$%d}`, i+1)
 		sql = strings.ReplaceAll(sql, old, new)
 	}
 
 	for i, arg := range args {
-		old := strs.Format(`{$%d}`, i+1)
-		new := strs.Format(`%v`, Quote(arg))
+		old := fmt.Sprintf(`{$%d}`, i+1)
+		new := fmt.Sprintf(`%v`, Quote(arg))
 		sql = strings.ReplaceAll(sql, old, new)
 	}
 
@@ -120,60 +117,4 @@ func RowsToSourceItems(rows *sql.Rows, source string) et.Items {
 	}
 
 	return result
-}
-
-/**
-* JsonQuote return a json quote string
-* @param val interface{}
-* @return interface{}
-**/
-func JsonQuote(val interface{}) interface{} {
-	f := `'%v'`
-	switch v := val.(type) {
-	case string:
-		v = strs.Format(`"%s"`, v)
-		return strs.Format(f, v)
-	case int:
-		return strs.Format(f, v)
-	case float64:
-		return strs.Format(f, v)
-	case float32:
-		return strs.Format(f, v)
-	case int16:
-		return strs.Format(f, v)
-	case int32:
-		return strs.Format(f, v)
-	case int64:
-		return strs.Format(f, v)
-	case bool:
-		return strs.Format(f, v)
-	case time.Time:
-		return strs.Format(f, v.Format("2006-01-02 15:04:05"))
-	case et.Json:
-		return strs.Format(f, v.ToString())
-	case map[string]interface{}:
-		return strs.Format(f, et.Json(v).ToString())
-	case []string:
-		var r string
-		for _, s := range v {
-			r = strs.Append(r, strs.Format(`"%s"`, s), ", ")
-		}
-		r = strs.Format(`[%s]`, r)
-		return strs.Format(f, r)
-	case []interface{}:
-		var r string
-		for _, _v := range v {
-			q := JsonQuote(_v)
-			r = strs.Append(r, strs.Format(`%v`, q), ", ")
-		}
-		r = strs.Format(`[%s]`, r)
-		return strs.Format(f, r)
-	case []uint8:
-		return strs.Format(f, string(v))
-	case nil:
-		return strs.Format(`%s`, "NULL")
-	default:
-		console.Alert(fmt.Sprintf("Not quoted type:%v value:%v", reflect.TypeOf(v), v))
-		return val
-	}
 }

@@ -54,7 +54,8 @@ func queryTx(db *sql.DB, tx *Tx, sourceFiled, sql string, arg ...any) (et.Items,
 				err = fmt.Errorf("error on rollback: %w: %s", errRollback, err)
 			}
 
-			return et.Items{}, fmt.Errorf("QueryTx error: %s", err.Error())
+			sql = SQLParse(sql, arg...)
+			return et.Items{}, fmt.Errorf("queryTx error: %s\nsql: %s\n", err.Error(), sql)
 		}
 		defer rows.Close()
 
@@ -67,7 +68,8 @@ func queryTx(db *sql.DB, tx *Tx, sourceFiled, sql string, arg ...any) (et.Items,
 
 	rows, err := db.Query(sql, arg...)
 	if err != nil {
-		return et.Items{}, fmt.Errorf("Query error: %s", err.Error())
+		sql = SQLParse(sql, arg...)
+		return et.Items{}, fmt.Errorf("query error: %s\nsql: %s\n", err.Error(), sql)
 	}
 	defer rows.Close()
 

@@ -3,13 +3,13 @@ module github.com/celsiainternet/jdb
 go 1.23.0
 
 require (
-	github.com/celsiainternet/elvis v1.1.131
-	github.com/go-chi/chi/v5 v5.2.2
+	github.com/celsiainternet/elvis v1.1.132
 	github.com/go-sql-driver/mysql v1.9.3
 	modernc.org/sqlite v1.37.1
 )
 
 require (
+	github.com/go-chi/chi/v5 v5.2.2 // indirect
 	github.com/matoous/go-nanoid/v2 v2.1.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect

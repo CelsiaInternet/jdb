@@ -15,10 +15,6 @@ import (
 var coreRecycling *Model
 
 func (s *DB) defineRecycling() error {
-	if s.driver.Name() == SqliteDriver {
-		return nil
-	}
-
 	if err := s.defineSchema(); err != nil {
 		return err
 	}

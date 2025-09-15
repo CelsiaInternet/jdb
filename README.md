@@ -1,13 +1,13 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v0.0.34-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v0.0.35-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
 JDB es una librería de Go que proporciona una interfaz unificada y simplificada para trabajar con múltiples bases de datos. Ofrece soporte para PostgreSQL, MySQL, SQLite y Oracle con una API consistente y fácil de usar.
 
-## Últimas Actualizaciones (v0.0.34)
+## Últimas Actualizaciones (v0.0.35)
 
 - **Dependencias actualizadas**: Elvis v1.1.127, Chi router v5.2.2
 - **Drivers mejorados**: MySQL v1.9.3, PostgreSQL v1.10.9, SQLite v1.37.1
@@ -71,14 +71,14 @@ JDB es una librería de Go que proporciona una interfaz unificada y simplificada
 
 ```bash
 go get github.com/celsiainternet/jdb
-go get github.com/celsiainternet/jdb@v0.0.34
+go get github.com/celsiainternet/jdb@v0.0.35
 ```
 
 ### Dependencias Principales
 
 ```bash
 # Dependencia principal
-go get github.com/celsiainternet/elvis@v1.1.131
+go get github.com/celsiainternet/elvis@v1.1.132
 
 # Drivers de base de datos incluidos
 # - PostgreSQL: github.com/lib/pq v1.10.9
@@ -630,29 +630,15 @@ user.DefineObject("address", "addresses", map[string]string{
 
 ```bash
 # Compilar y ejecutar con race detection
-gofmt -w . && go run --race ./cmd/jdb
-
-# Ejecutar con parámetros específicos
-go run ./cmd/jdb status
-go run ./cmd/jdb start
+gofmt -w . && go run --race ./cmd
 ```
 
 ### Compilar para producción
 
 ```bash
 # Compilación optimizada
-gofmt -w . && go build -a -o ./jdb ./cmd/jdb
+gofmt -w . && go build -a -o ./jdb ./cmd
 
-# Ejecutar el binario compilado
-./jdb help
-./jdb start
-```
-
-### Ejemplo con aplicación personalizada
-
-```bash
-# Usar cmd/main.go como ejemplo base
-go run ./cmd/main.go
 ```
 
 ### Gestión de Versiones Automática
@@ -675,7 +661,7 @@ go run ./cmd/main.go
 
 ### Información de Versión
 
-**Versión Actual**: v0.0.34
+**Versión Actual**: v0.0.35
 
 El sistema de versionado es automático y sigue el estándar semántico (SemVer):
 

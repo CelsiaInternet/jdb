@@ -49,10 +49,7 @@ func (s *Postgres) ExistDatabase(db *sql.DB, name string) (bool, error) {
 		return false, nil
 	}
 
-	first := items.Result[0]
-	result := first.Bool("exists")
-
-	return result, nil
+	return items.Bool(0, "exists"), nil
 }
 
 /**

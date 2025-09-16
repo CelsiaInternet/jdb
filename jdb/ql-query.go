@@ -1,7 +1,7 @@
 package jdb
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/et"
 )
@@ -13,7 +13,7 @@ import (
 **/
 func (s *Ql) FirstTx(tx *Tx, n int) (et.Items, error) {
 	if s.Db == nil {
-		return et.Items{}, errors.New(MSG_DATABASE_NOT_FOUND)
+		return et.Items{}, fmt.Errorf(MSG_DATABASE_NOT_FOUND)
 	}
 
 	s.setTx(tx)
@@ -79,7 +79,7 @@ func (s *Ql) RowsTx(tx *Tx, val int) (et.Items, error) {
 **/
 func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 	if s.Db == nil {
-		return false, errors.New(MSG_DATABASE_NOT_FOUND)
+		return false, fmt.Errorf(MSG_DATABASE_NOT_FOUND)
 	}
 
 	s.setTx(tx)
@@ -99,7 +99,7 @@ func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 **/
 func (s *Ql) CountedTx(tx *Tx) (int, error) {
 	if s.Db == nil {
-		return 0, errors.New(MSG_DATABASE_NOT_FOUND)
+		return 0, fmt.Errorf(MSG_DATABASE_NOT_FOUND)
 	}
 
 	s.setTx(tx)

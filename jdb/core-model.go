@@ -1,7 +1,7 @@
 package jdb
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
@@ -48,7 +48,7 @@ func (s *DB) defineModel() error {
 **/
 func (s *DB) getModel(kind, name string) (et.Item, error) {
 	if coreModel == nil || !coreModel.isInit {
-		return et.Item{}, errors.New(MSG_DATABASE_NOT_CONCURRENT)
+		return et.Item{}, fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	return coreModel.
@@ -121,7 +121,7 @@ func (s *DB) deleteModel(kind, name string) error {
 **/
 func (s *DB) QueryModel(search et.Json) (interface{}, error) {
 	if coreModel == nil || !coreModel.isInit {
-		return nil, errors.New(MSG_DATABASE_NOT_CONCURRENT)
+		return nil, fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	result, err := coreModel.

@@ -1,7 +1,6 @@
 package jdb
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -83,7 +82,7 @@ func (s *DB) upsertRecycling(tx *Tx, schema, name, sysId string) error {
 **/
 func (s *DB) GetRecycling(schema, name, sysId string) (et.Item, error) {
 	if coreRecycling == nil || !coreRecycling.isInit {
-		return et.Item{}, errors.New(MSG_DATABASE_NOT_CONCURRENT)
+		return et.Item{}, fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	if !utility.ValidName(schema) {
@@ -138,7 +137,7 @@ func (s *DB) deleteRecycling(tx *Tx, schema, name, sysId string) error {
 	}
 
 	if !item.Ok {
-		return errors.New(MSG_RECORD_NOT_FOUND)
+		return fmt.Errorf(MSG_RECORD_NOT_FOUND)
 	}
 
 	return nil
@@ -151,7 +150,7 @@ func (s *DB) deleteRecycling(tx *Tx, schema, name, sysId string) error {
 **/
 func (s *DB) QueryRecycling(search et.Json) (interface{}, error) {
 	if coreRecycling == nil || !coreRecycling.isInit {
-		return et.Item{}, errors.New(MSG_DATABASE_NOT_CONCURRENT)
+		return et.Item{}, fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	result, err := coreRecycling.

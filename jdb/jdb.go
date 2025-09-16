@@ -2,7 +2,6 @@ package jdb
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -103,6 +102,7 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 	result.IsDebug = connection.Debug
 	result.UseCore = connection.UserCore
 	result.NodeId = connection.NodeId
+	result.connectParams = connection
 	err = result.Conected(connection)
 	if err != nil {
 		return nil, err
@@ -316,7 +316,7 @@ func describe(kind, name string) (et.Json, error) {
 	}
 
 	if kind == "" {
-		return help, errors.New(MSG_KIND_NOT_DEFINED)
+		return help, fmt.Errorf(MSG_KIND_NOT_DEFINED)
 	}
 
 	switch kind {
@@ -348,7 +348,7 @@ func describe(kind, name string) (et.Json, error) {
 				"message": MSG_INVALID_NAME,
 				"help":    "It is required at least two parts in the name of the field, first part is the name of model and second is field name.",
 				"example": "model.field",
-			}, errors.New(MSG_INVALID_NAME)
+			}, fmt.Errorf(MSG_INVALID_NAME)
 		}
 
 		model := GetModel(list[0])
@@ -395,7 +395,7 @@ func commandsTx(tx *Tx, params et.Json) (et.Items, error) {
 
 		param := params.Json(name)
 		if param.IsEmpty() {
-			return et.Items{}, errors.New(help.ToString())
+			return et.Items{}, fmt.Errorf(help.ToString())
 		}
 
 		debug := param.ValBool(false, "debug")

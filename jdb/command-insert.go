@@ -2,20 +2,22 @@ package jdb
 
 import (
 	"fmt"
-
-	"github.com/celsiainternet/elvis/et"
 )
 
 func (s *Command) inserted() error {
+	model := s.getModel()
+	if model == nil {
+		return fmt.Errorf(MSG_MODEL_NOT_FOUND)
+	}
+
 	if len(s.Data) == 0 {
-		return fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), s.From.Name)
+		return fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), model.Name)
 	}
 
 	if err := s.prepare(); err != nil {
 		return err
 	}
 
-	model := s.From
 	results, err := s.Db.Command(s)
 	if err != nil {
 		return err
@@ -32,17 +34,14 @@ func (s *Command) inserted() error {
 	}
 
 	for _, after := range s.ResultMap {
-		for _, event := range model.eventsInsert {
-			err := event(s.tx, model, et.Json{}, after)
+		for _, fn := range model.afterInsert {
+			err := fn(s.tx, after)
 			if err != nil {
 				return err
 			}
 		}
-	}
-
-	for _, data := range s.Data {
 		for _, fn := range s.afterInsert {
-			err := fn(s.tx, data)
+			err := fn(s.tx, after)
 			if err != nil {
 				return err
 			}

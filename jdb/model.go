@@ -2,7 +2,6 @@ package jdb
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -39,8 +38,8 @@ func (s TypeId) Str() string {
 }
 
 var (
-	ErrNotInserted = errors.New("not inserted")
-	ErrNotUpdated  = errors.New("not updated")
+	ErrNotInserted = fmt.Errorf("not inserted")
+	ErrNotUpdated  = fmt.Errorf("not updated")
 )
 
 type Model struct {
@@ -75,9 +74,12 @@ type Model struct {
 	FullTextField      *Column                  `json:"-"`
 	ProjectField       *Column                  `json:"-"`
 	Version            int                      `json:"version"`
-	eventsInsert       []Event                  `json:"-"`
-	eventsUpdate       []Event                  `json:"-"`
-	eventsDelete       []Event                  `json:"-"`
+	beforeInsert       []DataFunctionTx         `json:"-"`
+	beforeUpdate       []DataFunctionTx         `json:"-"`
+	beforeDelete       []DataFunctionTx         `json:"-"`
+	afterInsert        []DataFunctionTx         `json:"-"`
+	afterUpdate        []DataFunctionTx         `json:"-"`
+	afterDelete        []DataFunctionTx         `json:"-"`
 	eventEmiterChannel chan event.EvenMessage   `json:"-"`
 	eventsEmiter       map[string]event.Handler `json:"-"`
 	IsDebug            bool                     `json:"-"`
@@ -127,17 +129,20 @@ func NewTable(db *DB, table string) *Model {
 		Joins:              make(map[string]*Join),
 		Required:           make(map[string]bool),
 		TpId:               TpUUId,
+		beforeInsert:       []DataFunctionTx{},
+		beforeUpdate:       []DataFunctionTx{},
+		beforeDelete:       []DataFunctionTx{},
+		afterInsert:        []DataFunctionTx{},
+		afterUpdate:        []DataFunctionTx{},
+		afterDelete:        []DataFunctionTx{},
 		eventEmiterChannel: make(chan event.EvenMessage),
 		eventsEmiter:       make(map[string]event.Handler),
-		eventsInsert:       make([]Event, 0),
-		eventsUpdate:       make([]Event, 0),
-		eventsDelete:       make([]Event, 0),
 		Version:            1,
 		IsDebug:            db.IsDebug,
 	}
-	result.DefineEvent(EventInsert, eventInsertDefault)
-	result.DefineEvent(EventUpdate, eventUpdateDefault)
-	result.DefineEvent(EventDelete, eventDeleteDefault)
+	result.AfterInsert(result.afterInsertDefault)
+	result.AfterUpdate(result.afterUpdateDefault)
+	result.AfterDelete(result.afterDeleteDefault)
 	db.tables = append(db.tables, result)
 
 	return result
@@ -177,17 +182,20 @@ func NewModel(schema *Schema, name string, version int) *Model {
 			Joins:              make(map[string]*Join),
 			Required:           make(map[string]bool),
 			TpId:               TpUUId,
+			beforeInsert:       []DataFunctionTx{},
+			beforeUpdate:       []DataFunctionTx{},
+			beforeDelete:       []DataFunctionTx{},
+			afterInsert:        []DataFunctionTx{},
+			afterUpdate:        []DataFunctionTx{},
+			afterDelete:        []DataFunctionTx{},
 			eventEmiterChannel: make(chan event.EvenMessage),
 			eventsEmiter:       make(map[string]event.Handler),
-			eventsInsert:       make([]Event, 0),
-			eventsUpdate:       make([]Event, 0),
-			eventsDelete:       make([]Event, 0),
 			Version:            version,
 			IsDebug:            schema.Db.IsDebug,
 		}
-		result.DefineEvent(EventInsert, eventInsertDefault)
-		result.DefineEvent(EventUpdate, eventUpdateDefault)
-		result.DefineEvent(EventDelete, eventDeleteDefault)
+		result.AfterInsert(result.afterInsertDefault)
+		result.AfterUpdate(result.afterUpdateDefault)
+		result.AfterDelete(result.afterDeleteDefault)
 
 		schema.addModel(result)
 		return result
@@ -238,13 +246,16 @@ func loadModel(schema *Schema, model *Model) (*Model, error) {
 	/* Event */
 	model.eventEmiterChannel = make(chan event.EvenMessage)
 	model.eventsEmiter = make(map[string]event.Handler)
-	model.eventsInsert = make([]Event, 0)
-	model.eventsUpdate = make([]Event, 0)
-	model.eventsDelete = make([]Event, 0)
+	model.afterInsert = make([]DataFunctionTx, 0)
+	model.afterUpdate = make([]DataFunctionTx, 0)
+	model.afterDelete = make([]DataFunctionTx, 0)
+	model.beforeInsert = make([]DataFunctionTx, 0)
+	model.beforeUpdate = make([]DataFunctionTx, 0)
+	model.beforeDelete = make([]DataFunctionTx, 0)
+	model.AfterInsert(model.afterInsertDefault)
+	model.AfterUpdate(model.afterUpdateDefault)
+	model.AfterDelete(model.afterDeleteDefault)
 	model.IsDebug = schema.Db.IsDebug
-	model.DefineEvent(EventInsert, eventInsertDefault)
-	model.DefineEvent(EventUpdate, eventUpdateDefault)
-	model.DefineEvent(EventDelete, eventDeleteDefault)
 	/* Define columns */
 	for name := range model.Definitions {
 		definition := model.Definitions.Json(name)
@@ -831,7 +842,7 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 	getField := func(name string) *Field {
 		col := s.getColumn(name)
 		if col != nil {
-			return col.GetField()
+			return GetField(col)
 		}
 
 		if s.Integrity {
@@ -848,7 +859,7 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 
 		result := newAtribute(s, name, TypeDataText)
 
-		return result.GetField()
+		return GetField(result)
 	}
 
 	result := getField(name)

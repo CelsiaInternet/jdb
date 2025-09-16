@@ -1,7 +1,7 @@
 package jdb
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
@@ -14,7 +14,7 @@ import (
 **/
 func (s *Ql) List(page, rows int) (et.List, error) {
 	if s.Db == nil {
-		return et.List{}, errors.New(MSG_DATABASE_NOT_FOUND)
+		return et.List{}, fmt.Errorf(MSG_DATABASE_NOT_FOUND)
 	}
 
 	all, err := s.Db.Count(s)

@@ -1,7 +1,7 @@
 package jdb
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/celsiainternet/elvis/console"
@@ -85,7 +85,7 @@ func (s *DB) upsertRecord(tx *Tx, schema, name, sysid, option string) error {
 **/
 func (s *DB) QueryRecords(query et.Json) (interface{}, error) {
 	if coreRecords == nil || !coreRecords.isInit {
-		return nil, errors.New(MSG_DATABASE_NOT_CONCURRENT)
+		return nil, fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	result, err := coreRecords.

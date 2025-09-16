@@ -43,7 +43,7 @@ type Command struct {
 	tx           *Tx                 `json:"-"`
 	Command      TypeCommand         `json:"command"`
 	Db           *DB                 `json:"-"`
-	From         *Model              `json:"-"`
+	From         *QlFroms            `json:"-"`
 	Data         []et.Json           `json:"data"`
 	Values       []map[string]*Field `json:"values"`
 	Returns      []*Field            `json:"returns"`
@@ -70,7 +70,7 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		Id:           utility.UUID(),
 		Command:      command,
 		Db:           model.Db,
-		From:         model,
+		From:         newForms(),
 		Data:         data,
 		Values:       make([]map[string]*Field, 0),
 		beforeInsert: []DataFunctionTx{},
@@ -85,6 +85,7 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		CurrentMap:   make(map[string]et.Json),
 		ResultMap:    make(map[string]et.Json),
 	}
+	result.From.add(model)
 	result.QlWhere = newQlWhere(result.validator)
 	result.IsDebug = model.IsDebug
 	result.beforeInsert = append(result.beforeInsert, result.beforeInsertDefault)
@@ -149,67 +150,20 @@ func (s *Command) Describe() et.Json {
 }
 
 /**
+* getModel
+* @return *Model
+**/
+func (s *Command) getModel() *Model {
+	return s.From.getModel(0)
+}
+
+/**
 * getField
 * @param name string
 * @return *Field
 **/
 func (s *Command) getField(name string) *Field {
 	return s.From.getField(name, false)
-}
-
-/**
-* validator
-* validate this val is a field or basic type
-* @return interface{}
-**/
-func (s *Command) validator(val interface{}) interface{} {
-	switch v := val.(type) {
-	case string:
-		if strings.HasPrefix(v, ":") {
-			v = strings.TrimPrefix(v, ":")
-			field := s.getField(v)
-			if field != nil {
-				return field
-			}
-			return nil
-		}
-
-		if strings.HasPrefix(v, "$") {
-			v = strings.TrimPrefix(v, "$")
-			return v
-		}
-
-		v = strings.Replace(v, `\\:`, `\:`, 1)
-		v = strings.Replace(v, `\:`, `:`, 1)
-		v = strings.Replace(v, `\\$`, `\$`, 1)
-		v = strings.Replace(v, `\$`, `$`, 1)
-		field := s.getField(v)
-		if field != nil {
-			return field
-		}
-
-		return v
-	case *Field:
-		return v
-	case Field:
-		return v
-	case *Column:
-		return v.GetField()
-	case Column:
-		return v.GetField()
-	case []interface{}:
-		return v
-	case []string:
-		return v
-	case []et.Json:
-		return v
-	default:
-		if v == nil {
-			return "nil"
-		}
-
-		return v
-	}
 }
 
 /**

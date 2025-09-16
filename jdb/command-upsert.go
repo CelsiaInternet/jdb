@@ -1,13 +1,17 @@
 package jdb
 
-import "errors"
+import "fmt"
 
 func (s *Command) upsert() error {
-	if len(s.Data) != 1 {
-		return errors.New(MSG_MANY_INSERT_DATA)
+	model := s.getModel()
+	if model == nil {
+		return fmt.Errorf(MSG_MODEL_NOT_FOUND)
 	}
 
-	model := s.From
+	if len(s.Data) != 1 {
+		return fmt.Errorf(MSG_MANY_INSERT_DATA)
+	}
+
 	data := s.Data[0]
 	where, err := model.GetWhereByPrimaryKeys(data)
 	if err != nil {

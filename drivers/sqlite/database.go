@@ -2,7 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
-	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/celsiainternet/elvis/console"
@@ -34,7 +34,7 @@ func (s *SqlLite) connectTo(database string) (*sql.DB, error) {
 func (s *SqlLite) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 	database := connection.Params.(*Connection).Database
 	if database == "" {
-		return nil, errors.New("database is required")
+		return nil, fmt.Errorf("database is required")
 	}
 
 	db, err := s.connectTo(database)

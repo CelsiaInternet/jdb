@@ -7,15 +7,19 @@ import (
 )
 
 func (s *Command) updated() error {
-	if len(s.Data) == 0 {
-		return fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), s.From.Name)
+	model := s.getModel()
+	if model == nil {
+		return fmt.Errorf(MSG_MODEL_NOT_FOUND)
+	}
+
+	if len(s.Data) != 1 {
+		return fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), model.Name)
 	}
 
 	if err := s.prepare(); err != nil {
 		return err
 	}
 
-	model := s.From
 	results, err := s.Db.Command(s)
 	if err != nil {
 		return err
@@ -36,23 +40,18 @@ func (s *Command) updated() error {
 		if before == nil {
 			before = et.Json{}
 		}
-
-		for _, event := range model.eventsUpdate {
-			err := event(s.tx, model, before, after)
+		for _, fn := range model.afterUpdate {
+			err := fn(s.tx, after)
 			if err != nil {
 				return err
 			}
 		}
-	}
-
-	for _, data := range s.Data {
 		for _, fn := range s.afterUpdate {
-			err := fn(s.tx, data)
+			err := fn(s.tx, after)
 			if err != nil {
 				return err
 			}
 		}
 	}
-
 	return nil
 }

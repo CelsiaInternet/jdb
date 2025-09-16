@@ -1,7 +1,6 @@
 package jdb
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/celsiainternet/elvis/console"
@@ -48,7 +47,7 @@ func (s *DB) defineSeries() error {
 **/
 func GetSeries(kind, tag string) (string, error) {
 	if coreSeries == nil {
-		return "", errors.New(MSG_DATABASE_NOT_CONCURRENT)
+		return "", fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	item, err := coreSeries.
@@ -73,7 +72,6 @@ func GetSeries(kind, tag string) (string, error) {
 		return "", console.Debug(err.Error())
 	}
 
-	console.Debug("GetSeries:", item.Result.ToString())
 	value := item.Int("value")
 	format := item.Str("format")
 	result := fmt.Sprintf(format, value)
@@ -88,7 +86,7 @@ func GetSeries(kind, tag string) (string, error) {
 **/
 func SetSeries(kind, tag, format string, lastValue int) error {
 	if coreSeries == nil {
-		return errors.New(MSG_DATABASE_NOT_CONCURRENT)
+		return fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
 	}
 
 	_, err := coreSeries.

@@ -1,10 +1,11 @@
 package sqlite
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/utility"
 	jdb "github.com/celsiainternet/jdb/jdb"
 	_ "modernc.org/sqlite"
 )
@@ -41,12 +42,34 @@ func (s *Connection) ToJson() et.Json {
 }
 
 /**
+* Load
+* @param params et.Json
+* @return error
+**/
+func (s *Connection) Load(params et.Json) error {
+	database := params.Str("database")
+	if utility.ValidStr(database, 0, []string{}) {
+		return fmt.Errorf("database is required")
+	}
+
+	version := params.Int("version")
+	if version == 0 {
+		return fmt.Errorf("version is required")
+	}
+
+	s.Database = database
+	s.Version = version
+
+	return nil
+}
+
+/**
 * Validate
 * @return error
 **/
 func (s *Connection) Validate() error {
 	if s.Database == "" {
-		return errors.New("database is required")
+		return fmt.Errorf("database is required")
 	}
 
 	return nil

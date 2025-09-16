@@ -1,17 +1,21 @@
 package jdb
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/et"
 )
 
 func (s *Command) current(where et.Json) error {
-	if len(s.Data) != 1 {
-		return errors.New(MSG_MANY_INSERT_DATA)
+	model := s.getModel()
+	if model == nil {
+		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
-	model := s.From
+	if len(s.Data) != 1 {
+		return fmt.Errorf(MSG_MANY_INSERT_DATA)
+	}
+
 	columns := model.getColumnsByType(TpColumn)
 	ql := From(model)
 	ql.setWheres(where)

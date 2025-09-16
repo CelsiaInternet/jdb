@@ -1,15 +1,17 @@
 package jdb
 
-import (
-	"github.com/celsiainternet/elvis/et"
-)
+import "fmt"
 
 func (s *Command) deleted() error {
+	model := s.getModel()
+	if model == nil {
+		return fmt.Errorf(MSG_MODEL_NOT_FOUND)
+	}
+
 	if err := s.prepare(); err != nil {
 		return err
 	}
 
-	model := s.From
 	results, err := s.Db.Command(s)
 	if err != nil {
 		return err
@@ -22,8 +24,8 @@ func (s *Command) deleted() error {
 	}
 
 	for _, before := range s.ResultMap {
-		for _, event := range model.eventsDelete {
-			err := event(s.tx, model, before, et.Json{})
+		for _, fn := range model.afterDelete {
+			err := fn(s.tx, before)
 			if err != nil {
 				return err
 			}

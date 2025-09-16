@@ -1,7 +1,7 @@
 package jdb
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/reg"
@@ -14,11 +14,10 @@ import (
 * @return error
 **/
 func (s *Command) beforeInsertDefault(tx *Tx, data et.Json) error {
-	if s.From == nil {
-		return errors.New(MSG_MODEL_REQUIRED)
+	model := s.getModel()
+	if model == nil {
+		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
-
-	model := s.From
 
 	if model.IndexField != nil && data.Int(model.IndexField.Name) == 0 {
 		data[model.IndexField.Name] = reg.GenIndex()
@@ -46,12 +45,12 @@ func (s *Command) beforeInsertDefault(tx *Tx, data et.Json) error {
 * @return error
 **/
 func (s *Command) beforeUpdateDefault(tx *Tx, data et.Json) error {
-	if s.From == nil {
-		return errors.New(MSG_MODEL_REQUIRED)
+	model := s.getModel()
+	if model == nil {
+		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
 	now := utility.Now()
-	model := s.From
 	if model.CreatedAtField != nil {
 		delete(data, model.CreatedAtField.Name)
 	}
@@ -70,7 +69,7 @@ func (s *Command) beforeUpdateDefault(tx *Tx, data et.Json) error {
 **/
 func (s *Command) beforeDeleteDefault(tx *Tx, data et.Json) error {
 	if s.From == nil {
-		return errors.New(MSG_MODEL_REQUIRED)
+		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
 	return nil

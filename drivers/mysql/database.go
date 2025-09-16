@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/celsiainternet/elvis/console"
@@ -59,7 +58,7 @@ func (s *Mysql) ExistDatabase(db *sql.DB, name string) (bool, error) {
 **/
 func (s *Mysql) CreateDatabase(db *sql.DB, name string) error {
 	if s.jdb == nil {
-		return errors.New(MSG_JDB_NOT_DEFINED)
+		return fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
 
 	exist, err := s.ExistDatabase(db, name)
@@ -89,7 +88,7 @@ func (s *Mysql) CreateDatabase(db *sql.DB, name string) error {
 **/
 func (s *Mysql) DropDatabase(db *sql.DB, name string) error {
 	if s.jdb == nil {
-		return errors.New(MSG_JDB_NOT_DEFINED)
+		return fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
 
 	exist, err := s.ExistDatabase(db, name)

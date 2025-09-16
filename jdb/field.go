@@ -301,31 +301,31 @@ func (s *Field) asName() string {
 * GetField
 * @return *Field
 **/
-func (s *Column) GetField() *Field {
-	result := newField(s.Name)
-	result.Column = s
-	result.Name = s.Name
-	result.Alias = s.Name
-	result.Hidden = s.Hidden
+func GetField(col *Column) *Field {
+	result := newField(col.Name)
+	result.Column = col
+	result.Name = col.Name
+	result.Alias = col.Name
+	result.Hidden = col.Hidden
 
-	if s.TypeColumn == TpRelatedTo {
+	if col.TypeColumn == TpRelatedTo {
 		result.Page = 1
 		result.Rows = 30
 		result.TpResult = TpResult
 	}
 
-	if s.Model == nil {
+	if col.Model == nil {
 		return result
 	}
 
-	result.Schema = s.Model.Schema
-	result.Model = s.Model.Name
+	result.Schema = col.Model.Schema
+	result.Model = col.Model.Name
 
-	if s.Source == nil {
+	if col.Source == nil {
 		return result
 	}
 
-	result.Source = s.Source.Name
+	result.Source = col.Source.Name
 
 	return result
 }

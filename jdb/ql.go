@@ -1,7 +1,6 @@
 package jdb
 
 import (
-	"strings"
 	"sync"
 
 	"github.com/celsiainternet/elvis/et"
@@ -77,58 +76,6 @@ func (s *Ql) Tx() *Tx {
 }
 
 /**
-* validator
-* validate this val is a field or basic type
-* @param val interface{}
-* @return interface{}
-**/
-func (s *Ql) validator(val interface{}) interface{} {
-	switch v := val.(type) {
-	case string:
-		if strings.HasPrefix(v, ":") {
-			v = strings.TrimPrefix(v, ":")
-			field := s.getField(v)
-			if field != nil {
-				return field
-			}
-			return nil
-		}
-
-		if strings.HasPrefix(v, "$") {
-			v = strings.TrimPrefix(v, "$")
-			return v
-		}
-
-		v = strings.Replace(v, `\\:`, `\:`, 1)
-		v = strings.Replace(v, `\:`, `:`, 1)
-		v = strings.Replace(v, `\\$`, `\$`, 1)
-		v = strings.Replace(v, `\$`, `$`, 1)
-		field := s.getField(v)
-		if field != nil {
-			return field
-		}
-
-		return v
-	case *Field:
-		return v
-	case Field:
-		return v
-	case *Column:
-		return v.GetField()
-	case Column:
-		return v.GetField()
-	case []interface{}:
-		return v
-	case []string:
-		return v
-	case []et.Json:
-		return v
-	default:
-		return v
-	}
-}
-
-/**
 * getColumnField
 * @param name string
 * @return *Field
@@ -137,7 +84,7 @@ func (s *Ql) getColumnField(name string) *Field {
 	for _, from := range s.Froms.Froms {
 		column := from.getColumn(name)
 		if column != nil {
-			return column.GetField()
+			return GetField(column)
 		}
 	}
 
@@ -150,30 +97,7 @@ func (s *Ql) getColumnField(name string) *Field {
 * @return *Field
 **/
 func (s *Ql) getField(name string) *Field {
-	findField := func(name string) *Field {
-		for _, from := range s.Froms.Froms {
-			field := from.getField(name, false)
-			if field != nil {
-				field.As = from.As
-				return field
-			}
-		}
-
-		return nil
-	}
-
-	for tp, ag := range agregations {
-		if ag.re.MatchString(name) {
-			n := strs.ReplaceAll(name, []string{ag.Agregation, "(", ")"}, "")
-			field := findField(n)
-			if field != nil {
-				field.Agregation = tp
-				return field
-			}
-		}
-	}
-
-	return findField(name)
+	return s.Froms.getField(name, false)
 }
 
 /**

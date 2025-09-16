@@ -1,8 +1,6 @@
 package jdb
 
-import (
-	"errors"
-)
+import "fmt"
 
 var coreSchema *Schema
 
@@ -12,7 +10,7 @@ var coreSchema *Schema
 **/
 func (s *DB) createCore() error {
 	if s.driver == nil {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
+		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 	if err := s.defineModel(); err != nil {
 		return err
@@ -40,7 +38,7 @@ func (s *DB) defineSchema() error {
 
 	coreSchema = NewSchema(s, "core")
 	if coreSchema == nil {
-		return errors.New(MSG_SCHEMA_NOT_FOUND)
+		return fmt.Errorf(MSG_SCHEMA_NOT_FOUND)
 	}
 
 	return nil

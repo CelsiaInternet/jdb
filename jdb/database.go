@@ -3,7 +3,6 @@ package jdb
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -14,20 +13,21 @@ import (
 )
 
 type DB struct {
-	CreatedAt   time.Time `json:"created_at"`
-	UpdateAt    time.Time `json:"update_at"`
-	Id          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	UseCore     bool      `json:"use_core"`
-	NodeId      int       `json:"node_id"`
-	db          *sql.DB   `json:"-"`
-	driver      Driver    `json:"-"`
-	schemas     []*Schema `json:"-"`
-	models      []*Model  `json:"-"`
-	tables      []*Model  `json:"-"`
-	isInit      bool      `json:"-"`
-	IsDebug     bool      `json:"-"`
+	CreatedAt     time.Time     `json:"created_at"`
+	UpdateAt      time.Time     `json:"update_at"`
+	Id            string        `json:"id"`
+	Name          string        `json:"name"`
+	Description   string        `json:"description"`
+	UseCore       bool          `json:"use_core"`
+	NodeId        int           `json:"node_id"`
+	connectParams ConnectParams `json:"-"`
+	db            *sql.DB       `json:"-"`
+	driver        Driver        `json:"-"`
+	schemas       []*Schema     `json:"-"`
+	models        []*Model      `json:"-"`
+	tables        []*Model      `json:"-"`
+	isInit        bool          `json:"-"`
+	IsDebug       bool          `json:"-"`
 }
 
 /**
@@ -42,7 +42,7 @@ func NewDatabase(id, name, driver string) (*DB, error) {
 	}
 
 	if driver == "" {
-		return nil, errors.New(MSG_DRIVER_NOT_DEFINED)
+		return nil, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	if _, ok := conn.Drivers[driver]; !ok {
@@ -92,6 +92,40 @@ func (s *DB) serialize() ([]byte, error) {
 	}
 
 	return result, nil
+}
+
+/**
+* Ping
+* @return error
+**/
+func (s *DB) Ping() error {
+	if s.db == nil {
+		return fmt.Errorf(MSG_DB_NOT_CONNECTED)
+	}
+
+	return s.db.Ping()
+}
+
+/**
+* Restore
+* @return error
+**/
+func (s *DB) Restore() error {
+	if s.db == nil {
+		return fmt.Errorf(MSG_DB_NOT_CONNECTED)
+	}
+
+	err := s.db.Close()
+	if err != nil {
+		return err
+	}
+
+	err = s.Conected(s.connectParams)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /**
@@ -202,7 +236,7 @@ func (s *DB) Debug() {
 **/
 func (s *DB) Conected(connection ConnectParams) error {
 	if s.driver == nil {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
+		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	if s.db != nil {
@@ -225,7 +259,7 @@ func (s *DB) Conected(connection ConnectParams) error {
 **/
 func (s *DB) Disconected() error {
 	if s.db == nil {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
+		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return s.db.Close()
@@ -279,7 +313,7 @@ func (s *DB) GetModel(name string) *Model {
 **/
 func (s *DB) DropSchema(name string) error {
 	if s.driver == nil {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
+		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	schema := s.GetSchema(name)
@@ -309,7 +343,7 @@ func (s *DB) DropSchema(name string) error {
 **/
 func (s *DB) LoadModel(model *Model) error {
 	if s.driver == nil {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
+		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return s.driver.LoadModel(model)
@@ -322,7 +356,7 @@ func (s *DB) LoadModel(model *Model) error {
 **/
 func (s *DB) MutateModel(model *Model) error {
 	if s.driver == nil {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
+		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return s.driver.MutateModel(model)
@@ -334,7 +368,7 @@ func (s *DB) MutateModel(model *Model) error {
 **/
 func (s *DB) DropModel(model *Model) error {
 	if s.driver == nil {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
+		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	err := s.driver.DropModel(model)
@@ -362,7 +396,7 @@ func (s *DB) DropModel(model *Model) error {
 **/
 func (s *DB) EmptyModel(model *Model) error {
 	if s.driver == nil {
-		return errors.New(MSG_DRIVER_NOT_DEFINED)
+		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return s.driver.EmptyModel(model)
@@ -385,7 +419,7 @@ func (s *DB) From(table string) *Ql {
 **/
 func (s *DB) Select(ql *Ql) (et.Items, error) {
 	if s.driver == nil {
-		return et.Items{}, errors.New(MSG_DRIVER_NOT_DEFINED)
+		return et.Items{}, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return s.driver.Select(ql)
@@ -398,7 +432,7 @@ func (s *DB) Select(ql *Ql) (et.Items, error) {
 **/
 func (s *DB) Count(ql *Ql) (int, error) {
 	if s.driver == nil {
-		return 0, errors.New(MSG_DRIVER_NOT_DEFINED)
+		return 0, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return s.driver.Count(ql)
@@ -411,7 +445,7 @@ func (s *DB) Count(ql *Ql) (int, error) {
 **/
 func (s *DB) Exists(ql *Ql) (bool, error) {
 	if s.driver == nil {
-		return false, errors.New(MSG_DRIVER_NOT_DEFINED)
+		return false, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return s.driver.Exists(ql)
@@ -424,12 +458,12 @@ func (s *DB) Exists(ql *Ql) (bool, error) {
 **/
 func (s *DB) Command(command *Command) (et.Items, error) {
 	if s.driver == nil {
-		return et.Items{}, errors.New(MSG_DRIVER_NOT_DEFINED)
+		return et.Items{}, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	result, err := s.driver.Command(command)
 	if err != nil {
-		publishError(command.From, command.Sql, err)
+		publishError(command.getModel(), command.Sql, err)
 		return et.Items{}, err
 	}
 
@@ -445,7 +479,7 @@ func (s *DB) Command(command *Command) (et.Items, error) {
 **/
 func (s *DB) Query(sql string, arg ...any) (et.Items, error) {
 	if s.db == nil {
-		return et.Items{}, errors.New(MSG_DATABASE_NOT_CONNECTED)
+		return et.Items{}, fmt.Errorf(MSG_DATABASE_NOT_CONNECTED)
 	}
 
 	return Query(s, sql, arg...)

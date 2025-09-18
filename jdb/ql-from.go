@@ -114,35 +114,6 @@ func From(name interface{}) *Ql {
 }
 
 /**
-* From
-* @param name string
-* @return *Ql
-**/
-func (s *Ql) From(name string) *Ql {
-	model := s.Db.GetModel(name)
-	if model == nil {
-		return s
-	}
-
-	main := s.Froms.add(model)
-	for _, from := range s.Froms.Froms {
-		if from.As != main.As {
-			for _, detail := range from.RelationsTo {
-				if detail.With.Id == main.Id {
-					j := s.Join(main.Model)
-					for fk, pk := range detail.Fk {
-						j.On(fk).Eq(from.As + "." + pk)
-					}
-					return s
-				}
-			}
-		}
-	}
-
-	return s
-}
-
-/**
 * getForms
 * @return []string
 **/

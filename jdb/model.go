@@ -3,7 +3,6 @@ package jdb
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"slices"
 	"time"
 
@@ -38,8 +37,10 @@ func (s TypeId) Str() string {
 }
 
 var (
-	ErrNotInserted = fmt.Errorf("not inserted")
-	ErrNotUpdated  = fmt.Errorf("not updated")
+	ErrNotInserted = fmt.Errorf("record not inserted")
+	ErrNotUpdated  = fmt.Errorf("record not updated")
+	ErrNotFound    = fmt.Errorf("record not found")
+	ErrNotUpserted = fmt.Errorf("record not inserted or updated")
 )
 
 type Model struct {
@@ -785,6 +786,43 @@ func (s *Model) getColumn(name string) *Column {
 }
 
 /**
+* getField
+* @param name string, isCreate bool
+* @return *Field
+**/
+func (s *Model) getField(name string, isCreate bool) *Field {
+	getField := func(name string) *Field {
+		col := s.getColumn(name)
+		if col != nil {
+			return GetField(col)
+		}
+
+		if !isCreate {
+			return nil
+		}
+
+		if s.Integrity {
+			return nil
+		}
+
+		if s.SourceField == nil {
+			return nil
+		}
+
+		result := newAtribute(s, name, TypeDataText)
+
+		return GetField(result)
+	}
+
+	result := getField(name)
+	if result != nil {
+		return result
+	}
+
+	return nil
+}
+
+/**
 * getColumns
 * @param name string
 * @return *Column
@@ -831,88 +869,6 @@ func (s *Model) getColumnsArray(names ...string) []string {
 	}
 
 	return result
-}
-
-/**
-* getField
-* @param name string, isCreate bool
-* @return *Field
-**/
-func (s *Model) getField(name string, isCreate bool) *Field {
-	getField := func(name string) *Field {
-		col := s.getColumn(name)
-		if col != nil {
-			return GetField(col)
-		}
-
-		if s.Integrity {
-			return nil
-		}
-
-		if s.SourceField == nil {
-			return nil
-		}
-
-		if !isCreate {
-			return nil
-		}
-
-		result := newAtribute(s, name, TypeDataText)
-
-		return GetField(result)
-	}
-
-	result := getField(name)
-	if result != nil {
-		return result
-	}
-
-	re := regexp.MustCompile(`(?i)\s*AS\s*`)
-	list := re.Split(name, -1)
-	alias := ""
-	if len(list) > 1 {
-		name = list[0]
-		alias = list[1]
-	}
-
-	list = strs.Split(name, ".")
-	switch len(list) {
-	case 1:
-		result := getField(list[0])
-		if result != nil && alias != "" {
-			result.Alias = alias
-		}
-
-		return result
-	case 2:
-		if !strs.Same(s.Name, list[0]) {
-			return nil
-		}
-
-		result := getField(list[1])
-		if result != nil && alias != "" {
-			result.Alias = alias
-		}
-
-		return result
-	case 3:
-		if !strs.Same(s.Schema, list[0]) {
-			return nil
-		}
-
-		if !strs.Same(s.Name, list[1]) {
-			return nil
-		}
-
-		result := getField(list[2])
-		if result != nil && alias != "" {
-			result.Alias = alias
-		}
-
-		return result
-	default:
-		return nil
-	}
 }
 
 /**

@@ -24,5 +24,13 @@ func main() {
 		console.Panic(err)
 	}
 
+	_, err = jdb.From("users").
+		Where("phone").Eq("").
+		Debug().
+		All()
+	if err != nil {
+		console.Panic(err)
+	}
+
 	console.Debug("db:", db.Name)
 }

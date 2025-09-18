@@ -89,15 +89,21 @@ func query(db *DB, tx *Tx, sourceFiled, sql string, arg ...any) (et.Items, error
 		"db_name": db.Name,
 		"sql":     sql,
 	}
-	if tx != nil {
-		data["tx_id"] = tx.Id
-	}
 
 	result, err := queryTx(db.db, tx, sourceFiled, sql)
 	if err != nil {
 		data["error"] = err.Error()
 		event.Publish(EVENT_SQL_ERROR, data)
 		return et.Items{}, fmt.Errorf("query error: %s\nsql: %s\n", err.Error(), sql)
+	}
+
+	if tx != nil {
+		if tx.Committed {
+			tp := TipoSQL(sql)
+			event.Publish(fmt.Sprintf("sql:%s", tp), data)
+		}
+
+		return result, nil
 	}
 
 	tp := TipoSQL(sql)

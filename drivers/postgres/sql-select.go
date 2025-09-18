@@ -67,6 +67,11 @@ func asField(field jdb.Field) string {
 	}
 
 	result := strs.Append("", field.As, "")
+	if field.Column == nil {
+		result = strs.Append(result, field.Name, ".")
+		return result
+	}
+
 	switch field.Column.TypeColumn {
 	case jdb.TpColumn:
 		result = strs.Append(result, field.Name, ".")
@@ -93,19 +98,6 @@ func aliasAsField(field jdb.Field) string {
 	}
 
 	return strs.Append(result, field.Alias, " AS ")
-}
-
-/**
-* jsonBuildObject
-* @param result, obj string
-* @return string
-**/
-func jsonBuildObject(result, obj string) string {
-	if len(obj) == 0 {
-		return result
-	}
-
-	return strs.Append(result, strs.Format("jsonb_build_object(\n%s)", obj), "||\n")
 }
 
 /**
@@ -180,6 +172,19 @@ func (s *Postgres) sqlBuildObject(selects []*jdb.Field) string {
 	}
 
 	return result
+}
+
+/**
+* jsonBuildObject
+* @param result, obj string
+* @return string
+**/
+func jsonBuildObject(result, obj string) string {
+	if len(obj) == 0 {
+		return result
+	}
+
+	return strs.Append(result, strs.Format("jsonb_build_object(\n%s)", obj), "||\n")
 }
 
 /**

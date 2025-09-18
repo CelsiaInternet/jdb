@@ -12,6 +12,7 @@ const (
 	MSG_DATABASE_NOT_FOUND       = "Database not found (%s)"
 	MSG_DATABASE_IS_REQUIRED     = "Database is required"
 	MSG_SCHEMA_NOT_FOUND         = "Schema not found (%s)"
+	MSG_SCHEMA_IS_REQUIRED       = "Schema is required"
 	MSG_QUERY_FAILED             = "Query failed: %s\nSQL: %s"
 	MSG_MODEL_NOT_FOUND          = "Model not found (%s)"
 	MSG_MODEL_REQUIRED           = "Model is required"

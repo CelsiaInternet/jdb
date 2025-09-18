@@ -11,9 +11,13 @@ import (
 * @return string
 **/
 func (s *Postgres) sqlDelete(command *jdb.Command) string {
-	from := command.From
+	from := command.GetFrom()
+	if from == nil {
+		return ""
+	}
+
 	where := whereConditions(command.QlWhere)
-	objects := s.sqlObject(from.GetFrom())
+	objects := s.sqlObject(from)
 	returns := strs.Format("%s AS result", objects)
 	if len(command.Returns) > 0 {
 		returns = ""
@@ -21,6 +25,8 @@ func (s *Postgres) sqlDelete(command *jdb.Command) string {
 			returns = strs.Append(returns, fld.Name, ", ")
 		}
 	}
+
 	result := "DELETE FROM %s\nWHERE %s\nRETURNING\n%s;"
-	return strs.Format(result, tableName(from), where, returns)
+
+	return strs.Format(result, tableName(from.Model), where, returns)
 }

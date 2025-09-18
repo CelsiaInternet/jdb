@@ -13,7 +13,7 @@ import (
 func (s *Command) prepare() error {
 	model := s.getModel()
 	if model == nil {
-		return fmt.Errorf(MSG_MODEL_NOT_FOUND)
+		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
 	s.Values = make([]map[string]*Field, 0)

@@ -68,11 +68,12 @@ func Quote(val interface{}) any {
 	case time.Time:
 		return strs.Format(fmt, v.Format("2006-01-02 15:04:05"))
 	case []string:
-		result := ""
-		for _, s := range v {
-			result = strs.Append(result, strs.Format(fmt, s), ",")
+		bt, err := json.Marshal(v)
+		if err != nil {
+			logs.Errorf("Quote", "type:%v, value:%v, error marshalling array: %v", reflect.TypeOf(v), v, err)
+			return strs.Format(fmt, `[]`)
 		}
-		return result
+		return strs.Format(fmt, string(bt))
 	case et.Json:
 		return strs.Format(fmt, v.ToString())
 	case map[string]interface{}:

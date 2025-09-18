@@ -40,17 +40,10 @@ func (s *Model) Where(val string) *Ql {
 
 /**
 * Join
-* @param name string
-* @return *Model
+* @param with *Model, field string, operator string, value interface{}
+* @return *Ql
 **/
-func (s *Model) Join(name string) *QlJoin {
-	return From(s).Join(name)
-}
-
-/**
-* GetFrom
-* @return *QlFrom
-**/
-func (s *Model) GetFrom() *QlFrom {
-	return &QlFrom{Model: s}
+func (s *Model) Join(with *Model, field string, operator string, value interface{}) *Ql {
+	result := From(s)
+	return result.Join(with, field, operator, value)
 }

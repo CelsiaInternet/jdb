@@ -14,7 +14,7 @@ import (
 **/
 func (s *Ql) List(page, rows int) (et.List, error) {
 	if s.Db == nil {
-		return et.List{}, fmt.Errorf(MSG_DATABASE_NOT_FOUND)
+		return et.List{}, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
 	all, err := s.Db.Count(s)

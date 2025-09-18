@@ -3,8 +3,6 @@ package jdb
 import (
 	"encoding/json"
 	"fmt"
-	"slices"
-	"strings"
 
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
@@ -19,29 +17,114 @@ const (
 	FullJoin
 )
 
-func (s TypeJoin) Str() string {
-	switch s {
-	case InnerJoin:
-		return "INNER JOIN"
-	case LeftJoin:
-		return "LEFT JOIN"
-	case RightJoin:
-		return "RIGHT JOIN"
-	case FullJoin:
-		return "FULL JOIN"
+type QlJoin struct {
+	Ql       *Ql         `json:"-"`
+	TypeJoin TypeJoin    `json:"type_join"`
+	From     *QlFrom     `json:"from"`
+	With     *QlFrom     `json:"with"`
+	Field    *Field      `json:"field"`
+	Operator string      `json:"operator"`
+	Value    interface{} `json:"value"`
+}
+
+/**
+* QlJoin
+* @param name interface{}
+* @return *Ql
+**/
+func (s *Ql) join(tp TypeJoin, from *QlFrom, with *Model, field string, operator string, value interface{}) *Ql {
+	if from == nil {
+		return s
 	}
 
-	return ""
+	result := &QlJoin{
+		Ql:       s,
+		TypeJoin: tp,
+		From:     from,
+		With:     s.Froms.add(with),
+		Operator: operator,
+	}
+
+	result.Field = from.getField(field, false)
+	switch v := value.(type) {
+	case string:
+		result.Value = with.getField(v, false)
+	default:
+		result.Value = v
+	}
+
+	s.Joins = append(s.Joins, result)
+
+	return s
 }
 
-type QlJoin struct {
-	*QlWhere
-	Ql       *Ql      `json:"-"`
-	TypeJoin TypeJoin `json:"type_join"`
-	With     *QlFrom  `json:"with"`
+/**
+* Join
+* @param with *Model, field string, operator string, value interface{}
+* @return *Ql
+**/
+func (s *Ql) Join(with *Model, field string, operator string, value interface{}) *Ql {
+	var from *QlFrom
+	n := len(s.Joins)
+	if n == 0 {
+		from = s.Froms.getForm(0)
+	} else {
+		from = s.Joins[n-1].With
+	}
+
+	return s.join(InnerJoin, from, with, field, operator, value)
 }
 
-type QlJoins []*QlJoin
+/**
+* LeftJoin
+* @param with *Model, field string, operator string, value interface{}
+* @return *Ql
+**/
+func (s *Ql) LeftJoin(with *Model, field string, operator string, value interface{}) *Ql {
+	var from *QlFrom
+	n := len(s.Joins)
+	if n == 0 {
+		from = s.Froms.getForm(0)
+	} else {
+		from = s.Joins[n-1].With
+	}
+
+	return s.join(LeftJoin, from, with, field, operator, value)
+}
+
+/**
+* RightJoin
+* @param with *Model, field string, operator string, value interface{}
+* @return *Ql
+**/
+func (s *Ql) RightJoin(with *Model, field string, operator string, value interface{}) *Ql {
+	var from *QlFrom
+	n := len(s.Joins)
+	if n == 0 {
+		from = s.Froms.getForm(0)
+	} else {
+		from = s.Joins[n-1].With
+	}
+
+	return s.join(RightJoin, from, with, field, operator, value)
+}
+
+/**
+* FullJoin
+* @param with *Model, field string, operator string, value interface{}
+* @return *Ql
+**/
+func (s *Ql) FullJoin(with *Model, field string, operator string, value interface{}) *Ql {
+	var from *QlFrom
+	n := len(s.Joins)
+	if n == 0 {
+		from = s.Froms.getForm(0)
+	} else {
+		from = s.Joins[n-1].With
+	}
+
+	return s.join(FullJoin, from, with, field, operator, value)
+}
 
 /**
 * Serialize
@@ -80,194 +163,21 @@ func (s *QlJoin) Describe() et.Json {
 }
 
 /**
-* On
-* @param val string
-* @return *QlJoin
-**/
-func (s *QlJoin) On(val string) *QlJoin {
-	field := s.Ql.getField(val)
-	if field != nil {
-		s.setWhere(field)
-	}
-
-	return s
-}
-
-/**
-* And
-* @param val interface{}
-* @return *QlJoin
-**/
-func (s *QlJoin) And(val interface{}) *QlJoin {
-	val = s.Ql.validator(val)
-	if val != nil {
-		s.setAnd(val)
-	}
-
-	return s
-}
-
-/**
-* Or
-* @param val interface{}
-* @return *QlJoin
-**/
-func (s *QlJoin) Or(val interface{}) *QlJoin {
-	val = s.Ql.validator(val)
-	if val != nil {
-		s.setOr(val)
-	}
-
-	return s
-}
-
-/**
-* Select
-* @param fields ...interface{}
-* @return *Ql
-**/
-func (s *QlJoin) Select(fields ...interface{}) *Ql {
-	return s.Ql.Select(fields...)
-}
-
-/**
-* Data
-* @param fields ...interface{}
-* @return *Ql
-**/
-func (s *QlJoin) Data(fields ...interface{}) *Ql {
-	return s.Ql.Data(fields...)
-}
-
-/**
-* QlJoin
-* @param name interface{}
-* @return *Ql
-**/
-func (s *Ql) Join(name interface{}) *QlJoin {
-	var model *Model
-	switch v := name.(type) {
-	case *Model:
-		model = v
-	default:
-		str := fmt.Sprintf("%v", v)
-		model = s.Db.GetModel(str)
-	}
-
-	with := s.Froms.add(model)
-	result := &QlJoin{
-		QlWhere:  newQlWhere(s.validator),
-		Ql:       s,
-		TypeJoin: InnerJoin,
-		With:     with,
-	}
-
-	s.Joins = append(s.Joins, result)
-
-	return result
-}
-
-/**
-* LeftJoin
-* @param m *Model
-* @return *Ql
-**/
-func (s *Ql) LeftJoin(m *Model) *QlJoin {
-	result := s.Join(m)
-	result.TypeJoin = LeftJoin
-
-	return result
-}
-
-/**
-* RightJoin
-* @param m *Model
-* @return *Ql
-**/
-func (s *Ql) RightJoin(m *Model) *QlJoin {
-	result := s.Join(m)
-	result.TypeJoin = RightJoin
-
-	return result
-}
-
-/**
-* FullJoin
-* @param m *Model
-* @return *Ql
-**/
-func (s *Ql) FullJoin(m *Model) *QlJoin {
-	result := s.Join(m)
-	result.TypeJoin = FullJoin
-
-	return result
-}
-
-/**
-* setWheres
-* @param wheres et.Json
-* @return *QlJoin
-**/
-func (s *QlJoin) setWheres(wheres et.Json) *QlJoin {
-	if len(wheres) == 0 {
-		return s
-	}
-
-	and := func(vals []et.Json) {
-		for _, val := range vals {
-			for key := range val {
-				s.setAnd(key)
-				s.setValue(val.Json(key))
-			}
-		}
-	}
-
-	or := func(vals []et.Json) {
-		for _, val := range vals {
-			for key := range val {
-				s.setOr(key)
-				s.setValue(val.Json(key))
-			}
-		}
-	}
-
-	for key := range wheres {
-		key = strings.ToLower(key)
-		if slices.Contains([]string{"and", "or"}, key) {
-			continue
-		}
-
-		val := wheres.Json(key)
-		s.On(key).setValue(val)
-	}
-
-	for key := range wheres {
-		switch strings.ToLower(key) {
-		case "and":
-			vals := wheres.ArrayJson(key)
-			and(vals)
-		case "or":
-			vals := wheres.ArrayJson(key)
-			or(vals)
-		}
-	}
-
-	return s
-}
-
-/**
 * SetJoins
 * @param joins []et.Json
 **/
 func (s *Ql) setJoins(joins []et.Json) *Ql {
 	for _, join := range joins {
-		for key := range join {
-			with := s.Db.GetModel(key)
-			if with != nil {
-				val := join.Json(key)
-				s.Join(with).setWheres(val)
-			}
+		sWith := join.Str("with")
+		with := s.Db.GetModel(sWith)
+		if with == nil {
+			continue
 		}
+
+		field := join.Str("field")
+		operator := join.Str("operator")
+		value := join.Str("value")
+		s.Join(with, field, operator, value)
 	}
 
 	return s
@@ -281,7 +191,10 @@ func (s *Ql) getJoins() []et.Json {
 	result := []et.Json{}
 	for _, join := range s.Joins {
 		item := et.Json{
-			join.With.Name: join.getWheres(),
+			"with":     join.With.Name,
+			"field":    join.Field.Name,
+			"operator": join.Operator,
+			"value":    join.Value,
 		}
 		result = append(result, item)
 	}

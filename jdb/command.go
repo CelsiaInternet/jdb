@@ -70,7 +70,7 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		Id:           utility.UUID(),
 		Command:      command,
 		Db:           model.Db,
-		From:         newForms(),
+		From:         setForms(model),
 		Data:         data,
 		Values:       make([]map[string]*Field, 0),
 		beforeInsert: []DataFunctionTx{},
@@ -85,7 +85,6 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		CurrentMap:   make(map[string]et.Json),
 		ResultMap:    make(map[string]et.Json),
 	}
-	result.From.add(model)
 	result.QlWhere = newQlWhere(result.validator)
 	result.IsDebug = model.IsDebug
 	result.beforeInsert = append(result.beforeInsert, result.beforeInsertDefault)
@@ -93,6 +92,15 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 	result.beforeDelete = append(result.beforeDelete, result.beforeDeleteDefault)
 
 	return result
+}
+
+/**
+* validator
+* validate this val is a field or basic type
+* @return interface{}
+**/
+func (s *Command) validator(val interface{}) interface{} {
+	return s.From.validator(val)
 }
 
 /**
@@ -155,6 +163,14 @@ func (s *Command) Describe() et.Json {
 **/
 func (s *Command) getModel() *Model {
 	return s.From.getModel(0)
+}
+
+/**
+* getFrom
+* @return *QlFrom
+**/
+func (s *Command) GetFrom() *QlFrom {
+	return s.From.getForm(0)
 }
 
 /**

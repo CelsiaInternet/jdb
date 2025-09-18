@@ -8,6 +8,31 @@ import (
 )
 
 /**
+* addDetail
+* @param field *Field
+* @return *Ql
+**/
+func (s *Ql) addDetail(field *Field) *Ql {
+	idx := slices.IndexFunc(s.Details, func(e *Field) bool { return e == field })
+	if idx == -1 {
+		s.Details = append(s.Details, field)
+	}
+
+	return s
+}
+
+/**
+* deleteDetail
+* @param idx int
+* @return *Ql
+**/
+func (s *Ql) deleteDetail(idx int) *Ql {
+	s.Details = append(s.Details[:idx], s.Details[idx+1:]...)
+
+	return s
+}
+
+/**
 * GetDetailsTx
 * @param tx *Tx, data et.Json
 * @return error
@@ -72,7 +97,7 @@ func (s *Ql) GetDetailsTx(tx *Tx, data et.Json) {
 
 			where := col.Detail.GetWhere(data)
 			if s.IsDebug {
-				console.Debug("GetDetailsTx:", where.ToString())
+				console.Log("GetDetailsTx:", where.ToString())
 			}
 
 			ql := From(with).
@@ -88,7 +113,7 @@ func (s *Ql) GetDetailsTx(tx *Tx, data et.Json) {
 
 			idx := slices.IndexFunc(ql.Details, func(e *Field) bool { return e.Column == field.Column })
 			if idx != -1 {
-				ql.Details = append(ql.Details[:idx], ql.Details[idx+1:]...)
+				ql.deleteDetail(idx)
 			}
 
 			if field.TpResult == TpResult {
@@ -139,7 +164,7 @@ func (s *Ql) GetDetailsTx(tx *Tx, data et.Json) {
 
 			where := rollup.Where(data)
 			if s.IsDebug {
-				console.Debug("GetDetailsTx:", where.ToString())
+				console.Log("GetDetailsTx:", where.ToString())
 			}
 
 			ql := From(with).
@@ -155,7 +180,7 @@ func (s *Ql) GetDetailsTx(tx *Tx, data et.Json) {
 
 			idx := slices.IndexFunc(ql.Details, func(e *Field) bool { return e.Column == field.Column })
 			if idx != -1 {
-				ql.Details = append(ql.Details[:idx], ql.Details[idx+1:]...)
+				ql.deleteDetail(idx)
 			}
 
 			if len(ql.Selects) == 0 {
@@ -165,6 +190,10 @@ func (s *Ql) GetDetailsTx(tx *Tx, data et.Json) {
 			result, err := ql.
 				OneTx(tx)
 			if err != nil {
+				continue
+			}
+
+			if !result.Ok {
 				continue
 			}
 
@@ -180,8 +209,14 @@ func (s *Ql) GetDetailsTx(tx *Tx, data et.Json) {
 
 				data.Set(col.Name, object)
 			} else {
-				for _, val := range result.Result {
-					data.Set(col.Name, val)
+				if len(rollup.Fields) == 1 {
+					for _, val := range result.Result {
+						data.Set(col.Name, val)
+					}
+				} else {
+					for key, val := range result.Result {
+						data.Set(key, val)
+					}
 				}
 			}
 		}
@@ -236,7 +271,7 @@ func (s *Ql) setDetail(params et.Json) *Ql {
 
 		idx := slices.IndexFunc(s.Details, func(e *Field) bool { return e.asField() == field.asField() })
 		if idx == -1 {
-			s.Details = append(s.Details, field)
+			s.addDetail(field)
 		}
 
 		field.Select = selects

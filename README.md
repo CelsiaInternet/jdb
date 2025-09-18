@@ -631,6 +631,7 @@ user.DefineObject("address", "addresses", map[string]string{
 ```bash
 # Compilar y ejecutar con race detection
 gofmt -w . && go run --race ./cmd
+gofmt -w . && go run ./cmd
 ```
 
 ### Compilar para producción

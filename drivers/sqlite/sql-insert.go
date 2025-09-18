@@ -16,7 +16,11 @@ import (
 * @return string
 **/
 func (s *SqlLite) sqlInsert(command *jdb.Command) string {
-	from := command.From
+	from := command.GetFrom()
+	if from == nil {
+		return ""
+	}
+
 	columns := utility.NewList()
 	value := ""
 	values := ""
@@ -45,7 +49,7 @@ func (s *SqlLite) sqlInsert(command *jdb.Command) string {
 		values = strs.Append(values, value, ",\n")
 	}
 
-	objects := s.sqlObject(from.GetFrom())
+	objects := s.sqlObject(from)
 	returns := strs.Format("%s AS result", objects)
 	if len(command.Returns) > 0 {
 		returns := ""
@@ -60,5 +64,5 @@ func (s *SqlLite) sqlInsert(command *jdb.Command) string {
 	}
 
 	result := "INSERT INTO %s(%s)\nVALUES %s\nRETURNING\n%s;"
-	return strs.Format(result, tableName(from), strings.Join(columnNames, ", "), values, returns)
+	return strs.Format(result, tableName(from.Model), strings.Join(columnNames, ", "), values, returns)
 }

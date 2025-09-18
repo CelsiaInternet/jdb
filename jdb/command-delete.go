@@ -5,7 +5,7 @@ import "fmt"
 func (s *Command) deleted() error {
 	model := s.getModel()
 	if model == nil {
-		return fmt.Errorf(MSG_MODEL_NOT_FOUND)
+		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
 	if err := s.prepare(); err != nil {

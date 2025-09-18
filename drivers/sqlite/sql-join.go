@@ -1,6 +1,8 @@
 package sqlite
 
 import (
+	"fmt"
+
 	"github.com/celsiainternet/elvis/strs"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
@@ -13,8 +15,7 @@ import (
 func (s *SqlLite) sqlJoin(joins []*jdb.QlJoin) string {
 	result := ""
 	for _, join := range joins {
-		def := s.tableAs(join.With)
-		def = strs.Append(def, whereConditions(join.QlWhere), " ON ")
+		def := fmt.Sprintf("%s ON %s %s %s", s.tableAs(join.With), aliasAsField(*join.Field), join.Operator, whereValue(join.Value))
 		switch join.TypeJoin {
 		case jdb.InnerJoin:
 			def = strs.Append(`INNER JOIN`, def, " ")

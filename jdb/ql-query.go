@@ -3,6 +3,7 @@ package jdb
 import (
 	"fmt"
 
+	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 )
 
@@ -13,7 +14,7 @@ import (
 **/
 func (s *Ql) FirstTx(tx *Tx, n int) (et.Items, error) {
 	if s.Db == nil {
-		return et.Items{}, fmt.Errorf(MSG_DATABASE_NOT_FOUND)
+		return et.Items{}, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
 	s.setTx(tx)
@@ -79,7 +80,7 @@ func (s *Ql) RowsTx(tx *Tx, val int) (et.Items, error) {
 **/
 func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 	if s.Db == nil {
-		return false, fmt.Errorf(MSG_DATABASE_NOT_FOUND)
+		return false, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
 	s.setTx(tx)
@@ -99,7 +100,7 @@ func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 **/
 func (s *Ql) CountedTx(tx *Tx) (int, error) {
 	if s.Db == nil {
-		return 0, fmt.Errorf(MSG_DATABASE_NOT_FOUND)
+		return 0, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
 	s.setTx(tx)
@@ -204,6 +205,8 @@ func (s *Ql) queryTx(tx *Tx, params et.Json) (et.Json, error) {
 	page := params.Int("page")
 	limit := params.ValInt(30, "limit")
 	debug := params.Bool("debug")
+
+	console.Debug(params.ToString())
 
 	result, err := s.
 		setJoins(joins).

@@ -38,7 +38,7 @@ func (s *DB) defineSchema() error {
 
 	coreSchema = NewSchema(s, "core")
 	if coreSchema == nil {
-		return fmt.Errorf(MSG_SCHEMA_NOT_FOUND)
+		return fmt.Errorf(MSG_SCHEMA_IS_REQUIRED)
 	}
 
 	return nil

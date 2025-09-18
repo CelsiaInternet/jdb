@@ -38,6 +38,16 @@ type Ql struct {
 }
 
 /**
+* validator
+* validate this val is a field or basic type
+* @param val interface{}
+* @return interface{}
+**/
+func (s *Ql) validator(val interface{}) interface{} {
+	return s.Froms.validator(val)
+}
+
+/**
 * Describe
 * @return et.Json
 **/

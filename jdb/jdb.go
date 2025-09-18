@@ -219,12 +219,12 @@ func GetModel(name string) *Model {
 	}
 
 	if len(list) == 2 {
-		schema := db.GetSchema(list[1])
+		schema := db.GetSchema(list[0])
 		if schema == nil {
 			return nil
 		}
 
-		return schema.GetModel(list[2])
+		return schema.GetModel(list[1])
 	}
 
 	if len(list) == 3 {
@@ -345,10 +345,10 @@ func describe(kind, name string) (et.Json, error) {
 		list := strs.Split(name, ".")
 		if len(list) != 2 {
 			return et.Json{
-				"message": MSG_INVALID_NAME,
+				"message": fmt.Sprintf(MSG_INVALID_NAME, name),
 				"help":    "It is required at least two parts in the name of the field, first part is the name of model and second is field name.",
 				"example": "model.field",
-			}, fmt.Errorf(MSG_INVALID_NAME)
+			}, fmt.Errorf(MSG_INVALID_NAME, name)
 		}
 
 		model := GetModel(list[0])

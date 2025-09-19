@@ -206,7 +206,9 @@ func (s *Ql) queryTx(tx *Tx, params et.Json) (et.Json, error) {
 	limit := params.ValInt(30, "limit")
 	debug := params.Bool("debug")
 
-	console.Debug(params.ToString())
+	if debug {
+		console.Debug(params.ToEscapeHTML())
+	}
 
 	result, err := s.
 		setJoins(joins).

@@ -1135,25 +1135,6 @@ func (s *Model) DefineCalc(name string, fn DataFunction) *Model {
 }
 
 /**
-* DefineConcurrent
-* @param name string, fn DataFunction
-* @return Model
-**/
-func (s *Model) DefineConcurrent(name string, fn DataFunction) *Model {
-	result := s.getColumn(name)
-	if result != nil {
-		result.CalcFunction = fn
-		return s
-	}
-
-	result = newColumn(s, name, "", TpConcurrent, TypeDataNone, TypeDataNone.DefaultValue())
-	result.CalcFunction = fn
-	s.addColumn(result)
-
-	return s
-}
-
-/**
 * defineFields
 * @param fields et.Json
 **/

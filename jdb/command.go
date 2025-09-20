@@ -91,6 +91,30 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 	result.beforeUpdate = append(result.beforeUpdate, result.beforeUpdateDefault)
 	result.beforeDelete = append(result.beforeDelete, result.beforeDeleteDefault)
 
+	for _, fn := range model.beforeInsert {
+		result.beforeInsert = append(result.beforeInsert, fn)
+	}
+
+	for _, fn := range model.beforeUpdate {
+		result.beforeUpdate = append(result.beforeUpdate, fn)
+	}
+
+	for _, fn := range model.beforeDelete {
+		result.beforeDelete = append(result.beforeDelete, fn)
+	}
+
+	for _, fn := range model.afterInsert {
+		result.afterInsert = append(result.afterInsert, fn)
+	}
+
+	for _, fn := range model.afterUpdate {
+		result.afterUpdate = append(result.afterUpdate, fn)
+	}
+
+	for _, fn := range model.afterDelete {
+		result.afterDelete = append(result.afterDelete, fn)
+	}
+
 	return result
 }
 

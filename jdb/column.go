@@ -17,7 +17,6 @@ const (
 	TpCalc
 	TpRelatedTo
 	TpRollup
-	TpConcurrent
 )
 
 func (s TypeColumn) Str() string {
@@ -32,8 +31,6 @@ func (s TypeColumn) Str() string {
 		return "related_to"
 	case TpRollup:
 		return "rollup"
-	case TpConcurrent:
-		return "concurrent"
 	}
 
 	return "attribute"
@@ -56,8 +53,6 @@ func StrsToTypeColumn(strs string) TypeColumn {
 		return TpRelatedTo
 	case "rollup":
 		return TpRollup
-	case "concurrent":
-		return TpConcurrent
 	}
 
 	return TpAtribute

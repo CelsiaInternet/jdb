@@ -41,6 +41,7 @@ var (
 	ErrNotUpdated  = fmt.Errorf("record not updated")
 	ErrNotFound    = fmt.Errorf("record not found")
 	ErrNotUpserted = fmt.Errorf("record not inserted or updated")
+	ErrDuplicate   = fmt.Errorf("record duplicate")
 )
 
 type Model struct {

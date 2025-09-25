@@ -2,8 +2,6 @@ package jdb
 
 import (
 	"fmt"
-
-	"github.com/celsiainternet/elvis/et"
 )
 
 func (s *Command) updated() error {
@@ -35,11 +33,7 @@ func (s *Command) updated() error {
 		return err
 	}
 
-	for key, after := range s.ResultMap {
-		before := s.CurrentMap[key]
-		if before == nil {
-			before = et.Json{}
-		}
+	for _, after := range s.ResultMap {
 		for _, fn := range model.afterUpdate {
 			err := fn(s.tx, after)
 			if err != nil {

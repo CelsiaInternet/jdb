@@ -78,7 +78,7 @@ go get github.com/celsiainternet/jdb@v0.0.45
 
 ```bash
 # Dependencia principal
-go get github.com/celsiainternet/elvis@v1.1.145
+go get github.com/celsiainternet/elvis@v1.1.146
 
 # Drivers de base de datos incluidos
 # - PostgreSQL: github.com/lib/pq v1.10.9

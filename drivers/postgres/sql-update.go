@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"fmt"
+
 	"github.com/celsiainternet/elvis/strs"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
@@ -28,7 +30,7 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) string {
 			} else if field.Column.TypeColumn == jdb.TpAtribute && from.SourceField != nil {
 				val := jdb.JsonQuote(field.Value)
 				if len(atribs) == 0 {
-					atribs = from.SourceField.Name
+					atribs = fmt.Sprintf("COALESCE(%s, '{}')", from.SourceField.Name)
 					atribs = strs.Format("jsonb_set(%s, '{%s}', %v::jsonb, true)", atribs, key, val)
 				} else {
 					atribs = strs.Format("jsonb_set(\n%s, \n'{%s}', %v::jsonb, true)", atribs, key, val)

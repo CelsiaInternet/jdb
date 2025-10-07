@@ -10,6 +10,8 @@ github.com/celsiainternet/elvis v1.1.147 h1:QfgecKK0R5pGhUsFuQMy9Pk+qlHEjv9Bm2PZ
 github.com/celsiainternet/elvis v1.1.147/go.mod h1:nVA8BeO2jw2W0gQfDSHxzD0V7l9kHibRUcqJuU3+b5E=
 github.com/celsiainternet/elvis v1.1.148 h1:U17cD/fBPuhsDQPzXqVUL7ZqyocoHHHQT5l87qpvq98=
 github.com/celsiainternet/elvis v1.1.148/go.mod h1:nVA8BeO2jw2W0gQfDSHxzD0V7l9kHibRUcqJuU3+b5E=
+github.com/celsiainternet/elvis v1.1.150 h1:kTiN77Qzn2XGzvNZxnqy1oFi7ppMm/EFOLayvl1wA1A=
+github.com/celsiainternet/elvis v1.1.150/go.mod h1:nVA8BeO2jw2W0gQfDSHxzD0V7l9kHibRUcqJuU3+b5E=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

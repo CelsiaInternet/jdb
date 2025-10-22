@@ -203,7 +203,7 @@ func (s *Ql) queryTx(tx *Tx, params et.Json) (et.Json, error) {
 	havings := params.Json("having")
 	orderBy := params.Json("order_by")
 	page := params.Int("page")
-	limit := params.ValInt(30, "limit")
+	limit := params.ValInt(1000, "limit")
 	debug := params.Bool("debug")
 
 	if debug {

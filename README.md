@@ -1,13 +1,13 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v0.0.63-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v0.0.64-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
 JDB es una librería de Go que proporciona una interfaz unificada y simplificada para trabajar con múltiples bases de datos. Ofrece soporte para PostgreSQL, MySQL, SQLite y Oracle con una API consistente y fácil de usar.
 
-## Últimas Actualizaciones (v0.0.63)
+## Últimas Actualizaciones (v0.0.64)
 
 - **Dependencias actualizadas**: Elvis v1.1.127, Chi router v5.2.2
 - **Drivers mejorados**: MySQL v1.9.3, PostgreSQL v1.10.9, SQLite v1.37.1
@@ -71,14 +71,14 @@ JDB es una librería de Go que proporciona una interfaz unificada y simplificada
 
 ```bash
 go get github.com/celsiainternet/jdb
-go get github.com/celsiainternet/jdb@v0.0.63
+go get github.com/celsiainternet/jdb@v0.0.64
 ```
 
 ### Dependencias Principales
 
 ```bash
 # Dependencia principal
-go get github.com/celsiainternet/elvis@v1.1.163
+go get github.com/celsiainternet/elvis@v1.1.164
 
 # Drivers de base de datos incluidos
 # - PostgreSQL: github.com/lib/pq v1.10.9
@@ -662,7 +662,7 @@ gofmt -w . && go build -a -o ./jdb ./cmd
 
 ### Información de Versión
 
-**Versión Actual**: v0.0.63
+**Versión Actual**: v0.0.64
 
 El sistema de versionado es automático y sigue el estándar semántico (SemVer):
 

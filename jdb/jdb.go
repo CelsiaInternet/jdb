@@ -94,7 +94,7 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 		return nil, err
 	}
 
-	result, err := NewDatabase(connection.Id, connection.Name, connection.Driver)
+	result, err := NewDatabase(connection.Name, connection.Driver)
 	if err != nil {
 		return nil, err
 	}

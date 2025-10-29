@@ -79,5 +79,15 @@ func load() (*ConnectParams, error) {
 		return nil, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
-	return &params, nil
+	result := &ConnectParams{
+		Id:       params.Id,
+		Driver:   params.Driver,
+		Name:     params.Name,
+		UserCore: params.UserCore,
+		NodeId:   params.NodeId,
+		Debug:    params.Debug,
+		Params:   params.Params,
+	}
+
+	return result, nil
 }

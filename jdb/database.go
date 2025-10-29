@@ -10,6 +10,7 @@ import (
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/timezone"
+	"github.com/celsiainternet/elvis/utility"
 )
 
 type DB struct {
@@ -31,12 +32,12 @@ type DB struct {
 }
 
 /**
-* NewDatabaseById
-* @param id, name, driver string
+* NewDatabase
+* @param name, driver string
 * @return *DB, error
 **/
-func NewDatabase(id, name, driver string) (*DB, error) {
-	idx := slices.IndexFunc(conn.DBS, func(e *DB) bool { return e.Id == id })
+func NewDatabase(name, driver string) (*DB, error) {
+	idx := slices.IndexFunc(conn.DBS, func(e *DB) bool { return e.Name == name })
 	if idx != -1 {
 		return conn.DBS[idx], nil
 	}
@@ -53,7 +54,7 @@ func NewDatabase(id, name, driver string) (*DB, error) {
 	result := &DB{
 		CreatedAt: now,
 		UpdateAt:  now,
-		Id:        id,
+		Id:        utility.UUID(),
 		Name:      name,
 		schemas:   make([]*Schema, 0),
 		models:    make([]*Model, 0),

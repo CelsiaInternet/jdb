@@ -3,7 +3,7 @@ module github.com/celsiainternet/jdb
 go 1.23.0
 
 require (
-	github.com/celsiainternet/elvis v1.1.172
+	github.com/celsiainternet/elvis v1.1.173
 	github.com/go-sql-driver/mysql v1.9.3
 	modernc.org/sqlite v1.37.1
 )

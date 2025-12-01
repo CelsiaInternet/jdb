@@ -9,7 +9,7 @@ import (
 	"github.com/celsiainternet/elvis/event"
 )
 
-func TipoSQL(query string) string {
+func tipoSQL(query string) string {
 	q := strings.TrimSpace(strings.ToUpper(query))
 
 	parts := strings.Fields(q)
@@ -27,98 +27,101 @@ func TipoSQL(query string) string {
 	case "CREATE", "ALTER", "DROP", "TRUNCATE":
 		return "definition"
 	case "GRANT", "REVOKE":
-		return "definition"
+		return "control"
 	case "COMMIT", "ROLLBACK", "SAVEPOINT", "SET":
-		return "definition"
+		return "transaction"
 	default:
 		return "desconocido"
 	}
 }
 
 /**
+* RowsToItems
+* @param rows *sql.Rows
+* @return et.Items
+**/
+func RowsToItems(rows *sql.Rows) et.Items {
+	var result = et.Items{Result: []et.Json{}}
+
+	append := func(item et.Json) {
+		result.Add(item)
+	}
+
+	for rows.Next() {
+		var item et.Json
+		item.ScanRows(rows)
+
+		if len(item) == 1 {
+			for _, v := range item {
+				switch val := v.(type) {
+				case et.Json:
+					append(val)
+				case map[string]interface{}:
+					append(et.Json(val))
+				default:
+					append(item)
+				}
+			}
+		} else {
+			append(item)
+		}
+	}
+
+	return result
+}
+
+/**
 * queryTx
-* @param db *sql.DB, tx *Tx, sourceFiled, sql string, arg ...any
+* @param db *DB, tx *Tx, sql string, arg ...any
 * @return *sql.Rows, error
 **/
-func queryTx(db *sql.DB, tx *Tx, sourceFiled, sql string, arg ...any) (et.Items, error) {
+func queryTx(db *DB, tx *Tx, query string, arg ...any) (et.Items, error) {
+	data := et.Json{
+		"db_name": db.Name,
+		"query":   query,
+		"args":    arg,
+	}
+
+	var err error
+	var rows *sql.Rows
 	if tx != nil {
-		err := tx.Begin(db)
+		err = tx.Begin(db.Db)
 		if err != nil {
 			return et.Items{}, err
 		}
 
-		rows, err := tx.Tx.Query(sql, arg...)
+		rows, err = tx.Tx.Query(query, arg...)
 		if err != nil {
 			errRollback := tx.Rollback()
 			if errRollback != nil {
+				data["error"] = err.Error()
+				event.Publish(EVENT_SQL_ERROR, data)
 				err = fmt.Errorf("error on rollback: %w: %s", errRollback, err)
 			}
 
 			return et.Items{}, err
 		}
-		defer rows.Close()
-
-		if sourceFiled != "" {
-			return RowsToSourceItems(rows, sourceFiled), nil
+	} else {
+		rows, err = db.Db.Query(query, arg...)
+		if err != nil {
+			return et.Items{}, err
 		}
-
-		return RowsToItems(rows), nil
 	}
 
-	rows, err := db.Query(sql, arg...)
-	if err != nil {
-		return et.Items{}, err
-	}
-	defer rows.Close()
-
-	if sourceFiled != "" {
-		return RowsToSourceItems(rows, sourceFiled), nil
-	}
-
-	return RowsToItems(rows), nil
-}
-
-/**
-* query
-* @param db *DB, tx *Tx, sourceFiled, sql string, arg ...any
-* @return et.Items, error
-**/
-func query(db *DB, tx *Tx, sourceFiled, sql string, arg ...any) (et.Items, error) {
-	sql = SQLParse(sql, arg...)
-	data := et.Json{
-		"db_name": db.Name,
-		"sql":     sql,
-	}
-
-	result, err := queryTx(db.db, tx, sourceFiled, sql)
-	if err != nil {
-		data["error"] = err.Error()
-		event.Publish(EVENT_SQL_ERROR, data)
-		return et.Items{}, fmt.Errorf("query error: %s\nsql: %s\n", err.Error(), sql)
-	}
-
-	if tx != nil {
-		if tx.Committed {
-			tp := TipoSQL(sql)
-			event.Publish(fmt.Sprintf("sql:%s", tp), data)
-		}
-
-		return result, nil
-	}
-
-	tp := TipoSQL(sql)
+	tp := tipoSQL(query)
 	event.Publish(fmt.Sprintf("sql:%s", tp), data)
-
+	defer rows.Close()
+	result := RowsToItems(rows)
 	return result, nil
 }
 
 /**
 * QueryTx
-* @param db *DB, tx *Tx, sourceFiled, sql string, arg ...any
+* @param db *DB, tx *Tx, sql string, arg ...any
 * @return et.Items, error
 **/
 func QueryTx(db *DB, tx *Tx, sql string, arg ...any) (et.Items, error) {
-	return query(db, tx, "", sql, arg...)
+	return queryTx(db, tx, sql, arg...)
 }
 
 /**
@@ -128,45 +131,4 @@ func QueryTx(db *DB, tx *Tx, sql string, arg ...any) (et.Items, error) {
 **/
 func Query(db *DB, sql string, arg ...any) (et.Items, error) {
 	return QueryTx(db, nil, sql, arg...)
-}
-
-/**
-* ResultTx
-* @param db *DB, tx *Tx, sql string, arg ...any
-* @return et.Items, error
-**/
-func ResultTx(db *DB, tx *Tx, sql string, arg ...any) (et.Items, error) {
-	return query(db, tx, "result", sql, arg...)
-}
-
-/**
-* Result
-* @param db *DB, tx *Tx, sql string, arg ...any
-* @return et.Items, error
-**/
-func Result(db *DB, sql string, arg ...any) (et.Items, error) {
-	return ResultTx(db, nil, sql, arg...)
-}
-
-/**
-* DefinitionTx
-* @param db *DB, tx *Tx, sql string, arg ...any
-* @return error
-**/
-func DefinitionTx(db *DB, tx *Tx, sql string, arg ...any) error {
-	_, err := query(db, tx, "", sql, arg...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-/**
-* Definition
-* @param db *DB, sql string, arg ...any
-* @return error
-**/
-func Definition(db *DB, sql string, arg ...any) error {
-	return DefinitionTx(db, nil, sql, arg...)
 }

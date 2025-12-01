@@ -127,17 +127,13 @@ func (s *DB) deleteRecycling(tx *Tx, schema, name, sysId string) error {
 		return fmt.Errorf(MSG_ATTRIBUTE_REQUIRED, "table_name")
 	}
 
-	item, err := coreRecycling.
+	_, err := coreRecycling.
 		Delete("schema_name").Eq(schema).
 		And("table_name").Eq(name).
 		And(cf.SystemId).Eq(sysId).
 		ExecTx(tx)
 	if err != nil {
 		return err
-	}
-
-	if !item.Ok {
-		return fmt.Errorf(MSG_RECORD_NOT_FOUND)
 	}
 
 	return nil

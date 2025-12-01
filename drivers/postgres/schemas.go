@@ -27,7 +27,7 @@ func (s *Postgres) loadSchema(name string) error {
 	}
 
 	sql := jdb.SQLDDL(`CREATE SCHEMA IF NOT EXISTS $1`, name)
-	err = jdb.Definition(s.jdb, sql)
+	_, err = jdb.Query(s.jdb, sql)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (s *Postgres) DropSchema(name string) error {
 	}
 
 	sql := jdb.SQLDDL(`DROP SCHEMA IF EXISTS $1 CASCADE`, name)
-	err := jdb.Definition(s.jdb, sql)
+	_, err := jdb.Query(s.jdb, sql)
 	if err != nil {
 		return err
 	}
@@ -68,12 +68,12 @@ func (s *Postgres) existSchema(name string) (bool, error) {
 		return false, fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
 
-	items, err := jdb.Query(s.jdb, `
+	sql := `
 	SELECT EXISTS(
-		SELECT 1
-		FROM information_schema.schemata
-		WHERE UPPER(schema_name) = UPPER($1)
-	);`, name)
+	SELECT 1
+	FROM information_schema.schemata
+	WHERE UPPER(schema_name) = UPPER($1));`
+	items, err := jdb.Query(s.jdb, sql, name)
 	if err != nil {
 		return false, err
 	}

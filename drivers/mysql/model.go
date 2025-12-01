@@ -57,7 +57,7 @@ func (s *Mysql) LoadModel(model *jdb.Model) error {
 			console.Debug(sql)
 		}
 
-		err = jdb.Definition(s.jdb, sql)
+		_, err = jdb.Query(s.jdb, sql)
 		if err != nil {
 			return err
 		}

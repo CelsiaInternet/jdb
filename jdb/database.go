@@ -21,8 +21,8 @@ type DB struct {
 	Description   string        `json:"description"`
 	UseCore       bool          `json:"use_core"`
 	NodeId        int           `json:"node_id"`
+	Db            *sql.DB       `json:"-"`
 	connectParams ConnectParams `json:"-"`
-	db            *sql.DB       `json:"-"`
 	driver        Driver        `json:"-"`
 	schemas       []*Schema     `json:"-"`
 	models        []*Model      `json:"-"`
@@ -70,11 +70,11 @@ func NewDatabase(name, driver string) (*DB, error) {
 * @return bool
 **/
 func (s *DB) HealthCheck() bool {
-	if s.db == nil {
+	if s.Db == nil {
 		return false
 	}
 
-	err := s.db.Ping()
+	err := s.Db.Ping()
 	if err != nil {
 		return false
 	}
@@ -100,11 +100,11 @@ func (s *DB) serialize() ([]byte, error) {
 * @return error
 **/
 func (s *DB) Ping() error {
-	if s.db == nil {
+	if s.Db == nil {
 		return fmt.Errorf(MSG_DB_NOT_CONNECTED)
 	}
 
-	return s.db.Ping()
+	return s.Db.Ping()
 }
 
 /**
@@ -112,11 +112,11 @@ func (s *DB) Ping() error {
 * @return error
 **/
 func (s *DB) Restore() error {
-	if s.db == nil {
+	if s.Db == nil {
 		return fmt.Errorf(MSG_DB_NOT_CONNECTED)
 	}
 
-	err := s.db.Close()
+	err := s.Db.Close()
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func (s *DB) Conected(connection ConnectParams) error {
 		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
-	if s.db != nil {
+	if s.Db != nil {
 		return nil
 	}
 
@@ -249,7 +249,7 @@ func (s *DB) Conected(connection ConnectParams) error {
 		return err
 	}
 
-	s.db = db
+	s.Db = db
 
 	return nil
 }
@@ -259,11 +259,11 @@ func (s *DB) Conected(connection ConnectParams) error {
 * @return error
 **/
 func (s *DB) Disconected() error {
-	if s.db == nil {
+	if s.Db == nil {
 		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
-	return s.db.Close()
+	return s.Db.Close()
 }
 
 /**
@@ -479,7 +479,7 @@ func (s *DB) Command(command *Command) (et.Items, error) {
 * @return et.Items, error
 **/
 func (s *DB) Query(sql string, arg ...any) (et.Items, error) {
-	if s.db == nil {
+	if s.Db == nil {
 		return et.Items{}, fmt.Errorf(MSG_DATABASE_NOT_CONNECTED)
 	}
 

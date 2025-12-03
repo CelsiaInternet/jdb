@@ -161,64 +161,44 @@ func NewModel(schema *Schema, name string, version int) *Model {
 		return schema.Db.models[idx]
 	}
 
-	newModel := func() *Model {
-		now := timezone.NowTime()
-		result := &Model{
-			Db:                 schema.Db,
-			schema:             schema,
-			Schema:             schema.Name,
-			Table:              name,
-			CreatedAt:          now,
-			UpdateAt:           now,
-			Id:                 reg.GenUlId("model"),
-			Name:               name,
-			UseCore:            schema.UseCore,
-			Definitions:        et.Json{},
-			Columns:            make([]*Column, 0),
-			PrimaryKeys:        make(map[string]*Column),
-			ForeignKeys:        make(map[string]*Relation),
-			Indices:            make(map[string]*Index),
-			Uniques:            make(map[string]*Index),
-			RelationsTo:        make(map[string]*Relation),
-			RelationsFrom:      make(map[string]*Relation),
-			Joins:              make(map[string]*Join),
-			Required:           make(map[string]bool),
-			TpId:               TpUUId,
-			beforeInsert:       []DataFunctionTx{},
-			beforeUpdate:       []DataFunctionTx{},
-			beforeDelete:       []DataFunctionTx{},
-			afterInsert:        []DataFunctionTx{},
-			afterUpdate:        []DataFunctionTx{},
-			afterDelete:        []DataFunctionTx{},
-			eventEmiterChannel: make(chan event.EvenMessage),
-			eventsEmiter:       make(map[string]event.Handler),
-			Version:            version,
-			IsDebug:            schema.Db.IsDebug,
-		}
-		result.AfterInsert(result.afterInsertDefault)
-		result.AfterUpdate(result.afterUpdateDefault)
-		result.AfterDelete(result.afterDeleteDefault)
-
-		schema.addModel(result)
-		return result
+	now := timezone.NowTime()
+	result := &Model{
+		Db:                 schema.Db,
+		schema:             schema,
+		Schema:             schema.Name,
+		Table:              name,
+		CreatedAt:          now,
+		UpdateAt:           now,
+		Id:                 reg.GenUlId("model"),
+		Name:               name,
+		UseCore:            schema.UseCore,
+		Definitions:        et.Json{},
+		Columns:            make([]*Column, 0),
+		PrimaryKeys:        make(map[string]*Column),
+		ForeignKeys:        make(map[string]*Relation),
+		Indices:            make(map[string]*Index),
+		Uniques:            make(map[string]*Index),
+		RelationsTo:        make(map[string]*Relation),
+		RelationsFrom:      make(map[string]*Relation),
+		Joins:              make(map[string]*Join),
+		Required:           make(map[string]bool),
+		TpId:               TpUUId,
+		beforeInsert:       []DataFunctionTx{},
+		beforeUpdate:       []DataFunctionTx{},
+		beforeDelete:       []DataFunctionTx{},
+		afterInsert:        []DataFunctionTx{},
+		afterUpdate:        []DataFunctionTx{},
+		afterDelete:        []DataFunctionTx{},
+		eventEmiterChannel: make(chan event.EvenMessage),
+		eventsEmiter:       make(map[string]event.Handler),
+		Version:            version,
+		IsDebug:            schema.Db.IsDebug,
 	}
+	result.AfterInsert(result.afterInsertDefault)
+	result.AfterUpdate(result.afterUpdateDefault)
+	result.AfterDelete(result.afterDeleteDefault)
 
-	if !schema.UseCore || !schema.Db.isInit {
-		return newModel()
-	}
-
-	var result *Model
-	err := schema.Db.Load("model", name, &result)
-	if err != nil {
-		return newModel()
-	}
-
-	result, err = loadModel(schema, result)
-	if err != nil {
-		result = newModel()
-	}
-
-	result.needMutate = version > result.Version
+	schema.addModel(result)
 	return result
 }
 

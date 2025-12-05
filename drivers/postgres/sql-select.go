@@ -26,7 +26,7 @@ func (s *Postgres) sqlSelect(ql *jdb.Ql) string {
 		result = s.sqlObjectOrders(ql.Selects, ql.Orders)
 	}
 
-	result = strs.Append("\nSELECT DISTINCT", result, "\n")
+	result = strs.Append("\nSELECT", result, "\n")
 
 	return result
 }
@@ -195,14 +195,6 @@ func jsonBuildObject(result, obj string) string {
 func (s *Postgres) sqlObjectOrders(selects []*jdb.Field, orders *jdb.QlOrder) string {
 	result := s.sqlBuildObject(selects)
 	result = strs.Append(result, "result", " AS ")
-	for _, ord := range orders.Asc {
-		def := aliasAsField(*ord)
-		result = strs.Append(result, def, ",\n")
-	}
-	for _, ord := range orders.Desc {
-		def := aliasAsField(*ord)
-		result = strs.Append(result, def, ",\n")
-	}
 
 	return result
 }
@@ -244,15 +236,6 @@ func (s *Postgres) Select(ql *jdb.Ql) (et.Items, error) {
 
 	if ql.IsDebug {
 		console.Debug(ql.Sql)
-	}
-
-	if ql.TypeSelect == jdb.Source {
-		result, err := jdb.QueryTx(s.jdb, ql.Tx(), ql.Sql)
-		if err != nil {
-			return et.Items{}, err
-		}
-
-		return result, nil
 	}
 
 	result, err := jdb.QueryTx(s.jdb, ql.Tx(), ql.Sql)

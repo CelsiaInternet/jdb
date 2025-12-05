@@ -71,14 +71,14 @@ JDB es una librería de Go que proporciona una interfaz unificada y simplificada
 
 ```bash
 go get github.com/celsiainternet/jdb
-go get github.com/celsiainternet/jdb@v0.0.84
+go get github.com/celsiainternet/jdb@v0.0.85
 ```
 
 ### Dependencias Principales
 
 ```bash
 # Dependencia principal
-go get github.com/celsiainternet/elvis@v1.1.183
+go get github.com/celsiainternet/elvis@v1.1.185
 
 # Drivers de base de datos incluidos
 # - PostgreSQL: github.com/lib/pq v1.10.9
@@ -87,6 +87,8 @@ go get github.com/celsiainternet/elvis@v1.1.183
 # - HTTP Router: github.com/go-chi/chi/v5 v5.2.2
 # - Utilidades adicionales: ULID, UUID, Redis, NATS
 ```
+
+/services/clients/services/all?state=0&search=&page=1&rows=30&select
 
 ## Configuración
 

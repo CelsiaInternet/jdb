@@ -23,10 +23,10 @@ func (s *Mysql) sqlSelect(ql *jdb.Ql) string {
 	if ql.TypeSelect == jdb.Select {
 		result = s.sqlColumns(ql.Selects)
 	} else {
-		result = s.sqlObjectOrders(ql.Selects, ql.Orders)
+		result = s.sqlAtributes(ql.Selects)
 	}
 
-	result = strs.Append("\nSELECT DISTINCT", result, "\n")
+	result = strs.Append("\nSELECT", result, "\n")
 
 	return result
 }
@@ -183,21 +183,13 @@ func (s *Mysql) sqlBuildObject(selects []*jdb.Field) string {
 }
 
 /**
-* sqlObjectOrders
-* @param selects []*jdb.Field, orders *jdb.QlOrder
+* sqlAtributes
+* @param selects []*jdb.Field
 * @return string
 **/
-func (s *Mysql) sqlObjectOrders(selects []*jdb.Field, orders *jdb.QlOrder) string {
+func (s *Mysql) sqlAtributes(selects []*jdb.Field) string {
 	result := s.sqlBuildObject(selects)
 	result = strs.Append(result, "result", " AS ")
-	for _, ord := range orders.Asc {
-		def := aliasAsField(*ord)
-		result = strs.Append(result, def, ",\n")
-	}
-	for _, ord := range orders.Desc {
-		def := aliasAsField(*ord)
-		result = strs.Append(result, def, ",\n")
-	}
 
 	return result
 }

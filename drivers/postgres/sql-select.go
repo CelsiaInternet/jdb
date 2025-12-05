@@ -23,7 +23,7 @@ func (s *Postgres) sqlSelect(ql *jdb.Ql) string {
 	if ql.TypeSelect == jdb.Select {
 		result = s.sqlColumns(ql.Selects)
 	} else {
-		result = s.sqlObjectOrders(ql.Selects, ql.Orders)
+		result = s.sqlAtributes(ql.Selects)
 	}
 
 	result = strs.Append("\nSELECT", result, "\n")
@@ -188,11 +188,11 @@ func jsonBuildObject(result, obj string) string {
 }
 
 /**
-* sqlObjectOrders
-* @param selects []*jdb.Field, orders *jdb.QlOrder
+* sqlAtributes
+* @param selects []*jdb.Field
 * @return string
 **/
-func (s *Postgres) sqlObjectOrders(selects []*jdb.Field, orders *jdb.QlOrder) string {
+func (s *Postgres) sqlAtributes(selects []*jdb.Field) string {
 	result := s.sqlBuildObject(selects)
 	result = strs.Append(result, "result", " AS ")
 

@@ -23,10 +23,10 @@ func (s *SqlLite) sqlSelect(ql *jdb.Ql) string {
 	if ql.TypeSelect == jdb.Select {
 		result = s.sqlColumns(ql.Selects)
 	} else {
-		result = s.sqlObjectOrders(ql.Selects, ql.Orders)
+		result = s.sqlAtributes(ql.Selects)
 	}
 
-	result = strs.Append("\nSELECT DISTINCT", result, "\n")
+	result = strs.Append("\nSELECT", result, "\n")
 
 	return result
 }
@@ -183,21 +183,13 @@ func (s *SqlLite) sqlBuildObject(selects []*jdb.Field) string {
 }
 
 /**
-* sqlObjectOrders
-* @param selects []*jdb.Field, orders *jdb.QlOrder
+* sqlAtributes
+* @param selects []*jdb.Field
 * @return string
 **/
-func (s *SqlLite) sqlObjectOrders(selects []*jdb.Field, orders *jdb.QlOrder) string {
+func (s *SqlLite) sqlAtributes(selects []*jdb.Field) string {
 	result := s.sqlBuildObject(selects)
 	result = strs.Append(result, "result", " AS ")
-	for _, ord := range orders.Asc {
-		def := aliasAsField(*ord)
-		result = strs.Append(result, def, ",\n")
-	}
-	for _, ord := range orders.Desc {
-		def := aliasAsField(*ord)
-		result = strs.Append(result, def, ",\n")
-	}
 
 	return result
 }

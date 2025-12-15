@@ -15,15 +15,6 @@ func (s *DB) createCore() error {
 	if err := s.defineModel(); err != nil {
 		return err
 	}
-	if err := s.defineRecords(); err != nil {
-		return err
-	}
-	if err := s.defineTables(); err != nil {
-		return err
-	}
-	if err := s.defineRecycling(); err != nil {
-		return err
-	}
 	if err := s.defineSeries(); err != nil {
 		return err
 	}

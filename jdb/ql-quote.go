@@ -1,6 +1,7 @@
 package jdb
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -44,9 +45,9 @@ func quote(str string) string {
 * @return any
 **/
 func Quote(val interface{}) any {
-	fmt := `'%s'`
+	format := `'%s'`
 	if quotedChar == `"` {
-		fmt = `"%s"`
+		format = `"%s"`
 	}
 	switch v := val.(type) {
 	case string:
@@ -66,29 +67,30 @@ func Quote(val interface{}) any {
 	case bool:
 		return v
 	case time.Time:
-		return strs.Format(fmt, v.Format("2006-01-02 15:04:05"))
+		return strs.Format(format, v.Format("2006-01-02 15:04:05"))
 	case []string:
 		bt, err := json.Marshal(v)
 		if err != nil {
 			logs.Errorf("Quote", "type:%v, value:%v, error marshalling array: %v", reflect.TypeOf(v), v, err)
-			return strs.Format(fmt, `[]`)
+			return strs.Format(format, `[]`)
 		}
-		return strs.Format(fmt, string(bt))
+		return strs.Format(format, string(bt))
 	case et.Json:
-		return strs.Format(fmt, v.ToString())
+		return strs.Format(format, v.ToString())
 	case map[string]interface{}:
-		return strs.Format(fmt, et.Json(v).ToString())
+		return strs.Format(format, et.Json(v).ToString())
 	case []et.Json, []interface{}, []map[string]interface{}:
 		bt, err := json.Marshal(v)
 		if err != nil {
 			logs.Errorf("Quote", "type:%v, value:%v, error marshalling array: %v", reflect.TypeOf(v), v, err)
-			return strs.Format(fmt, `[]`)
+			return strs.Format(format, `[]`)
 		}
-		return strs.Format(fmt, string(bt))
+		return strs.Format(format, string(bt))
 	case []uint8:
-		return strs.Format(fmt, string(v))
+		b := []byte(val.([]uint8))
+		return fmt.Sprintf("'\\x%s'", hex.EncodeToString(b))
 	case nil:
-		return strs.Format(`%s`, "NULL")
+		return fmt.Sprintf(`%s`, "NULL")
 	default:
 		logs.Errorf("Quote", "type:%v, value:%v", reflect.TypeOf(v), v)
 		return val

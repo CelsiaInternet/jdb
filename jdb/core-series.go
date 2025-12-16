@@ -69,7 +69,7 @@ func GetSeries(kind, tag string) (string, error) {
 		Return("value", "format").
 		One()
 	if err != nil {
-		return "", console.Debug(err.Error())
+		return "", err
 	}
 
 	value := item.Int("value")

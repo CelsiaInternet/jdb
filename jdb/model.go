@@ -825,10 +825,10 @@ func (s *Model) getColumns(names ...string) []*Column {
 * @param tp TypeColumn
 * @return []*Column
 **/
-func (s *Model) getColumnsByType(tp TypeColumn) []*Column {
-	result := []*Column{}
+func (s *Model) getColumnsByType(tp TypeColumn) []interface{} {
+	result := make([]interface{}, 0)
 	for _, col := range s.Columns {
-		if col.TypeColumn != tp {
+		if col.TypeColumn == tp {
 			result = append(result, col)
 		}
 	}

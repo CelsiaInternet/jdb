@@ -19,7 +19,7 @@ func (s *Command) current(where et.Json) error {
 	columns := model.getColumnsByType(TpColumn)
 	ql := From(model)
 	ql.setWheres(where)
-	ql.setSelects(columns)
+	ql.setSelects(columns...)
 	current, err := ql.
 		setDebug(s.IsDebug).
 		AllTx(s.tx)

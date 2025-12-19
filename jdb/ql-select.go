@@ -62,6 +62,9 @@ func (s *Ql) Select(fields ...interface{}) *Ql {
 		case string:
 			field := s.getField(v)
 			s.setSelect(field)
+		case *Column:
+			field := s.getField(v.Name)
+			s.setSelect(field)
 		case et.Json:
 			setRelationTo(v)
 		case map[string]interface{}:

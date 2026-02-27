@@ -90,6 +90,12 @@ const (
 	TypeDataRollup
 	/* None */
 	TypeDataNone
+	// Status
+	Active   = "0"
+	Archive  = "1"
+	Cancel   = "2"
+	System   = "-1"
+	ToDelete = "-2"
 )
 
 func (s TypeData) DefaultValue() interface{} {

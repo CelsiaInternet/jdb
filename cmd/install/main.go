@@ -18,20 +18,21 @@ var dependencies = []string{
 	"github.com/spf13/cobra",
 	"github.com/dimiro1/banner",
 	"github.com/mattn/go-colorable",
+	"github.com/celsiainternet/elvis@v1.1.202",
 }
 
 func main() {
-	total := 100
+	total := len(dependencies)
 	for i, dep := range dependencies {
-		p := (i + 1) * 100 / len(dependencies)
-		fmt.Printf("\r[%-50s] %d%% Installing %s", progressBar(p, total, 50), p, dep)
+		p := (i + 1) * 100 / total
+		fmt.Printf("\r[%-50s] %d%% Installing %s", progressBar(p, total, i+1), p, dep)
 		err := installLibrary(dep)
 		if err != nil {
 			return
 		}
 	}
 
-	fmt.Printf("\r[%-50s] %d%% ¡Completado!", progressBar(total, total, 50), total)
+	fmt.Printf("\r[%-50s] %d%% ¡Completado!", progressBar(total, total, total), total)
 }
 
 func installLibrary(library string) error {

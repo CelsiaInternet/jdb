@@ -1,0 +1,33 @@
+package main
+
+import (
+	"os"
+	"os/signal"
+
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/envar"
+	serv "$1/internal/service/$2"	
+)
+
+func main() {
+	envar.SetInt("port", 3000, "Port server", "PORT")
+	envar.SetInt("rpc", 4200, "Port rpc server", "RPC_PORT")
+	envar.SetStr("dbhost", "localhost", "Database host", "DB_HOST")
+	envar.SetInt("dbport", 5432, "Database port", "DB_PORT")
+	envar.SetStr("dbname", "", "Database name", "DB_NAME")
+	envar.SetStr("dbuser", "", "Database user", "DB_USER")
+	envar.SetStr("dbpass", "", "Database password", "DB_PASSWORD")
+
+	srv, err := serv.New()
+	if err != nil {
+		console.Fatal(err)
+	}
+
+	go srv.Start()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
+
+	srv.Close()
+}

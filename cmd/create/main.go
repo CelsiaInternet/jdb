@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/celsiainternet/elvis/create/v2"
+	"github.com/celsiainternet/jdb/cmd/create/v2"
 	"github.com/spf13/cobra"
 )
 

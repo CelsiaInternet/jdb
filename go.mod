@@ -5,6 +5,8 @@ go 1.23.0
 require (
 	github.com/celsiainternet/elvis v1.1.202
 	github.com/go-sql-driver/mysql v1.9.3
+	github.com/manifoldco/promptui v0.9.0
+	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.9.1
 	modernc.org/sqlite v1.37.1
 )
@@ -13,14 +15,12 @@ require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/go-chi/chi/v5 v5.2.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/manifoldco/promptui v0.9.0 // indirect
 	github.com/matoous/go-nanoid/v2 v2.1.0 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/xid v1.6.0 // indirect
-	github.com/schollz/progressbar/v3 v3.18.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	golang.org/x/term v0.31.0 // indirect
 )

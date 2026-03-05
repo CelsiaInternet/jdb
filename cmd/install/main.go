@@ -12,27 +12,26 @@ var dependencies = []string{
 	"github.com/matoous/go-nanoid/v2",
 	"github.com/oklog/ulid",
 	"golang.org/x/crypto/bcrypt",
-	"golang.org/x/exp/slices",
 	"github.com/manifoldco/promptui",
 	"github.com/schollz/progressbar/v3",
 	"github.com/spf13/cobra",
 	"github.com/dimiro1/banner",
 	"github.com/mattn/go-colorable",
-	"github.com/celsiainternet/elvis@v1.1.202",
 }
 
 func main() {
 	total := len(dependencies)
 	for i, dep := range dependencies {
 		p := (i + 1) * 100 / total
-		fmt.Printf("\r[%-50s] %d%% Installing %s", progressBar(p, 100, 50), p, dep)
+		fmt.Printf("\r[%-50s] %d%% Installing %s", progressBar(i+1, total, 50), p, dep)
 		err := installLibrary(dep)
 		if err != nil {
+			fmt.Printf("\r[%-50s] %d%% Error installing %s - %v", progressBar(i+1, total, 50), p, dep, err)
 			return
 		}
 	}
 
-	fmt.Printf("\r[%-50s] %d%% ¡Completado!", progressBar(total, 100, 50), total)
+	fmt.Printf("\r[%-50s] %d%% ¡Completado!", 100, total)
 }
 
 func installLibrary(library string) error {

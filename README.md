@@ -71,7 +71,7 @@ JDB es una librería de Go que proporciona una interfaz unificada y simplificada
 
 ```bash
 go get github.com/celsiainternet/jdb
-go get github.com/celsiainternet/jdb@v0.0.99
+go get github.com/celsiainternet/jdb@v0.0.100
 go run github.com/celsiainternet/jdb/cmd/install
 go run github.com/celsiainternet/jdb/cmd/create go
 ```

@@ -163,3 +163,60 @@ func (s *Instance) Query(query et.Json) (et.Json, error) {
 
 	return result, nil
 }
+
+/**
+* Get
+* @param id string, dest any
+* @return (bool, error)
+**/
+func Get(id string, dest any) (bool, error) {
+	if instance == nil {
+		return false, fmt.Errorf("instance not found")
+	}
+
+	ok, err := instance.Get(id, dest)
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
+}
+
+/**
+* Set
+* @param id string, tag string, obj any
+* @return error
+**/
+func Set(id, tag string, obj any) error {
+	if instance == nil {
+		return fmt.Errorf("instance not found")
+	}
+
+	return instance.Set(id, tag, obj)
+}
+
+/**
+* Delete
+* @param id string
+* @return error
+**/
+func Delete(id string) error {
+	if instance == nil {
+		return fmt.Errorf("instance not found")
+	}
+
+	return instance.Delete(id)
+}
+
+/**
+* Query
+* @param query et.Json
+* @return (et.Json, error)
+**/
+func Query(query et.Json) (et.Json, error) {
+	if instance == nil {
+		return et.Json{}, fmt.Errorf("instance not found")
+	}
+
+	return instance.Query(query)
+}

@@ -17,18 +17,22 @@ type Instance struct {
 
 var instance *Instance
 
-func Define(db *jdb.DB, schemaName string) (*Instance, error) {
+func Define(db *jdb.DB, schema, name string) (*Instance, error) {
 	if instance != nil {
 		return instance, nil
 	}
 
 	instance = &Instance{}
 
-	if err := instance.defineSchema(db, schemaName); err != nil {
+	if err := instance.defineSchema(db, schema); err != nil {
 		return nil, console.Panic(err)
 	}
 
-	instance.model = jdb.NewModel(instance.schema, "instances", 1)
+	if name == "" {
+		name = "instances"
+	}
+
+	instance.model = jdb.NewModel(instance.schema, name, 1)
 	instance.model.DefineCreatedAtField()
 	instance.model.DefineUpdatedAtField()
 	instance.model.DefineColumn(jdb.KEY, jdb.TypeDataKey)

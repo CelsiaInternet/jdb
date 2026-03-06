@@ -57,7 +57,7 @@ func MakePkg(name, schema string) error {
 	}
 
 	routerFileName := strs.Format(`router-%s.go`, name)
-	_, err = file.MakeFile(pkgPath, routerFileName, modelDbModelRouter, name, modelo, strs.Uppcase(modelo), strs.Lowcase(modelo))
+	_, err = file.MakeFile(pkgPath, routerFileName, modelDbModelRouter, name, modelo, strs.Titlecase(modelo), strs.Lowcase(modelo))
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func MakePkg(name, schema string) error {
 
 func MakeModel(packageName, modelo, schema string) error {
 	modelo = strs.Lowcase(modelo)
-	modelPath := strs.Format(`./internal/models/%s`, packageName)
+	modelPath := strs.Format(`./internal/models/%s`, strs.Lowcase(packageName))
 
 	if len(schema) > 0 {
 		_, _ = file.MakeFile(modelPath, "schema.go", modelSchema, packageName, "schema", schema)

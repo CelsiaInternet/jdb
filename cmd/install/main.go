@@ -6,17 +6,15 @@ import (
 )
 
 var dependencies = []string{
-	"github.com/joho/godotenv/autoload",
-	"github.com/bwmarrin/snowflake",
-	"github.com/google/uuid",
-	"github.com/matoous/go-nanoid/v2",
-	"github.com/oklog/ulid",
-	"golang.org/x/crypto/bcrypt",
-	"github.com/manifoldco/promptui",
-	"github.com/schollz/progressbar/v3",
-	"github.com/spf13/cobra",
-	"github.com/dimiro1/banner",
-	"github.com/mattn/go-colorable",
+	"github.com/joho/godotenv@v1.5.1",
+	"github.com/bwmarrin/snowflake@v0.3.0",
+	"github.com/google/uuid@v1.6.0",
+	"github.com/matoous/go-nanoid/v2@v2.1.0",
+	"github.com/oklog/ulid@v1.3.1",
+	"golang.org/x/crypto/bcrypt@v0.37.0",
+	"github.com/manifoldco/promptui@v0.9.0",
+	"github.com/schollz/progressbar/v3@v3.18.0",
+	"github.com/spf13/cobra@v1.9.1",
 }
 
 func main() {
@@ -31,7 +29,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf("\r[%-50s] %d%% ¡Completado!", 100, total)
+	fmt.Printf("\r[%-50s] %d%% ¡Completado!", progressBar(total, total, 50), total)
 }
 
 func installLibrary(library string) error {

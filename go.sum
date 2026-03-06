@@ -8,6 +8,8 @@ github.com/bwmarrin/snowflake v0.3.0 h1:xm67bEhkKh6ij1790JB83OujPR5CzNe8QuQqAgIS
 github.com/bwmarrin/snowflake v0.3.0/go.mod h1:NdZxfVWX+oR6y2K0o6qAYv6gIOP9rjG0/E9WsDpxqwE=
 github.com/celsiainternet/elvis v1.1.212 h1:qeFiusifW7OXEagFhKJVEjb1oJILoE6yAmZmx5JMT1g=
 github.com/celsiainternet/elvis v1.1.212/go.mod h1:nVA8BeO2jw2W0gQfDSHxzD0V7l9kHibRUcqJuU3+b5E=
+github.com/celsiainternet/elvis v1.1.213 h1:RHD9HfGSN4SMr8E0KB84PIlVjOdmFvybxIOxR1VUKew=
+github.com/celsiainternet/elvis v1.1.213/go.mod h1:YYH6wt2agCThWRQIFcIqa+ouQnLM+yV6lx1ep6lJl3E=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/chengxilo/virtualterm v1.0.4 h1:Z6IpERbRVlfB8WkOmtbHiDbBANU7cimRIof7mk9/PwM=

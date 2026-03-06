@@ -29,7 +29,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf("\r[%-50s] %d%% ¡Completado!", progressBar(total, total, 50), total)
+	fmt.Printf("\r[%-50s] %d%% ¡Completado!", progressBar(total, total, 50), 100)
 }
 
 func installLibrary(library string) error {

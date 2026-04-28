@@ -3,8 +3,10 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/envar"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
@@ -22,6 +24,16 @@ func (s *Postgres) connectTo(chain string) (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
+
+	maxOpen := envar.GetInt(25, "DB_POOL_MAX_OPEN")
+	maxIdle := envar.GetInt(5, "DB_POOL_MAX_IDLE")
+	connLifetime := envar.GetInt(900, "DB_POOL_CONN_LIFETIME")
+	connIdleTime := envar.GetInt(300, "DB_POOL_CONN_IDLE_TIME")
+
+	db.SetMaxOpenConns(maxOpen)
+	db.SetMaxIdleConns(maxIdle)
+	db.SetConnMaxLifetime(time.Duration(connLifetime) * time.Second)
+	db.SetConnMaxIdleTime(time.Duration(connIdleTime) * time.Second)
 
 	return db, nil
 }

@@ -32,5 +32,5 @@ func main() {
 		console.Panic(err)
 	}
 
-	console.Debug("db:", db.Name)
+	console.Log("db:", db.Name)
 }

@@ -25,16 +25,6 @@ func (s *Postgres) connectTo(chain string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	maxOpen := envar.GetInt(25, "DB_POOL_MAX_OPEN")
-	maxIdle := envar.GetInt(5, "DB_POOL_MAX_IDLE")
-	connLifetime := envar.GetInt(900, "DB_POOL_CONN_LIFETIME")
-	connIdleTime := envar.GetInt(300, "DB_POOL_CONN_IDLE_TIME")
-
-	db.SetMaxOpenConns(maxOpen)
-	db.SetMaxIdleConns(maxIdle)
-	db.SetConnMaxLifetime(time.Duration(connLifetime) * time.Second)
-	db.SetConnMaxIdleTime(time.Duration(connIdleTime) * time.Second)
-
 	return db, nil
 }
 
@@ -160,6 +150,15 @@ func (s *Postgres) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 		return nil, err
 	}
 
+	maxOpen := envar.GetInt(3, "DB_POOL_MAX_OPEN")
+	maxIdle := envar.GetInt(1, "DB_POOL_MAX_IDLE")
+	connLifetime := envar.GetInt(30, "DB_POOL_CONN_LIFETIME")
+	connIdleTime := envar.GetInt(2, "DB_POOL_CONN_IDLE_TIME")
+
+	db.SetMaxOpenConns(maxOpen)
+	db.SetMaxIdleConns(maxIdle)
+	db.SetConnMaxLifetime(time.Duration(connLifetime) * time.Minute)
+	db.SetConnMaxIdleTime(time.Duration(connIdleTime) * time.Minute)
 	s.connected = db != nil
 	console.LogKF(s.name, `Connected to %s:%s`, params.Host, params.Database)
 

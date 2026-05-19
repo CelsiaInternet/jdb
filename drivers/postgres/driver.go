@@ -19,6 +19,7 @@ type Connection struct {
 	Password string `json:"password"`
 	App      string `json:"app"`
 	Version  int    `json:"version"`
+	IsDebug  bool   `json:"is_debug"`
 }
 
 /**
@@ -57,6 +58,7 @@ func (s *Connection) ToJson() et.Json {
 		"password": s.Password,
 		"app":      s.App,
 		"version":  s.Version,
+		"is_debug": s.IsDebug,
 	}
 }
 
@@ -108,6 +110,7 @@ func (s *Connection) Load(params et.Json) error {
 	s.Password = password
 	s.App = app
 	s.Version = version
+	s.IsDebug = params.Bool("is_debug")
 
 	return nil
 }
@@ -161,6 +164,7 @@ func newDriver(db *jdb.DB) jdb.Driver {
 			Password: envar.GetStr("admin", "DB_PASSWORD"),
 			App:      envar.GetStr("jdb", "APP_NAME"),
 			Version:  envar.GetInt(13, "DB_VERSION"),
+			IsDebug:  envar.GetBool(false, "DEBUG"),
 		},
 	}
 }
@@ -176,7 +180,7 @@ func init() {
 		Name:     envar.GetStr("jdb", "DB_NAME"),
 		UserCore: true,
 		NodeId:   envar.GetInt(0, "NODE_ID"),
-		Debug:    envar.GetBool(false, "DEBUG"),
+		IsDebug:  envar.GetBool(false, "DEBUG"),
 		Params: &Connection{
 			Database: envar.GetStr("jdb", "DB_NAME"),
 			Host:     envar.GetStr("localhost", "DB_HOST"),
@@ -185,6 +189,7 @@ func init() {
 			Password: envar.GetStr("admin", "DB_PASSWORD"),
 			App:      envar.GetStr("jdb", "APP_NAME"),
 			Version:  envar.GetInt(13, "DB_VERSION"),
+			IsDebug:  envar.GetBool(false, "DEBUG"),
 		},
 	})
 }

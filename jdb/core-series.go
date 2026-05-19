@@ -103,3 +103,24 @@ func SetSeries(kind, tag, format string, lastValue int) error {
 
 	return nil
 }
+
+/**
+* ImportSeries
+* @param items []et.Json
+* @return error
+**/
+func ImportSeries(items []et.Json) error {
+	for _, item := range items {
+		err := SetSeries(
+			item.Str("kind"),
+			item.Str("tag"),
+			item.Str("format"),
+			item.Int("value"),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

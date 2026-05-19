@@ -609,6 +609,7 @@ func (s *Model) defineSystemKeyField() *Column {
 **/
 func (s *Model) defineIndexField() *Column {
 	result := s.defineColumn(cf.Index, TypeDataInt)
+	result.Hidden = true
 	s.defineIndex(true, []string{cf.Index})
 	s.IndexField = result
 

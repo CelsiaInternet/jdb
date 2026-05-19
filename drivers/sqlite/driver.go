@@ -13,6 +13,7 @@ import (
 type Connection struct {
 	Database string `json:"database"`
 	Version  int    `json:"version"`
+	IsDebug  bool   `json:"is_debug"`
 }
 
 /**
@@ -105,9 +106,10 @@ func init() {
 		Name:     envar.GetStr("jdb", "DB_NAME"),
 		UserCore: true,
 		NodeId:   envar.GetInt(1, "NODE_ID"),
-		Debug:    envar.GetBool(false, "DEBUG"),
+		IsDebug:  envar.GetBool(false, "DEBUG"),
 		Params: &Connection{
 			Database: envar.GetStr("jdb", "DB_NAME"),
+			IsDebug:  envar.GetBool(false, "DEBUG"),
 		},
 	})
 }

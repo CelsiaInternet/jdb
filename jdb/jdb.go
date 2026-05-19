@@ -99,7 +99,7 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 		return nil, err
 	}
 
-	result.IsDebug = connection.Debug
+	result.IsDebug = connection.IsDebug
 	result.UseCore = connection.UserCore
 	result.NodeId = connection.NodeId
 	result.connectParams = connection

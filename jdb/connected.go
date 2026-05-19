@@ -20,7 +20,7 @@ type ConnectParams struct {
 	Name     string    `json:"name"`
 	UserCore bool      `json:"user_core"`
 	NodeId   int       `json:"node_id"`
-	Debug    bool      `json:"debug"`
+	IsDebug  bool      `json:"is_debug"`
 	Params   Connected `json:"params"`
 }
 
@@ -35,7 +35,7 @@ func (s *ConnectParams) ToJson() et.Json {
 		"name":      s.Name,
 		"user_core": s.UserCore,
 		"node_id":   s.NodeId,
-		"debug":     s.Debug,
+		"is_debug":  s.IsDebug,
 		"params":    s.Params.ToJson(),
 	}
 }
@@ -53,7 +53,7 @@ func LoadConnectParams(params et.Json) (*ConnectParams, error) {
 		Name:     params.Str("name"),
 		UserCore: params.Bool("user_core"),
 		NodeId:   params.Int("node_id"),
-		Debug:    params.Bool("debug"),
+		IsDebug:  params.Bool("is_debug"),
 	}
 
 	err := result.Params.Load(connection)
@@ -85,7 +85,7 @@ func load() (*ConnectParams, error) {
 		Name:     params.Name,
 		UserCore: params.UserCore,
 		NodeId:   params.NodeId,
-		Debug:    params.Debug,
+		IsDebug:  params.IsDebug,
 		Params:   params.Params,
 	}
 

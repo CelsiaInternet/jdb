@@ -22,6 +22,10 @@ func (s *DB) createCore() error {
 	return nil
 }
 
+/**
+* defineSchema
+* @return error
+**/
 func (s *DB) defineSchema() error {
 	if coreSchema != nil {
 		return nil

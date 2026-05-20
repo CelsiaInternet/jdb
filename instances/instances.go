@@ -40,7 +40,6 @@ func Define(db *jdb.DB, schema, name string) (*Instance, error) {
 	instance.model.DefineColumn("definition", jdb.TypeDataBytes)
 	instance.model.DefinePrimaryKey(jdb.KEY)
 	instance.model.DefineSystemKeyField()
-	instance.model.DefineIndexField()
 	instance.model.DefineIndex(true, "tag")
 
 	if err := instance.model.Init(); err != nil {

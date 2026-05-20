@@ -108,6 +108,10 @@ func aliasAsField(field jdb.Field) string {
 func (s *Postgres) sqlObject(from *jdb.QlFrom) string {
 	var selects = []*jdb.Field{}
 	for _, col := range from.Columns {
+		if !slices.Contains([]jdb.TypeColumn{jdb.TpColumn}, col.TypeColumn) && col.Name == jdb.SOURCE {
+			continue
+		}
+
 		field := jdb.GetField(col)
 		if field == nil {
 			continue
@@ -115,10 +119,8 @@ func (s *Postgres) sqlObject(from *jdb.QlFrom) string {
 		if field.Column == nil {
 			continue
 		}
-		if slices.Contains([]jdb.TypeColumn{jdb.TpColumn}, field.Column.TypeColumn) {
-			field.As = from.As
-			selects = append(selects, field)
-		}
+		field.As = from.As
+		selects = append(selects, field)
 	}
 
 	return s.sqlBuildObject(selects)
@@ -149,6 +151,9 @@ func (s *Postgres) sqlBuildObject(selects []*jdb.Field) string {
 			continue
 		}
 		def := asField(*fld)
+		if def == "" || fld.Alias == "" {
+			continue
+		}
 		def = strs.Format(`'%s', %s`, fld.Alias, def)
 		obj = strs.Append(obj, def, ",\n")
 

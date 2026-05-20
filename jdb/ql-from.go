@@ -97,13 +97,13 @@ func From(name interface{}) *Ql {
 		Selects:    make([]*Field, 0),
 		Hiddens:    make([]string, 0),
 		Details:    make([]*Field, 0),
-		Groups:     make([]*Field, 0),
-		Orders:     &QlOrder{Asc: make([]*Field, 0), Desc: make([]*Field, 0)},
-		Offset:     0,
-		Limit:      0,
-		Sheet:      0,
-		Help:       helpQl(model),
-		wg:         &sync.WaitGroup{},
+		Groups: make([]*Field, 0),
+		Orders: &QlOrder{Asc: make([]*Field, 0), Desc: make([]*Field, 0)},
+		Offset: 0,
+		Limit:  0,
+		Sheet:  0,
+		Help:   helpQl(model),
+		wg:     &sync.WaitGroup{},
 	}
 	result.QlWhere = newQlWhere(result.validator)
 	result.IsDebug = model.IsDebug

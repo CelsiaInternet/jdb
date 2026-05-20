@@ -263,7 +263,6 @@ func StrToKindType(strs string) (TypeColumn, TypeData) {
 
 type ColumnFields struct {
 	Key       string
-	Index     string
 	Source    string
 	ProjectId string
 	CreatedAt string
@@ -283,7 +282,6 @@ type ColumnFields struct {
 func (s *ColumnFields) Json() et.Json {
 	return et.Json{
 		"key":        s.Key,
-		"index":      s.Index,
 		"source":     s.Source,
 		"project_id": s.ProjectId,
 		"created_at": s.CreatedAt,
@@ -300,8 +298,6 @@ func (s *ColumnFields) Json() et.Json {
 var (
 	cf         *ColumnFields
 	KEY        string
-	PRIMARYKEY string
-	INDEX      string
 	SOURCE     string
 	PROJECT_ID string
 	CREATED_AT string
@@ -318,7 +314,6 @@ var (
 func init() {
 	cf = &ColumnFields{
 		Key:       "_id",
-		Index:     "idx",
 		Source:    "_data",
 		ProjectId: "project_id",
 		CreatedAt: "created_at",
@@ -341,8 +336,6 @@ func init() {
 func SetColumnFields(fields *ColumnFields) {
 	cf = fields
 	KEY = cf.Key
-	PRIMARYKEY = cf.Key
-	INDEX = cf.Index
 	SOURCE = cf.Source
 	PROJECT_ID = cf.ProjectId
 	CREATED_AT = cf.CreatedAt

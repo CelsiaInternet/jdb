@@ -279,8 +279,6 @@ func (s *Model) defineColumns(tp int, args ...interface{}) error {
 		s.defineStatusField()
 	case TypeDefinitionSystemKeyField:
 		s.defineSystemKeyField()
-	case TypeDefinitionIndexField:
-		s.defineIndexField()
 	case TypeDefinitionFullTextField:
 		fields, err := toArrayString(args[1])
 		if err != nil {
@@ -597,21 +595,9 @@ func (s *Model) defineStatusField() *Column {
 **/
 func (s *Model) defineSystemKeyField() *Column {
 	result := s.defineColumn(cf.SystemId, TypeDataKey)
+	result.Hidden = true
 	s.defineIndex(true, []string{cf.SystemId})
 	s.SystemKeyField = result
-
-	return result
-}
-
-/**
-* DefineIndexField
-* @return *Column
-**/
-func (s *Model) defineIndexField() *Column {
-	result := s.defineColumn(cf.Index, TypeDataInt)
-	result.Hidden = true
-	s.defineIndex(true, []string{cf.Index})
-	s.IndexField = result
 
 	return result
 }
@@ -697,6 +683,12 @@ func (s *Model) defineRequired(colums []string) *Model {
 func (s *Model) defineRelation(name, relatedTo string, fks map[string]string, limit int) *Relation {
 	with := NewModel(s.schema, relatedTo, 1)
 	with.defineForeignKey(fks, s.Name, true, true)
+	for _, k := range fks {
+		col := with.getColumn(k)
+		if col != nil {
+			col.Hidden = true
+		}
+	}
 
 	col := newColumn(s, name, "", TpRelatedTo, TypeDataNone, TypeDataNone.DefaultValue())
 	col.Detail = &Relation{
@@ -770,7 +762,6 @@ func (s *Model) defineMultiSelect(name string, fks map[string]string) *Model {
 	result.With.defineCreatedAtField()
 	result.With.defineSourceField()
 	result.With.defineSystemKeyField()
-	result.With.defineIndexField()
 	primaryKeys := []string{}
 	for fkn := range fks {
 		primaryKeys = append(primaryKeys, fkn)
@@ -793,7 +784,6 @@ func (s *Model) defineModel() *Model {
 	s.definePrimaryKeyField()
 	s.defineSourceField()
 	s.defineSystemKeyField()
-	s.defineIndexField()
 
 	return s
 }
@@ -810,7 +800,6 @@ func (s *Model) defineProjectModel() *Model {
 	s.definePrimaryKeyField()
 	s.defineSourceField()
 	s.defineSystemKeyField()
-	s.defineIndexField()
 
 	return s
 }
@@ -972,16 +961,6 @@ func (s *Model) DefineSystemKeyField() *Column {
 	key := "system_key_field"
 	s.setDefine(key, TypeDefinitionSystemKeyField)
 	return s.defineSystemKeyField()
-}
-
-/**
-* DefineIndexField
-* @return *Column
-**/
-func (s *Model) DefineIndexField() *Column {
-	key := "index_field"
-	s.setDefine(key, TypeDefinitionIndexField)
-	return s.defineIndexField()
 }
 
 /**

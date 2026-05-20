@@ -89,6 +89,31 @@ func (s *Ql) Data(fields ...interface{}) *Ql {
 }
 
 /**
+* Detail
+* @param fields ...interface{}
+* @return *Ql
+**/
+func (s *Ql) Detail(fields ...interface{}) *Ql {
+	setDetail := func(name string) {
+		field := s.getField(name)
+		if map[TypeColumn]bool{TpRelatedTo: true, TpCalc: true, TpRollup: true}[field.Column.TypeColumn] {
+			s.Details = append(s.Details, field)
+		}
+	}
+
+	for _, name := range fields {
+		switch v := name.(type) {
+		case string:
+			setDetail(v)
+		case *Column:
+			setDetail(v.Name)
+		}
+	}
+
+	return s
+}
+
+/**
 * Hidden
 * @param fields ...string
 * @return *Ql

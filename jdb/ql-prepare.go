@@ -21,7 +21,7 @@ func (s *Ql) prepare() *Ql {
 				continue
 			}
 
-			if !slices.Contains([]TypeColumn{TpAtribute}, col.TypeColumn) {
+			if slices.Contains([]TypeColumn{TpColumn}, col.TypeColumn) {
 				field := GetField(col)
 				field.As = frm.As
 				s.setSelect(field)

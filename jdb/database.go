@@ -3,12 +3,14 @@ package jdb
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/logs"
 	"github.com/celsiainternet/elvis/timezone"
 	"github.com/celsiainternet/elvis/utility"
 )
@@ -464,11 +466,12 @@ func (s *DB) Command(command *Command) (et.Items, error) {
 
 	result, err := s.driver.Command(command)
 	if err != nil {
-		publishError(command.getModel(), command.Sql, err)
+		logs.Error("command", errors.New(et.Json{
+			"sql":   command.Sql,
+			"error": err.Error(),
+		}.ToString()))
 		return et.Items{}, err
 	}
-
-	publishCommand(command)
 
 	return result, nil
 }

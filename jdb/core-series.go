@@ -26,12 +26,10 @@ func (s *DB) defineSeries() error {
 	coreSeries.DefineColumn("value", TypeDataInt)
 	coreSeries.DefineColumn("format", TypeDataText)
 	coreSeries.DefineSystemKeyField()
-	coreSeries.DefineIndexField()
 	coreSeries.DefinePrimaryKey("kind", "tag")
 	coreSeries.DefineIndex(true,
 		"format",
 		cf.SystemId,
-		cf.Index,
 	)
 	if err := coreSeries.Init(); err != nil {
 		return console.Panic(err)

@@ -27,12 +27,10 @@ func (s *DB) defineModel() error {
 	coreModel.DefineColumn("version", TypeDataInt)
 	coreModel.DefineColumn("definition", TypeDataBytes)
 	coreModel.DefineSystemKeyField()
-	coreModel.DefineIndexField()
 	coreModel.DefinePrimaryKey("kind", "name")
 	coreModel.DefineIndex(true,
 		"version",
 		cf.SystemId,
-		cf.Index,
 	)
 	if err := coreModel.Init(); err != nil {
 		return console.Panic(err)

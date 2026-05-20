@@ -541,6 +541,14 @@ func (s *Model) defineSourceField() *Column {
 }
 
 /**
+* defineIndexField
+* @return *Column
+**/
+func (s *Model) defineIndexField() *Column {
+	return s.defineColumn(cf.Index, TypeDataText)
+}
+
+/**
 * defineAtribute
 * @param name string, typeData TypeData
 * @return *Column
@@ -784,6 +792,7 @@ func (s *Model) defineModel() *Model {
 	s.definePrimaryKeyField()
 	s.defineSourceField()
 	s.defineSystemKeyField()
+	s.defineIndexField()
 
 	return s
 }
@@ -800,6 +809,7 @@ func (s *Model) defineProjectModel() *Model {
 	s.definePrimaryKeyField()
 	s.defineSourceField()
 	s.defineSystemKeyField()
+	s.defineIndexField()
 
 	return s
 }
@@ -902,14 +912,20 @@ func (s *Model) DefineSource(name string) *Column {
 	return s.defineSource(name)
 }
 
-/**
-* DefineSourceField
-* @return *Column
-**/
 func (s *Model) DefineSourceField() *Column {
 	key := "source_field"
 	s.setDefine(key, TypeDefinitionSourceField)
 	return s.defineSourceField()
+}
+
+/**
+* DefineIndexField
+* @return *Column
+**/
+func (s *Model) DefineIndexField() *Column {
+	key := "index_field"
+	s.setDefine(key, TypeDefinitionIndexField)
+	return s.defineIndexField()
 }
 
 /**

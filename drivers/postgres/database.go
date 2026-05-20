@@ -3,10 +3,8 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/celsiainternet/elvis/console"
-	"github.com/celsiainternet/elvis/envar"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
@@ -150,15 +148,6 @@ func (s *Postgres) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 		return nil, err
 	}
 
-	maxOpen := envar.GetInt(3, "DB_POOL_MAX_OPEN")
-	maxIdle := envar.GetInt(1, "DB_POOL_MAX_IDLE")
-	connLifetime := envar.GetInt(30, "DB_POOL_CONN_LIFETIME")
-	connIdleTime := envar.GetInt(2, "DB_POOL_CONN_IDLE_TIME")
-
-	db.SetMaxOpenConns(maxOpen)
-	db.SetMaxIdleConns(maxIdle)
-	db.SetConnMaxLifetime(time.Duration(connLifetime) * time.Minute)
-	db.SetConnMaxIdleTime(time.Duration(connIdleTime) * time.Minute)
 	s.connected = db != nil
 	console.LogKF(s.name, `Connected to %s:%s`, params.Host, params.Database)
 

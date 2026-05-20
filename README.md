@@ -79,7 +79,7 @@ go run github.com/celsiainternet/jdb/cmd/create go
 
 ```bash
 # Dependencia principal
-go get github.com/celsiainternet/elvis@v1.1.236
+go get github.com/celsiainternet/elvis@v1.1.237
 go run github.com/celsiainternet/elvis/cmd/install
 
 # Drivers de base de datos incluidos

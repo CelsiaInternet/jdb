@@ -15,16 +15,14 @@ type Instance struct {
 	model  *jdb.Model
 }
 
-var instance *Instance
-
+/**
+* Define
+* @param db *jdb.DB, schema, name string
+* @return (*Instance, error)
+**/
 func Define(db *jdb.DB, schema, name string) (*Instance, error) {
-	if instance != nil {
-		return instance, nil
-	}
-
-	instance = &Instance{}
-
-	if err := instance.defineSchema(db, schema); err != nil {
+	schemaObj, err := defineSchema(db, schema)
+	if err != nil {
 		return nil, console.Panic(err)
 	}
 
@@ -32,21 +30,24 @@ func Define(db *jdb.DB, schema, name string) (*Instance, error) {
 		name = "instances"
 	}
 
-	instance.model = jdb.NewModel(instance.schema, name, 1)
-	instance.model.DefineCreatedAtField()
-	instance.model.DefineUpdatedAtField()
-	instance.model.DefineColumn(jdb.KEY, jdb.TypeDataKey)
-	instance.model.DefineColumn("tag", jdb.TypeDataKey)
-	instance.model.DefineColumn("definition", jdb.TypeDataBytes)
-	instance.model.DefinePrimaryKey(jdb.KEY)
-	instance.model.DefineSystemKeyField()
-	instance.model.DefineIndex(true, "tag")
+	model := jdb.NewModel(schemaObj, name, 1)
+	model.DefineCreatedAtField()
+	model.DefineUpdatedAtField()
+	model.DefineColumn(jdb.KEY, jdb.TypeDataKey)
+	model.DefineColumn("tag", jdb.TypeDataKey)
+	model.DefineColumn("definition", jdb.TypeDataBytes)
+	model.DefinePrimaryKey(jdb.KEY)
+	model.DefineSystemKeyField()
+	model.DefineIndex(true, "tag")
 
-	if err := instance.model.Init(); err != nil {
+	if err := model.Init(); err != nil {
 		return nil, err
 	}
 
-	return instance, nil
+	return &Instance{
+		schema: schemaObj,
+		model:  model,
+	}, nil
 }
 
 /**
@@ -161,61 +162,4 @@ func (s *Instance) Query(query et.Json) (et.Json, error) {
 	}
 
 	return result, nil
-}
-
-/**
-* Get
-* @param id string, dest any
-* @return (bool, error)
-**/
-func Get(id string, dest any) (bool, error) {
-	if instance == nil {
-		return false, fmt.Errorf("instance not found")
-	}
-
-	ok, err := instance.Get(id, dest)
-	if err != nil {
-		return false, err
-	}
-
-	return ok, nil
-}
-
-/**
-* Set
-* @param id string, tag string, obj any
-* @return error
-**/
-func Set(id, tag string, obj any) error {
-	if instance == nil {
-		return fmt.Errorf("instance not found")
-	}
-
-	return instance.Set(id, tag, obj)
-}
-
-/**
-* Delete
-* @param id string
-* @return error
-**/
-func Delete(id string) error {
-	if instance == nil {
-		return fmt.Errorf("instance not found")
-	}
-
-	return instance.Delete(id)
-}
-
-/**
-* Query
-* @param query et.Json
-* @return (et.Json, error)
-**/
-func Query(query et.Json) (et.Json, error) {
-	if instance == nil {
-		return et.Json{}, fmt.Errorf("instance not found")
-	}
-
-	return instance.Query(query)
 }

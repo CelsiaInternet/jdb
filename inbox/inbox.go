@@ -1,4 +1,4 @@
-package instances
+package inbox
 
 import (
 	"fmt"
@@ -16,12 +16,33 @@ type Inbox struct {
 	model  *jdb.Model
 }
 
+var inb *Inbox
+
 /**
-* DefineInboxes
+* Load
 * @param db *jdb.DB, schema, name string
 * @return (*Inbox, error)
 **/
-func DefineInboxes(db *jdb.DB, schema, name string) (*Inbox, error) {
+func Load(db *jdb.DB, schema, name string) (*Inbox, error) {
+	if inb != nil {
+		return inb, nil
+	}
+
+	var err error
+	inb, err = Define(db, schema, name)
+	if err != nil {
+		return nil, console.Panic(err)
+	}
+
+	return inb, nil
+}
+
+/**
+* Define
+* @param db *jdb.DB, schema, name string
+* @return (*Inbox, error)
+**/
+func Define(db *jdb.DB, schema, name string) (*Inbox, error) {
 	schemaObj, err := defineSchema(db, schema)
 	if err != nil {
 		return nil, console.Panic(err)

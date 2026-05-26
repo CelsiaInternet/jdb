@@ -15,6 +15,27 @@ type Instance struct {
 	model  *jdb.Model
 }
 
+var inst *Instance
+
+/**
+* Load
+* @param db *jdb.DB, schema, name string
+* @return (*Instance, error)
+**/
+func Load(db *jdb.DB, schema, name string) (*Instance, error) {
+	if inst != nil {
+		return inst, nil
+	}
+
+	var err error
+	inst, err = Define(db, schema, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return inst, nil
+}
+
 /**
 * Define
 * @param db *jdb.DB, schema, name string

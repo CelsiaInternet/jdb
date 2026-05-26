@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/reg"
 	"github.com/celsiainternet/elvis/strs"
 )
 
@@ -545,6 +546,10 @@ func (s *Model) defineSourceField() *Column {
 * @return *Column
 **/
 func (s *Model) defineIndexField() *Column {
+	s.BeforeDelete(func(tx *Tx, data et.Json) error {
+		data.Set(cf.Index, reg.ULID())
+		return nil
+	})
 	return s.defineColumn(cf.Index, TypeDataText)
 }
 

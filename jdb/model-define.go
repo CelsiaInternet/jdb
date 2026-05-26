@@ -522,6 +522,10 @@ func (s *Model) defineForeignKey(fks map[string]string, withName string, onDelet
 * @return *Column
 **/
 func (s *Model) defineSource(name string) *Column {
+	if s.SourceField != nil {
+		return s.SourceField
+	}
+
 	result := s.defineColumn(name, TypeDataObject)
 	s.defineIndex(true, []string{name})
 	s.SourceField = result
@@ -546,11 +550,18 @@ func (s *Model) defineSourceField() *Column {
 * @return *Column
 **/
 func (s *Model) defineIndexField() *Column {
+	if s.IndexField != nil {
+		return s.IndexField
+	}
+
+	result := s.defineColumn(cf.Index, TypeDataText)
 	s.BeforeDelete(func(tx *Tx, data et.Json) error {
 		data.Set(cf.Index, reg.ULID())
 		return nil
 	})
-	return s.defineColumn(cf.Index, TypeDataText)
+	s.IndexField = result
+
+	return result
 }
 
 /**
@@ -917,6 +928,10 @@ func (s *Model) DefineSource(name string) *Column {
 	return s.defineSource(name)
 }
 
+/**
+* DefineSourceField
+* @return *Column
+**/
 func (s *Model) DefineSourceField() *Column {
 	key := "source_field"
 	s.setDefine(key, TypeDefinitionSourceField)

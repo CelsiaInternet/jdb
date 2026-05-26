@@ -20,6 +20,19 @@ func GetInboxesById(id string) (et.Item, error) {
 }
 
 /**
+* GetInboxesByCode
+* @param code string
+* @return et.Item, error
+**/
+func GetInboxesByCode(code string) (et.Item, error) {
+	if inb == nil {
+		return et.Item{}, fmt.Errorf("inbox not found")
+	}
+
+	return inb.GetInboxesByCode(code)
+}
+
+/**
 * GetInboxesByMy
 * @param userId, appId, inbox, status string, page, rows int
 * @return et.Items, error
@@ -33,16 +46,16 @@ func GetInboxesByMy(userId, appId, inbox, status string, page, rows int) (et.Ite
 }
 
 /**
-* GetInboxesCode
-* @param projectId, inbox string
+* GenInboxesCode
+* @param projectId string
 * @return string, error
 **/
-func GetInboxesCode(projectId, inbox string) (string, error) {
+func GenInboxesCode(projectId string) (string, error) {
 	if inb == nil {
 		return "", fmt.Errorf("inbox not found")
 	}
 
-	return inb.GetInboxesCode(projectId, inbox)
+	return inb.GenInboxesCode(projectId)
 }
 
 /**

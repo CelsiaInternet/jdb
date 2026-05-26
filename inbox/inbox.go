@@ -56,11 +56,15 @@ func Define(db *jdb.DB, schema, name string) (*Inbox, error) {
 	model.DefineProjectModel()
 	model.DefineColumn("user_id", jdb.TypeDataKey)
 	model.DefineColumn("app_id", jdb.TypeDataKey)
-	model.DefineColumn("inbox", jdb.TypeDataText)
+	model.DefineColumn("kind", jdb.TypeDataText)
+	model.DefineColumn("code", jdb.TypeDataKey)
+	model.DefineColumn("caption", jdb.TypeDataText)
 	model.DefineIndex(true,
 		"user_id",
 		"app_id",
-		"inbox",
+		"kind",
+		"code",
+		"caption",
 	)
 	model.DefineCalc("delete", func(data et.Json) {
 		statusId := data.Str(jdb.STATUS_ID)
@@ -89,9 +93,6 @@ func Define(db *jdb.DB, schema, name string) (*Inbox, error) {
 
 		return nil
 	})
-	model.DefineIndex(true,
-		"step",
-	)
 
 	if err := model.Init(); err != nil {
 		return nil, console.Panic(err)
@@ -111,6 +112,22 @@ func Define(db *jdb.DB, schema, name string) (*Inbox, error) {
 func (s *Inbox) GetInboxesById(id string) (et.Item, error) {
 	item, err := s.model.
 		Where(jdb.KEY).Eq(id).
+		One()
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	return item, nil
+}
+
+/**
+* GetInboxesByCode
+* @param code string
+* @return et.Item, error
+**/
+func (s *Inbox) GetInboxesByCode(code string) (et.Item, error) {
+	item, err := s.model.
+		Where("code").Eq(code).
 		One()
 	if err != nil {
 		return et.Item{}, err
@@ -147,12 +164,12 @@ func (s *Inbox) GetInboxesByMy(userId, appId, inbox, status string, page, rows i
 }
 
 /**
-* GetInboxesCode
-* @param projectId, inbox string
+* GenInboxesCode
+* @param projectId string
 * @return string, error
 **/
-func (s *Inbox) GetInboxesCode(projectId, inbox string) (string, error) {
-	code, err := jdb.GetSeries(inbox, projectId)
+func (s *Inbox) GenInboxesCode(projectId string) (string, error) {
+	code, err := jdb.GetSeries("services", projectId)
 	if err != nil {
 		return "", err
 	}

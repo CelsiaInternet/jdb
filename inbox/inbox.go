@@ -58,13 +58,13 @@ func Define(db *jdb.DB, schema, name string) (*Inbox, error) {
 	model.DefineColumn("app_id", jdb.TypeDataKey)
 	model.DefineColumn("kind", jdb.TypeDataText)
 	model.DefineColumn("code", jdb.TypeDataKey)
-	model.DefineColumn("caption", jdb.TypeDataText)
+	model.DefineColumn("title", jdb.TypeDataText)
 	model.DefineIndex(true,
 		"user_id",
 		"app_id",
 		"kind",
 		"code",
-		"caption",
+		"title",
 	)
 	model.DefineCalc("delete", func(data et.Json) {
 		statusId := data.Str(jdb.STATUS_ID)

@@ -90,6 +90,12 @@ if [ "$HELP" == true ]; then
 elif [ "$CURRENT_VERSION" == "v0.0.0" ]; then
   NEW_VERSION="v1.0.0"
   update_version
+elif [ "$MAYOR" == true ]; then
+  build_version
+  update_version
+elif [ "$MINOR" == true ]; then
+  build_version
+  update_version
 elif [ "$REQUEST" == true ]; then
   build_version
   update_version

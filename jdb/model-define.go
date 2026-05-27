@@ -555,6 +555,7 @@ func (s *Model) defineIndexField() *Column {
 	}
 
 	result := s.defineColumn(cf.Index, TypeDataText)
+	result.Hidden = true
 	s.BeforeDelete(func(tx *Tx, data et.Json) error {
 		data.Set(cf.Index, reg.ULID())
 		return nil

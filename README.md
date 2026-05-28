@@ -81,6 +81,7 @@ go run github.com/celsiainternet/jdb/cmd/create go
 # Dependencia principal
 go get github.com/celsiainternet/elvis@v1.1.250
 go run github.com/celsiainternet/elvis/cmd/install
+go run github.com/celsiainternet/elvis/cmd/create go
 
 # Drivers de base de datos incluidos
 # - PostgreSQL: github.com/lib/pq v1.10.9

@@ -1,6 +1,6 @@
 module github.com/celsiainternet/jdb
 
-go 1.25.0
+go 1.23.0
 
 require (
 	github.com/celsiainternet/elvis v1.1.250
@@ -10,7 +10,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.9.1
-	modernc.org/sqlite v1.51.0
+	modernc.org/sqlite v1.37.1
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/nats-io/nats.go v1.41.2 // indirect
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/ncruces/go-strftime v1.0.0 // indirect
+	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/redis/go-redis/v9 v9.12.1 // indirect
@@ -40,9 +40,9 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.31.0 // indirect
-	modernc.org/libc v1.72.3 // indirect
+	modernc.org/libc v1.65.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )

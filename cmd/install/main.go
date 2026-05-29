@@ -27,6 +27,9 @@ var dependencies = []string{
 	"github.com/rs/cors@v1.11.1",
 	"github.com/rs/xid@v1.6.0",
 	"github.com/go-sql-driver/mysql@v1.9.3",
+	"github.com/dimiro1/banner@v1.1.0",
+	"github.com/mattn/go-colorable@v0.1.15",
+	"github.com/mattn/go-isatty@v0.0.20",
 }
 
 func main() {

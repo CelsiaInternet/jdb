@@ -79,7 +79,7 @@ go run github.com/celsiainternet/jdb/cmd/create go
 
 ```bash
 # Dependencia principal
-go get github.com/celsiainternet/elvis@v1.1.250
+go get github.com/celsiainternet/elvis@v1.1.251
 go run github.com/celsiainternet/elvis/cmd/install
 go run github.com/celsiainternet/elvis/cmd/create go
 

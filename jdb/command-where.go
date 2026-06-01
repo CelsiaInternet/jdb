@@ -1,10 +1,5 @@
 package jdb
 
-import (
-	"fmt"
-	"strings"
-)
-
 /**
 * Where
 * @param field string
@@ -66,14 +61,7 @@ func (s *Command) Neg(val interface{}) *Command {
 * @return *Command
 **/
 func (s *Command) In(val ...any) *Command {
-	parts := make([]string, len(val))
-	for i, v := range val {
-		vs := Quote(v)
-		parts[i] = fmt.Sprint(vs)
-	}
-
-	vals := strings.Join(parts, ",")
-	s.QlWhere.In(vals)
+	s.QlWhere.In(val...)
 
 	return s
 }

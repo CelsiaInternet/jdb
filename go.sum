@@ -10,6 +10,8 @@ github.com/celsiainternet/elvis v1.1.265 h1:wsDC5L3ZzhBAYz6JXtOs+4IaqpTRINzsnQ3b
 github.com/celsiainternet/elvis v1.1.265/go.mod h1:8zxTqe6MKIH2nbDBRpR/Er0xwrgYJ38l8K+yqByNz3Y=
 github.com/celsiainternet/elvis v1.1.269 h1:NPJREjIU3tZQCEWV9WpqDbtZEq9CaJmyamLdjW9doPM=
 github.com/celsiainternet/elvis v1.1.269/go.mod h1:8zxTqe6MKIH2nbDBRpR/Er0xwrgYJ38l8K+yqByNz3Y=
+github.com/celsiainternet/elvis v1.1.270 h1:jU7WPIjWQnBra05w/HGzp8LG9R8vLCWGLLVdYFGP1lw=
+github.com/celsiainternet/elvis v1.1.270/go.mod h1:8zxTqe6MKIH2nbDBRpR/Er0xwrgYJ38l8K+yqByNz3Y=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/chengxilo/virtualterm v1.0.4 h1:Z6IpERbRVlfB8WkOmtbHiDbBANU7cimRIof7mk9/PwM=

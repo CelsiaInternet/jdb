@@ -68,7 +68,8 @@ func (s *Command) Neg(val interface{}) *Command {
 func (s *Command) In(val ...any) *Command {
 	parts := make([]string, len(val))
 	for i, v := range val {
-		parts[i] = fmt.Sprint(v)
+		vs := Quote(v)
+		parts[i] = fmt.Sprint(vs)
 	}
 
 	vals := strings.Join(parts, ",")

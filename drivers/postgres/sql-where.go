@@ -1,6 +1,9 @@
 package postgres
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/celsiainternet/elvis/strs"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
@@ -69,12 +72,14 @@ func whereValue(val interface{}) string {
 	case *jdb.Field:
 		return asField(*v)
 	case []interface{}:
-		var result string
-		for _, w := range v {
-			val := whereValue(w)
-			result = strs.Append(result, strs.Format(`%v`, val), ",")
+		parts := make([]string, len(v))
+		for i, vl := range v {
+			vs := whereValue(vl)
+			parts[i] = fmt.Sprint(vs)
 		}
-		return result
+
+		vals := strings.Join(parts, ",")
+		return vals
 	default:
 		return strs.Format(`%v`, jdb.Quote(v))
 	}

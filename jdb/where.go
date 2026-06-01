@@ -2,7 +2,6 @@ package jdb
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/celsiainternet/elvis/et"
 )
@@ -518,15 +517,7 @@ func (s *QlWhere) In(val ...any) *QlWhere {
 	}
 
 	condition.Operator = In
-
-	parts := make([]string, len(val))
-	for i, v := range val {
-		vs := Quote(v)
-		parts[i] = fmt.Sprint(vs)
-	}
-
-	vals := strings.Join(parts, ",")
-	condition.setVal(vals)
+	condition.setVal(val)
 
 	return s
 }

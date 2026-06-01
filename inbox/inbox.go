@@ -3,7 +3,6 @@ package inbox
 import (
 	"fmt"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/dt"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/msg"
@@ -31,7 +30,7 @@ func Load(db *jdb.DB, schema, name string) (*Inbox, error) {
 	var err error
 	inb, err = Define(db, schema, name)
 	if err != nil {
-		return nil, console.Panic(err)
+		return nil, err
 	}
 
 	return inb, nil
@@ -45,7 +44,7 @@ func Load(db *jdb.DB, schema, name string) (*Inbox, error) {
 func Define(db *jdb.DB, schema, name string) (*Inbox, error) {
 	schemaObj, err := defineSchema(db, schema)
 	if err != nil {
-		return nil, console.Panic(err)
+		return nil, err
 	}
 
 	if name == "" {
@@ -95,7 +94,7 @@ func Define(db *jdb.DB, schema, name string) (*Inbox, error) {
 	})
 
 	if err := model.Init(); err != nil {
-		return nil, console.Panic(err)
+		return nil, err
 	}
 
 	return &Inbox{

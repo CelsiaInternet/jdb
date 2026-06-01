@@ -3,7 +3,6 @@ package jdb
 import (
 	"fmt"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 )
 
@@ -32,7 +31,7 @@ func (s *DB) defineSeries() error {
 		cf.SystemId,
 	)
 	if err := coreSeries.Init(); err != nil {
-		return console.Panic(err)
+		return err
 	}
 
 	return nil

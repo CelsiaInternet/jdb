@@ -18,6 +18,10 @@ func (s *Command) deleted() error {
 	}
 
 	s.Result = results
+	if !s.Result.Ok {
+		return nil
+	}
+
 	s.ResultMap, err = model.getMapResultByPk(s.Result.Result)
 	if err != nil {
 		return err

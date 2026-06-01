@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/utility"
 	"github.com/celsiainternet/jdb/jdb"
@@ -44,7 +43,7 @@ func Load(db *jdb.DB, schema, name string) (*Instance, error) {
 func Define(db *jdb.DB, schema, name string) (*Instance, error) {
 	schemaObj, err := defineSchema(db, schema)
 	if err != nil {
-		return nil, console.Panic(err)
+		return nil, err
 	}
 
 	if name == "" {

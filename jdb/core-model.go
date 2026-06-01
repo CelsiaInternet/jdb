@@ -3,7 +3,6 @@ package jdb
 import (
 	"fmt"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/timezone"
 )
@@ -33,7 +32,7 @@ func (s *DB) defineModel() error {
 		cf.SystemId,
 	)
 	if err := coreModel.Init(); err != nil {
-		return console.Panic(err)
+		return err
 	}
 
 	return nil

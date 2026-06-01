@@ -25,7 +25,7 @@ func (s *Command) updated() error {
 
 	s.Result = results
 	if !s.Result.Ok {
-		return fmt.Errorf(MSG_NOT_UPDATE_DATA)
+		return nil
 	}
 
 	s.ResultMap, err = model.getMapResultByPk(s.Result.Result)

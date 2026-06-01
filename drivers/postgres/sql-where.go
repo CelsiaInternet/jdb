@@ -80,6 +80,23 @@ func whereValue(val interface{}) string {
 
 		vals := strings.Join(parts, ",")
 		return vals
+	case []string:
+		vals := strings.Join(v, ",")
+		return vals
+	case []int:
+		parts := make([]string, len(v))
+		for i, vl := range v {
+			parts[i] = fmt.Sprint(vl)
+		}
+		vals := strings.Join(parts, ",")
+		return vals
+	case []float64:
+		parts := make([]string, len(v))
+		for i, vl := range v {
+			parts[i] = fmt.Sprint(vl)
+		}
+		vals := strings.Join(parts, ",")
+		return vals
 	default:
 		return strs.Format(`%v`, jdb.Quote(v))
 	}

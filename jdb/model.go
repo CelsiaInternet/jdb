@@ -679,13 +679,13 @@ func (s *Model) GetWhereByPrimaryKeys(data et.Json) ([]*QlCondition, error) {
 
 		if len(result) == 0 {
 			result = append(result, &QlCondition{
-				Field:    col,
+				Field:    col.Name,
 				Operator: Equal,
 				Value:    val,
 			})
 		} else {
 			result = append(result, &QlCondition{
-				Field:     col,
+				Field:     col.Name,
 				Operator:  Equal,
 				Value:     val,
 				Connector: And,

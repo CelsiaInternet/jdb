@@ -198,8 +198,7 @@ func (s *QlFroms) getField(name string, create bool) *Field {
 * @return interface{}
 **/
 func (s *QlFroms) validator(val interface{}) interface{} {
-	switch v := val.(type) {
-	case string:
+	getField := func(v string) interface{} {
 		if strings.HasPrefix(v, ":") {
 			v = strings.TrimPrefix(v, ":")
 			field := s.getField(v, false)
@@ -228,10 +227,15 @@ func (s *QlFroms) validator(val interface{}) interface{} {
 		}
 
 		return v
+	}
+
+	switch v := val.(type) {
+	case string:
+		return getField(v)
 	case *Field:
-		return v
+		return getField(v.Name)
 	case Field:
-		return v
+		return getField(v.Name)
 	case *Column:
 		return GetField(v)
 	case Column:

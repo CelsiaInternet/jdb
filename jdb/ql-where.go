@@ -9,11 +9,29 @@ import (
 )
 
 /**
-* Where
-* @param val interface{}
+* Add
+* @param w *QlCondition
 * @return *Ql
 **/
-func (s *Ql) Where(val interface{}) *Ql {
+func (s *Ql) AddWhere(w *QlCondition) *Ql {
+	s.QlWhere.Where(w.Field)
+	condition := s.condition()
+	if condition == nil {
+		return s
+	}
+
+	condition.Operator = w.Operator
+	condition.setVal(w.Value)
+
+	return s
+}
+
+/**
+* Where
+* @param val any
+* @return *Ql
+**/
+func (s *Ql) Where(val any) *Ql {
 	s.QlWhere.Where(val)
 
 	return s
@@ -246,10 +264,11 @@ func (s *Ql) setWheres(wheres et.Json) *Ql {
 * @return error
 **/
 func (s *Ql) getWhereByPrimaryKeys(data et.Json) error {
-	for name, col := range s.Froms.Froms[0].PrimaryKeys {
+	from := s.Froms.Froms[0]
+	for name, col := range from.PrimaryKeys {
 		val := data.Get(name)
 		if val == nil {
-			return fmt.Errorf("getWhereByPrimaryKeys:"+MSG_PRIMARY_KEY_REQUIRED, name, s.Froms.Froms[0].Name, data.ToString())
+			return fmt.Errorf("primary key %s is required in model:%s", name, from.Name)
 		}
 
 		s.Where(col.Name).Eq(val)

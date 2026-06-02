@@ -15,12 +15,14 @@ func (s *Command) current() error {
 	}
 
 	ql := From(model)
-	err := ql.getWhereByPrimaryKeys(s.Data[0])
-	if err != nil {
-		return err
+	if s.Command == Upsert {
+		err := ql.getWhereByPrimaryKeys(s.Data[0])
+		if err != nil {
+			return err
+		}
 	}
 	for _, w := range s.Wheres {
-		ql.Where(w.Field).Eq(w.Value)
+		ql.AddWhere(w)
 	}
 	ql.IsDebug = s.IsDebug
 	ql.language = s.language

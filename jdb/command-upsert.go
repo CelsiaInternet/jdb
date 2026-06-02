@@ -12,15 +12,17 @@ func (s *Command) upsert() error {
 		return fmt.Errorf(MSG_MANY_INSERT_DATA)
 	}
 
-	data := s.Data[0]
-	where, err := model.GetWhereByPrimaryKeys(data)
-	if err != nil {
-		return err
+	if len(s.QlWhere.Wheres) == 0 {
+		data := s.Data[0]
+		where, err := model.GetWhereByPrimaryKeys(data)
+		if err != nil {
+			return err
+		}
+		s.QlWhere.Wheres = where
 	}
 
-	s.current(where)
+	s.current()
 	if s.Current.Ok {
-		s.setWheres(where)
 		s.Command = Update
 		return s.updated()
 	}

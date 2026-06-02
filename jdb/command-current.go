@@ -2,11 +2,9 @@ package jdb
 
 import (
 	"fmt"
-
-	"github.com/celsiainternet/elvis/et"
 )
 
-func (s *Command) current(where et.Json) error {
+func (s *Command) current() error {
 	model := s.getModel()
 	if model == nil {
 		return fmt.Errorf(MSG_MODEL_REQUIRED)
@@ -18,10 +16,11 @@ func (s *Command) current(where et.Json) error {
 
 	columns := model.getColumnsByType(TpColumn)
 	ql := From(model)
-	ql.setWheres(where)
+	ql.Wheres = append(ql.Wheres, s.Wheres...)
+	ql.IsDebug = s.IsDebug
+	ql.language = s.language
 	ql.setSelects(columns...)
 	current, err := ql.
-		setDebug(s.IsDebug).
 		AllTx(s.tx)
 	if err != nil {
 		return err

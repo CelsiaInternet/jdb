@@ -663,14 +663,12 @@ func (s *Model) GetWhereByRequired(data et.Json) (et.Json, error) {
 * @param data et.Json
 * @return et.Json
 **/
-func (s *Model) GetWhereByPrimaryKeys(data et.Json) (et.Json, error) {
-	result := et.Json{}
-	and := []et.Json{}
-	n := 0
+func (s *Model) GetWhereByPrimaryKeys(data et.Json) ([]*QlCondition, error) {
+	result := []*QlCondition{}
 	for name := range s.PrimaryKeys {
 		val := data.Get(name)
 		if val == nil {
-			return et.Json{}, fmt.Errorf("GetWhereByPrimaryKeys:"+MSG_PRIMARY_KEY_REQUIRED, name, s.Name, data.ToString())
+			return result, fmt.Errorf("GetWhereByPrimaryKeys:"+MSG_PRIMARY_KEY_REQUIRED, name, s.Name, data.ToString())
 		}
 
 		col := s.getColumn(name)
@@ -679,21 +677,20 @@ func (s *Model) GetWhereByPrimaryKeys(data et.Json) (et.Json, error) {
 			val = s.GetId(vs)
 		}
 
-		if n == 0 {
-			result[name] = et.Json{
-				"eq": val,
-			}
+		if len(result) == 0 {
+			result = append(result, &QlCondition{
+				Field:    col,
+				Operator: Equal,
+				Value:    val,
+			})
 		} else {
-			and = append(and, et.Json{
-				name: et.Json{
-					"eq": val,
-				}})
+			result = append(result, &QlCondition{
+				Field:     col,
+				Operator:  Equal,
+				Value:     val,
+				Connector: And,
+			})
 		}
-		n++
-	}
-
-	if len(and) > 0 {
-		result["AND"] = and
 	}
 
 	return result, nil

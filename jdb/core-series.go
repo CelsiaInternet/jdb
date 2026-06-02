@@ -61,8 +61,6 @@ func GetSeries(kind, tag string) (string, error) {
 			data.Set("value", ":value + 1")
 			return nil
 		}).
-		Where("kind").Eq(kind).
-		And("tag").Eq(tag).
 		Return("value", "format").
 		One()
 	if err != nil {

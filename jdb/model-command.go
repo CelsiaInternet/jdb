@@ -48,7 +48,8 @@ func (s *Model) Delete(val string) *Command {
 * @return *Command
 **/
 func (s *Model) Upsert(data et.Json) *Command {
-	return NewCommand(s, []et.Json{data}, Upsert)
+	result := NewCommand(s, []et.Json{data}, Upsert)
+	return result
 }
 
 /**

@@ -14,11 +14,17 @@ func (s *Command) current() error {
 		return fmt.Errorf(MSG_MANY_INSERT_DATA)
 	}
 
-	columns := model.getColumnsByType(TpColumn)
 	ql := From(model)
-	ql.Wheres = append(ql.Wheres, s.Wheres...)
+	err := ql.getWhereByPrimaryKeys(s.Data[0])
+	if err != nil {
+		return err
+	}
+	for _, w := range s.Wheres {
+		ql.Where(w.Field).Eq(w.Value)
+	}
 	ql.IsDebug = s.IsDebug
 	ql.language = s.language
+	columns := model.getColumnsByType(TpColumn)
 	ql.setSelects(columns...)
 	current, err := ql.
 		AllTx(s.tx)

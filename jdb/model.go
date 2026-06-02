@@ -656,44 +656,6 @@ func (s *Model) GetWhereByRequired(data et.Json) (et.Json, error) {
 }
 
 /**
-* GetWhereByPrimaryKeys
-* @param data et.Json
-* @return et.Json
-**/
-func (s *Model) GetWhereByPrimaryKeys(data et.Json) ([]*QlCondition, error) {
-	result := []*QlCondition{}
-	for name := range s.PrimaryKeys {
-		val := data.Get(name)
-		if val == nil {
-			return result, fmt.Errorf("GetWhereByPrimaryKeys:"+MSG_PRIMARY_KEY_REQUIRED, name, s.Name, data.ToString())
-		}
-
-		col := s.getColumn(name)
-		if col != nil && col.IsKeyfield {
-			vs := fmt.Sprintf(`%v`, val)
-			val = s.GetId(vs)
-		}
-
-		if len(result) == 0 {
-			result = append(result, &QlCondition{
-				Field:    col,
-				Operator: Equal,
-				Value:    val,
-			})
-		} else {
-			result = append(result, &QlCondition{
-				Field:     col,
-				Operator:  Equal,
-				Value:     val,
-				Connector: And,
-			})
-		}
-	}
-
-	return result, nil
-}
-
-/**
 * sourceIdx
 * @return int
 **/

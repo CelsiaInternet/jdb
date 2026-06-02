@@ -1,6 +1,7 @@
 package jdb
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
@@ -237,4 +238,22 @@ func (s *Ql) setWheres(wheres et.Json) *Ql {
 	}
 
 	return s
+}
+
+/**
+* getWhereByPrimaryKeys
+* @param data et.Json
+* @return error
+**/
+func (s *Ql) getWhereByPrimaryKeys(data et.Json) error {
+	for name, col := range s.Froms.Froms[0].PrimaryKeys {
+		val := data.Get(name)
+		if val == nil {
+			return fmt.Errorf("getWhereByPrimaryKeys:"+MSG_PRIMARY_KEY_REQUIRED, name, s.Froms.Froms[0].Name, data.ToString())
+		}
+
+		s.Where(col.Name).Eq(val)
+	}
+
+	return nil
 }

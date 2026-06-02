@@ -82,7 +82,6 @@ func (s *Instance) Get(id string, dest any) (bool, error) {
 
 	items, err := s.model.
 		Where(jdb.KEY).Eq(id).
-		Debug().
 		One()
 	if err != nil {
 		return false, err

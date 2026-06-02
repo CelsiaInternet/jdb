@@ -679,8 +679,7 @@ func (s *QlWhere) NotNull() *QlWhere {
 
 /**
 * Debug
-* @param v bool
-* @return *Command
+* @return *QlWhere
 **/
 func (s *QlWhere) Debug() *QlWhere {
 	s.IsDebug = true

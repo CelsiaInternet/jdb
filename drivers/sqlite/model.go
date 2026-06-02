@@ -35,56 +35,32 @@ func (s *SqlLite) existTable(name string) (bool, error) {
 /**
 * LoadModel
 * @param model *jdb.Model
-* @return error
+* @return (bool, error)
 **/
-func (s *SqlLite) LoadModel(model *jdb.Model) error {
+func (s *SqlLite) LoadModel(model *jdb.Model) (bool, error) {
 	table := tableName(model)
 	exist, err := s.existTable(table)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	if !exist {
-		sql := s.ddlTable(model)
-		sqlIndex := s.ddlTableIndex(model)
-		sql = strs.Append(sql, sqlIndex, "\n")
-		if model.IsDebug {
-			console.Debug(sql)
-		}
-
-		_, err = jdb.Query(s.jdb, sql)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	if exist {
+		return false, nil
 	}
 
-	if model.UseCore {
-		return nil
+	sql := s.ddlTable(model)
+	sqlIndex := s.ddlTableIndex(model)
+	sql = strs.Append(sql, sqlIndex, "\n")
+	if model.IsDebug {
+		console.Debug(sql)
 	}
 
-	sql := `
-	SELECT 
-    name AS column_name,
-    type AS data_type,
-    256 AS size
-	FROM pragma_table_info(?);`
-
-	items, err := jdb.Query(s.jdb, sql, table)
+	_, err = jdb.Query(s.jdb, sql)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	for _, item := range items.Result {
-		name := item.Str("column_name")
-		dataType := item.Str("data_type")
-		size := item.Int("size")
-		typeData := s.strToTypeData(dataType, size)
-		model.DefineColumn(name, typeData)
-	}
-
-	return nil
+	return true, nil
 }
 
 /**

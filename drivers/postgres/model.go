@@ -39,73 +39,38 @@ func (s *Postgres) existTable(schema, name string) (bool, error) {
 /**
 * LoadModel
 * @param model *jdb.Model
-* @return error
+* @return (bool, error)
 **/
-func (s *Postgres) LoadModel(model *jdb.Model) error {
+func (s *Postgres) LoadModel(model *jdb.Model) (bool, error) {
 	err := s.loadSchema(model.Schema)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	exist, err := s.existTable(model.Schema, model.Table)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	if !exist {
-		sql := s.ddlTable(model)
-		sqlIndex := s.ddlTableIndex(model)
-		sql = strs.Append(sql, sqlIndex, "\n")
-		if model.IsDebug {
-			console.Debug(sql)
-		}
-
-		_, err = jdb.Query(s.jdb, sql)
-		if err != nil {
-			return err
-		}
-
-		console.LogKF("Model", "Create %s", tableName(model))
-
-		return nil
+	if exist {
+		return true, nil
 	}
 
-	if model.UseCore {
-		return nil
+	sql := s.ddlTable(model)
+	sqlIndex := s.ddlTableIndex(model)
+	sql = strs.Append(sql, sqlIndex, "\n")
+	if model.IsDebug {
+		console.Debug(sql)
 	}
 
-	sql := `
-	SELECT
-	a.attname AS column_name, 
-	t.typname AS data_type,
-	CASE 
-		WHEN a.attlen > 0 THEN a.attlen
-		WHEN a.attlen = -1 AND a.atttypmod > 0 THEN a.atttypmod - 4
-		ELSE NULL
-	END AS size
-	FROM pg_catalog.pg_attribute a
-	JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
-	JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
-	JOIN pg_catalog.pg_type t ON a.atttypid = t.oid
-	WHERE n.nspname = $1
-	AND c.relname = $2
-	AND a.attnum > 0
-	AND NOT a.attisdropped;`
-
-	items, err := jdb.Query(s.jdb, sql, model.Schema, model.Table)
+	_, err = jdb.Query(s.jdb, sql)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	for _, item := range items.Result {
-		name := item.Str("column_name")
-		dataType := item.Str("data_type")
-		size := item.Int("size")
-		typeData := s.strToTypeData(dataType, size)
-		model.DefineColumn(name, typeData)
-	}
+	console.LogKF("Model", "Create %s", tableName(model))
 
-	return nil
+	return false, nil
 }
 
 /**

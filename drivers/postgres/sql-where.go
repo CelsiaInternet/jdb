@@ -71,6 +71,10 @@ func whereValue(val interface{}) string {
 		return asField(v)
 	case *jdb.Field:
 		return asField(*v)
+	case jdb.Column:
+		return v.Name
+	case *jdb.Column:
+		return v.Name
 	case []interface{}:
 		parts := make([]string, len(v))
 		for i, vl := range v {

@@ -17,7 +17,7 @@ type Driver interface {
 	Name() string
 	Connect(connection ConnectParams) (*sql.DB, error)
 	/* Model */
-	LoadModel(model *Model) error
+	LoadModel(model *Model) (bool, error)
 	DropModel(model *Model) error
 	EmptyModel(model *Model) error
 	MutateModel(model *Model) error

@@ -18,7 +18,7 @@ func (s *Command) upsert() error {
 		if err != nil {
 			return err
 		}
-		s.QlWhere.Wheres = where
+		s.QlWhere.Wheres = append(s.QlWhere.Wheres, where...)
 	}
 
 	s.current()

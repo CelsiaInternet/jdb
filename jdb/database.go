@@ -342,11 +342,11 @@ func (s *DB) DropSchema(name string) error {
 /**
 * LoadModel
 * @param model *Model
-* @return error
+* @return (bool, error)
 **/
-func (s *DB) LoadModel(model *Model) error {
+func (s *DB) LoadModel(model *Model) (bool, error) {
 	if s.driver == nil {
-		return fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
+		return false, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
 	return s.driver.LoadModel(model)

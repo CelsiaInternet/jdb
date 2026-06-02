@@ -463,21 +463,18 @@ func (s *Model) Init() error {
 		}
 	}()
 
-	if s.needMutate {
-		err := s.Db.MutateModel(s)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := s.Db.LoadModel(s)
-		if err != nil {
-			return err
-		}
+	exist, err := s.Db.LoadModel(s)
+	if err != nil {
+		return err
 	}
 
 	s.isInit = true
 
-	err := s.Save()
+	if exist {
+		return nil
+	}
+
+	err = s.Save()
 	if err != nil {
 		return err
 	}
@@ -679,13 +676,13 @@ func (s *Model) GetWhereByPrimaryKeys(data et.Json) ([]*QlCondition, error) {
 
 		if len(result) == 0 {
 			result = append(result, &QlCondition{
-				Field:    col.Name,
+				Field:    col,
 				Operator: Equal,
 				Value:    val,
 			})
 		} else {
 			result = append(result, &QlCondition{
-				Field:     col.Name,
+				Field:     col,
 				Operator:  Equal,
 				Value:     val,
 				Connector: And,

@@ -22,18 +22,18 @@ var inb *Inbox
 * @param db *jdb.DB, schema, name string
 * @return (*Inbox, error)
 **/
-func Load(db *jdb.DB, schema, name string) (*Inbox, error) {
+func Load(db *jdb.DB, schema string) error {
 	if inb != nil {
-		return inb, nil
+		return nil
 	}
 
 	var err error
-	inb, err = Define(db, schema, name)
+	inb, err = Define(db, schema)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return inb, nil
+	return nil
 }
 
 /**
@@ -41,16 +41,13 @@ func Load(db *jdb.DB, schema, name string) (*Inbox, error) {
 * @param db *jdb.DB, schema, name string
 * @return (*Inbox, error)
 **/
-func Define(db *jdb.DB, schema, name string) (*Inbox, error) {
+func Define(db *jdb.DB, schema string) (*Inbox, error) {
 	schemaObj, err := defineSchema(db, schema)
 	if err != nil {
 		return nil, err
 	}
 
-	if name == "" {
-		name = "inboxes"
-	}
-
+	name := "inboxes"
 	model := jdb.NewModel(schemaObj, name, 1)
 	model.DefineProjectModel()
 	model.DefineColumn("user_id", jdb.TypeDataKey)

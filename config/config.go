@@ -23,18 +23,18 @@ var (
 * @param db *jdb.DB, schema string, name string
 * @return *Config, error
 **/
-func Load(db *jdb.DB, schema, name string) (*Config, error) {
+func Load(db *jdb.DB, schema string) error {
 	if cfg != nil {
-		return cfg, nil
+		return nil
 	}
 
 	var err error
-	cfg, err = Define(db, schema, name)
+	cfg, err = Define(db, schema)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return cfg, nil
+	return nil
 }
 
 /**
@@ -42,16 +42,13 @@ func Load(db *jdb.DB, schema, name string) (*Config, error) {
 * @param db *jdb.DB, schema string, name string
 * @return *Config, error
 **/
-func Define(db *jdb.DB, schema, name string) (*Config, error) {
+func Define(db *jdb.DB, schema string) (*Config, error) {
 	schemaObj, err := defineSchema(db, schema)
 	if err != nil {
 		return nil, err
 	}
 
-	if name == "" {
-		name = "Configs"
-	}
-
+	name := "configs"
 	model := jdb.NewModel(schemaObj, name, 1)
 	model.DefineCreatedAtField()
 	model.DefineSystemKeyField()

@@ -8,6 +8,7 @@ import (
 	"github.com/celsiainternet/elvis/dt"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/event"
+	"github.com/celsiainternet/elvis/middleware"
 	"github.com/celsiainternet/elvis/msg"
 	"github.com/celsiainternet/elvis/timezone"
 	"github.com/celsiainternet/elvis/utility"
@@ -29,18 +30,19 @@ var (
 * @param db *jdb.DB, schema string, name string
 * @return *Authorization, error
 **/
-func Load(db *jdb.DB, schema, name string) (*Authorization, error) {
+func Load(db *jdb.DB, schema string) error {
 	if auth != nil {
-		return auth, nil
+		return nil
 	}
 
 	var err error
-	auth, err = Define(db, schema, name)
+	auth, err = Define(db, schema)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return auth, nil
+	middleware.SetAuthorizationStore(auth)
+	return nil
 }
 
 /**
@@ -48,7 +50,7 @@ func Load(db *jdb.DB, schema, name string) (*Authorization, error) {
 * @param db *jdb.DB, schema string, name string
 * @return *Authorization, error
 **/
-func Define(db *jdb.DB, schema, name string) (*Authorization, error) {
+func Define(db *jdb.DB, schema string) (*Authorization, error) {
 	_, err := cache.Load()
 	if err != nil {
 		return nil, err
@@ -59,10 +61,7 @@ func Define(db *jdb.DB, schema, name string) (*Authorization, error) {
 		return nil, err
 	}
 
-	if name == "" {
-		name = "Authorizationes"
-	}
-
+	name := "authorizations"
 	model := jdb.NewModel(schemaObj, name, 1)
 	model.DefineCreatedAtField()
 	model.DefineSystemKeyField()

@@ -25,9 +25,9 @@ var (
 )
 
 /**
-* Load
-* @param db *jdb.DB, schema, name string
-* @return (*Authorization, error)
+* Load: Returns the existing Authorization singleton or creates one if it does not exist.
+* @param db *jdb.DB, schema string, name string
+* @return *Authorization, error
 **/
 func Load(db *jdb.DB, schema, name string) (*Authorization, error) {
 	if auth != nil {
@@ -44,9 +44,9 @@ func Load(db *jdb.DB, schema, name string) (*Authorization, error) {
 }
 
 /**
-* Define
-* @param db *jdb.DB, schema, name string
-* @return (*Authorization, error)
+* Define: Creates and initializes a new Authorization instance with its schema and model.
+* @param db *jdb.DB, schema string, name string
+* @return *Authorization, error
 **/
 func Define(db *jdb.DB, schema, name string) (*Authorization, error) {
 	_, err := cache.Load()
@@ -117,9 +117,9 @@ func Define(db *jdb.DB, schema, name string) (*Authorization, error) {
 }
 
 /**
-* Author
-* @param projectId, profileId, method, path string
-* @return et.Item, error
+* Author: Checks whether a profile is authorized to access a given method and path within a project.
+* @param projectId string, profileId string, method string, path string
+* @return bool, error
 **/
 func (s *Authorization) Author(projectId, profileId, method, path string) (bool, error) {
 	key := fmt.Sprintf("%s:%s:%s:%s", projectId, profileId, method, path)
@@ -143,8 +143,8 @@ func (s *Authorization) Author(projectId, profileId, method, path string) (bool,
 }
 
 /**
-* RemoveAuthor
-* @param projectId, profileId, method, path string
+* RemoveAuthor: Removes the authorization for a profile to access a given method and path within a project.
+* @param projectId string, profileId string, method string, path string
 * @return error
 **/
 func (s *Authorization) RemoveAuthor(projectId, profileId, method, path string) error {
@@ -166,9 +166,9 @@ func (s *Authorization) RemoveAuthor(projectId, profileId, method, path string) 
 }
 
 /**
-* StateAuthorizationes
-* @param id, stateId, createdBy string
-* @return et.Item, error
+* SetAuthor: Grants a profile authorization to access a given method and path within a project.
+* @param projectId string, profileId string, method string, path string
+* @return error
 **/
 func (s *Authorization) SetAuthor(projectId, profileId, method, path string) error {
 	if !utility.ValidStr(method, 0, []string{""}) {
@@ -202,8 +202,8 @@ func (s *Authorization) SetAuthor(projectId, profileId, method, path string) err
 }
 
 /**
-* SetPath
-* @params method, path string
+* SetPath: Registers a method and path as a known authorization endpoint.
+* @param method string, path string
 * @return error
 **/
 func (s *Authorization) SetPath(method, path string) error {
@@ -216,8 +216,8 @@ func (s *Authorization) SetPath(method, path string) error {
 }
 
 /**
-* RemoveAuthor
-* @param projectId, profileId, method, path string
+* RemovePath: Removes a method and path from the known authorization endpoints.
+* @param method string, path string
 * @return error
 **/
 func (s *Authorization) RemovePath(method, path string) error {
@@ -233,9 +233,9 @@ func (s *Authorization) RemovePath(method, path string) error {
 }
 
 /**
-* Query
+* Query: Executes an authorization query and returns the result.
 * @param query et.Json
-* @return interface{}, error
+* @return et.Json, error
 **/
 func (s *Authorization) Query(query et.Json) (et.Json, error) {
 	result, err := jdb.From(s.model).

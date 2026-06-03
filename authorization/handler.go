@@ -83,3 +83,15 @@ func Query(query et.Json) (et.Json, error) {
 
 	return auth.Query(query)
 }
+
+/**
+* InitEvent: Initializes the authorization event listeners.
+* @return error
+**/
+func InitEvent() error {
+	if auth == nil {
+		return errors.New(MSG_AUTHORIZATION_NOT_DEFINED)
+	}
+
+	return auth.InitEvent()
+}

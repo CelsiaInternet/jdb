@@ -15,13 +15,13 @@ const (
 * InitEven: Subscribes to API gateway events for route authorization changes.
 * @return void
 **/
-func (s *Authorization) InitEven() error {
-	err := event.Subscribe(router.APIGATEWAY_SET_RESOLVE, s.eventSetResolve)
+func (s *Authorization) InitEvent() error {
+	err := event.Stack(router.APIGATEWAY_SET_RESOLVE, s.eventSetResolve)
 	if err != nil {
 		return err
 	}
 
-	err = event.Subscribe(router.APIGATEWAY_DELETE_RESOLVE, s.eventDeleteResolve)
+	err = event.Stack(router.APIGATEWAY_DELETE_RESOLVE, s.eventDeleteResolve)
 	if err != nil {
 		return err
 	}

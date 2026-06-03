@@ -20,8 +20,8 @@ type Authorization struct {
 }
 
 var (
-	auth           *Authorization
-	ErrorSetAuthor = fmt.Errorf(msg.RECORD_NOT_FOUND)
+	auth        *Authorization
+	ErrorInsert = fmt.Errorf(msg.RECORD_FOUND)
 )
 
 /**
@@ -72,18 +72,6 @@ func Define(db *jdb.DB, schema, name string) (*Authorization, error) {
 	model.DefineColumn("method", jdb.TypeDataText)
 	model.DefineColumn("path", jdb.TypeDataFullText)
 	model.DefinePrimaryKey("project_id", "profile_id", "method", "path")
-	model.DefineCalc("delete", func(data et.Json) {
-		statusId := data.Str(jdb.STATUS_ID)
-		if map[string]bool{
-			utility.FOR_DELETE: true,
-			utility.ARCHIVED:   true,
-			utility.CANCELLED:  true,
-		}[statusId] {
-			data.Set("delete", true)
-		} else {
-			data.Set("delete", false)
-		}
-	})
 	model.BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
 		projectId := data.Str("project_id")
 		profileId := data.Str("profile_id")
@@ -100,7 +88,7 @@ func Define(db *jdb.DB, schema, name string) (*Authorization, error) {
 		}
 
 		if exist {
-			return ErrorSetAuthor
+			return ErrorInsert
 		}
 
 		return nil
@@ -208,7 +196,7 @@ func (s *Authorization) SetAuthor(projectId, profileId, method, path string) err
 **/
 func (s *Authorization) SetPath(method, path string) error {
 	err := s.SetAuthor("", "", method, path)
-	if err != nil && !errors.Is(err, ErrorSetAuthor) {
+	if err != nil && !errors.Is(err, ErrorInsert) {
 		return err
 	}
 

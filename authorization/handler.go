@@ -88,10 +88,10 @@ func Query(query et.Json) (et.Json, error) {
 * InitEvent: Initializes the authorization event listeners.
 * @return error
 **/
-func InitEvent() error {
+func InitEvent(projectId string, profiles []string) error {
 	if auth == nil {
 		return errors.New(MSG_AUTHORIZATION_NOT_DEFINED)
 	}
 
-	return auth.InitEvent()
+	return auth.InitEvent(projectId, profiles)
 }

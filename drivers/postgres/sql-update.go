@@ -29,6 +29,9 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) string {
 				set = strs.Append(set, def, ",\n")
 			} else if field.Column.TypeColumn == jdb.TpAtribute && from.SourceField != nil {
 				val := jdb.JsonQuote(field.Value)
+				if val == "null" || val == "NULL" {
+					continue
+				}
 				if len(atribs) == 0 {
 					atribs = fmt.Sprintf("COALESCE(%s, '{}')", from.SourceField.Name)
 					atribs = strs.Format("jsonb_set(%s, '{%s}', %v::jsonb, true)", atribs, key, val)

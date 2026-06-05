@@ -187,7 +187,7 @@ func (s *DB) Load(kind, name string, out interface{}) error {
 		console.Debug(kind, ":", string(definition))
 	}
 
-	err = json.Unmarshal(definition, out)
+	err = json.Unmarshal(definition, &out)
 	if err != nil {
 		return err
 	}

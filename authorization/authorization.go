@@ -16,8 +16,10 @@ import (
 )
 
 type Authorization struct {
-	schema *jdb.Schema
-	model  *jdb.Model
+	schema           *jdb.Schema
+	model            *jdb.Model
+	defaultProjectId string
+	defaultProfiles  []string
 }
 
 var (
@@ -69,7 +71,7 @@ func Define(db *jdb.DB, schema string) (*Authorization, error) {
 	model.DefineColumn("project_id", jdb.TypeDataKey)
 	model.DefineColumn("profile_id", jdb.TypeDataKey)
 	model.DefineColumn("method", jdb.TypeDataText)
-	model.DefineColumn("path", jdb.TypeDataFullText)
+	model.DefineColumn("path", jdb.TypeDataText)
 	model.DefinePrimaryKey("project_id", "profile_id", "method", "path")
 	model.BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
 		projectId := data.Str("project_id")

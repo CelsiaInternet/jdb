@@ -58,7 +58,7 @@ func Define(db *jdb.DB, schema, name string) (*Instance, error) {
 	model.DefineColumn("definition", jdb.TypeDataBytes)
 	model.DefinePrimaryKey(jdb.KEY)
 	model.DefineSystemKeyField()
-	model.DefineIndex(true, "tag")
+	model.DefineIndex(true, "tag", "kind", "user_id")
 
 	if err := model.Init(); err != nil {
 		return nil, err
@@ -80,23 +80,23 @@ func (s *Instance) Get(id string, dest any) (bool, error) {
 		return false, fmt.Errorf("model not found")
 	}
 
-	items, err := s.model.
+	item, err := s.model.
 		Where(jdb.KEY).Eq(id).
 		One()
 	if err != nil {
 		return false, err
 	}
 
-	if !items.Ok {
+	if !item.Ok {
 		return false, nil
 	}
 
-	scr, err := items.Byte("definition")
+	bt, err := item.Byte("definition")
 	if err != nil {
 		return false, err
 	}
 
-	err = json.Unmarshal(scr, dest)
+	err = json.Unmarshal(bt, &dest)
 	if err != nil {
 		return false, err
 	}
@@ -114,6 +114,7 @@ func (s *Instance) Set(id, tag string, obj any) error {
 		return nil
 	}
 
+	data := et.Json{}
 	bt, ok := obj.([]byte)
 	if !ok {
 		var err error
@@ -123,13 +124,13 @@ func (s *Instance) Set(id, tag string, obj any) error {
 		}
 	}
 
-	now := utility.Now()
-	data := et.Json{
+	data = et.Json{
 		jdb.KEY:      id,
 		"tag":        tag,
 		"definition": bt,
 	}
 
+	now := utility.Now()
 	_, err := s.model.
 		Upsert(data).
 		BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
@@ -141,6 +142,7 @@ func (s *Instance) Set(id, tag string, obj any) error {
 			data[jdb.UPDATED_AT] = now
 			return nil
 		}).
+		Debug().
 		Exec()
 	if err != nil {
 		return err

@@ -1,6 +1,8 @@
 package authorization
 
 import (
+	"errors"
+
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/event"
 	"github.com/celsiainternet/elvis/router"
@@ -15,7 +17,10 @@ const (
 * InitEven: Subscribes to API gateway events for route authorization changes.
 * @return void
 **/
-func (s *Authorization) InitEvent() error {
+func (s *Authorization) InitEvent(projectId string, profiles []string) error {
+	s.defaultProjectId = projectId
+	s.defaultProfiles = profiles
+
 	err := event.Stack(router.APIGATEWAY_SET_RESOLVE, s.eventSetResolve)
 	if err != nil {
 		return err
@@ -42,9 +47,12 @@ func (s *Authorization) eventSetResolve(m event.EvenMessage) {
 	data := m.Data
 	method := data.Str("method")
 	path := data.Str("path")
-	err := s.SetPath(method, path)
-	if err != nil {
-		console.AlertF(`Authorization gateway error:%s`, err.Error())
+	for _, profile := range s.defaultProfiles {
+		err := s.SetAuthor(s.defaultProjectId, profile, method, path)
+		if err != nil && !errors.Is(err, ErrorInsert) {
+			console.AlertF(`Authorization gateway error:%s`, err.Error())
+			continue
+		}
 	}
 }
 

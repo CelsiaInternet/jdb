@@ -2,6 +2,7 @@ package jdb
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 
 	"github.com/celsiainternet/elvis/et"
@@ -236,11 +237,21 @@ func (s *Field) setAgregation(agr TypeAgregation) {
 * @return any
 **/
 func (s *Field) ValueQuoted() any {
-	if s.Unquoted {
-		return strs.Format(`%v`, s.Value)
+	validaObject := func(value any) any {
+		if s.Column.TypeData == TypeDataObject {
+			return fmt.Sprintf(`%v::jsonb`, value)
+		}
+
+		return value
 	}
 
-	return Quote(s.Value)
+	if s.Unquoted {
+		result := strs.Format(`%v`, s.Value)
+		return validaObject(result)
+	}
+
+	result := Quote(s.Value)
+	return validaObject(result)
 }
 
 /**

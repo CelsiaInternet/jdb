@@ -24,7 +24,7 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) string {
 	for _, value := range command.Values {
 		for key, field := range value {
 			if field.Column.TypeColumn == jdb.TpColumn {
-				val := field.ValueQuoted()
+				val := field.ValueQuoted()				
 				def := strs.Format(`%s = %v`, key, val)
 				set = strs.Append(set, def, ",\n")
 			} else if field.Column.TypeColumn == jdb.TpAtribute && from.SourceField != nil {

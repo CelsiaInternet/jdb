@@ -21,28 +21,41 @@ func GetInboxesById(id string) (et.Item, error) {
 
 /**
 * GetInboxesByCode
-* @param code string
+* @param kind, code string
 * @return et.Item, error
 **/
-func GetInboxesByCode(code string) (et.Item, error) {
+func GetInboxesByCode(kind, code string) (et.Item, error) {
 	if inb == nil {
 		return et.Item{}, fmt.Errorf("inbox not found")
 	}
 
-	return inb.GetInboxesByCode(code)
+	return inb.GetInboxesByCode(kind, code)
 }
 
 /**
 * GetInboxesByMy
-* @param userId, appId, inbox, status string, page, rows int
+* @param userId, appId, kind, status string, page, rows int
 * @return et.Items, error
 **/
-func GetInboxesByMy(userId, appId, inbox, status string, page, rows int) (et.Items, error) {
+func GetInboxesByUserId(userId, appId, kind, status string, page, rows int) (et.Items, error) {
 	if inb == nil {
 		return et.Items{}, fmt.Errorf("inbox not found")
 	}
 
-	return inb.GetInboxesByMy(userId, appId, inbox, status, page, rows)
+	return inb.GetInboxesByUserId(userId, appId, kind, status, page, rows)
+}
+
+/**
+* GetInboxesByClientId
+* @param clientId, appId, status string, page, rows int
+* @return et.Items, error
+**/
+func GetInboxesByClientId(clientId, appId, status string, page, rows int) (et.Items, error) {
+	if inb == nil {
+		return et.Items{}, fmt.Errorf("inbox not found")
+	}
+
+	return inb.GetInboxesByClientId(clientId, appId, status, page, rows)
 }
 
 /**
@@ -60,28 +73,28 @@ func GenInboxesCode(projectId string) (string, error) {
 
 /**
 * UpsertInboxes
-* @param projectId, id, userId, appId, inbox string, data et.Json, createdBy string
+* @param projectId, id, clientId, appId, kind string, data et.Json, userId string
 * @return et.Item, error
 **/
-func UpsertInboxes(projectId, id, userId, appId, inbox string, data et.Json, createdBy string) (et.Item, error) {
+func UpsertInboxes(projectId, id, clientId, appId, kind string, data et.Json, userId string) (et.Item, error) {
 	if inb == nil {
 		return et.Item{}, fmt.Errorf("inbox not found")
 	}
 
-	return inb.UpsertInboxes(projectId, id, userId, appId, inbox, data, createdBy)
+	return inb.UpsertInboxes(projectId, id, clientId, appId, kind, data, userId)
 }
 
 /**
 * StateInboxes
-* @param id, stateId, createdBy string
+* @param id, status, userId string
 * @return et.Item, error
 **/
-func StateInboxes(id, stateId, createdBy string) (et.Item, error) {
+func StateInboxes(id, status, userId string) (et.Item, error) {
 	if inb == nil {
 		return et.Item{}, fmt.Errorf("inbox not found")
 	}
 
-	return inb.StateInboxes(id, stateId, createdBy)
+	return inb.StateInboxes(id, status, userId)
 }
 
 /**

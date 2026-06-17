@@ -6,6 +6,7 @@ import (
 	"github.com/celsiainternet/elvis/dt"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/msg"
+	"github.com/celsiainternet/elvis/strs"
 	"github.com/celsiainternet/elvis/utility"
 	"github.com/celsiainternet/jdb/jdb"
 )
@@ -50,17 +51,19 @@ func Define(db *jdb.DB, schema string) (*Inbox, error) {
 	name := "inboxes"
 	model := jdb.NewModel(schemaObj, name, 1)
 	model.DefineProjectModel()
-	model.DefineColumn("user_id", jdb.TypeDataKey)
+	model.DefineColumn("user_id", jdb.TypeDataKey) // Identificador del usuario del sistema
 	model.DefineColumn("app_id", jdb.TypeDataKey)
 	model.DefineColumn("kind", jdb.TypeDataText)
 	model.DefineColumn("code", jdb.TypeDataKey)
 	model.DefineColumn("title", jdb.TypeDataText)
+	model.DefineColumn("client_id", jdb.TypeDataText) // Identificador del cliente
 	model.DefineIndex(true,
 		"user_id",
 		"app_id",
 		"kind",
 		"code",
 		"title",
+		"client_id",
 	)
 	model.DefineCalc("delete", func(data et.Json) {
 		statusId := data.Str(jdb.STATUS_ID)
@@ -106,6 +109,12 @@ func Define(db *jdb.DB, schema string) (*Inbox, error) {
 * @return et.Item, error
 **/
 func (s *Inbox) GetInboxesById(id string) (et.Item, error) {
+	key := strs.Format("inbox:%s", id)
+	obj := dt.Get(key)
+	if obj.Ok {
+		return obj.Item, nil
+	}
+
 	item, err := s.model.
 		Where(jdb.KEY).Eq(id).
 		One()
@@ -113,6 +122,7 @@ func (s *Inbox) GetInboxesById(id string) (et.Item, error) {
 		return et.Item{}, err
 	}
 
+	dt.Up(key, item)
 	return item, nil
 }
 
@@ -121,7 +131,13 @@ func (s *Inbox) GetInboxesById(id string) (et.Item, error) {
 * @param code string
 * @return et.Item, error
 **/
-func (s *Inbox) GetInboxesByCode(code string) (et.Item, error) {
+func (s *Inbox) GetInboxesByCode(kind, code string) (et.Item, error) {
+	key := strs.Format("inbox:%s:%s", kind, code)
+	obj := dt.Get(key)
+	if obj.Ok {
+		return obj.Item, nil
+	}
+
 	item, err := s.model.
 		Where("code").Eq(code).
 		One()
@@ -129,19 +145,46 @@ func (s *Inbox) GetInboxesByCode(code string) (et.Item, error) {
 		return et.Item{}, err
 	}
 
+	dt.Up(key, item)
 	return item, nil
 }
 
 /**
-* GetInboxesByMy
-* @param userId, appId, inbox, status string, page, limit int
+* GetInboxesByUserId
+* @param userId, appId, kind, status string, page, limit int
 * @return et.Items, error
 **/
-func (s *Inbox) GetInboxesByMy(userId, appId, inbox, status string, page, rows int) (et.Items, error) {
+func (s *Inbox) GetInboxesByUserId(userId, appId, kind, status string, page, rows int) (et.Items, error) {
 	ql := s.model.
 		Where("user_id").Eq(userId).
 		And("app_id").Eq(appId).
-		And("inbox").Eq(inbox)
+		And("kind").Eq(kind)
+	if status == "0" {
+		ql = ql.And("_status").In(status, "-2")
+	} else {
+		ql = ql.And("_status").Eq(status)
+	}
+
+	result, err := ql.
+		OrderByDesc(jdb.UPDATED_AT).
+		Page(page).
+		Rows(rows)
+	if err != nil {
+		return et.Items{}, err
+	}
+
+	return result, nil
+}
+
+/**
+* GetInboxesByClientId
+* @param clientId, appId, status string, page, rows int
+* @return et.Items, error
+**/
+func (s *Inbox) GetInboxesByClientId(clientId, appId, status string, page, rows int) (et.Items, error) {
+	ql := s.model.
+		Where("client_id").Eq(clientId).
+		And("app_id").Eq(appId)
 	if status == "0" {
 		ql = ql.And("_status").In(status, "-2")
 	} else {
@@ -175,16 +218,20 @@ func (s *Inbox) GenInboxesCode(projectId string) (string, error) {
 
 /**
 * UpsertInboxes
-* @param projectId, id string, userId, appId, inbox string, data et.Json, createdBy string
+* @param projectId, id string, userId, appId, kind string, data et.Json, createdBy string
 * @return et.Item, error
 **/
-func (s *Inbox) UpsertInboxes(projectId, id, userId, appId, inbox string, data et.Json, createdBy string) (et.Item, error) {
+func (s *Inbox) UpsertInboxes(projectId, id, clientId, appId, kind string, data et.Json, userId string) (et.Item, error) {
 	if !utility.ValidStr(projectId, 0, []string{""}) {
 		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.PROJECT_ID)
 	}
 
 	if !utility.ValidStr(id, 0, []string{""}) {
 		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.KEY)
+	}
+
+	if !utility.ValidStr(clientId, 0, []string{""}) {
+		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "client_id")
 	}
 
 	if !utility.ValidStr(userId, 0, []string{""}) {
@@ -195,33 +242,47 @@ func (s *Inbox) UpsertInboxes(projectId, id, userId, appId, inbox string, data e
 		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "app_id")
 	}
 
-	if !utility.ValidStr(inbox, 0, []string{""}) {
-		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "inbox")
+	if !utility.ValidStr(kind, 0, []string{""}) {
+		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "kind")
 	}
 
 	id = s.model.GetId(id)
 	now := utility.Now()
 	data[jdb.PROJECT_ID] = projectId
 	data[jdb.KEY] = id
-	data["inbox"] = inbox
+	data["kind"] = kind
 	result, err := s.model.
 		Upsert(data).
 		BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
-			code, err := jdb.GetSeries(inbox, projectId)
-			if err == nil {
-				data["code"] = code
+			code := data.Str("code")
+			if code == "" {
+				code, err := s.GenInboxesCode(projectId)
+				if err == nil {
+					data["code"] = code
+				}
 			}
 			data[jdb.CREATED_AT] = now
 			data[jdb.UPDATED_AT] = now
 			data[jdb.STATUS_ID] = utility.ACTIVE
 			data["app_id"] = appId
+			data["client_id"] = clientId
 			data["user_id"] = userId
-			data["created_by"] = createdBy
+			auditLog := data.ArrayJson("audit_log")
+			auditLog = append(auditLog, et.Json{
+				"user_id": userId,
+				"action":  "create",
+				"date":    now,
+			})
 			return nil
 		}).
 		BeforeUpdate(func(tx *jdb.Tx, data et.Json) error {
 			data[jdb.UPDATED_AT] = now
-			data["updated_by"] = createdBy
+			auditLog := data.ArrayJson("audit_log")
+			auditLog = append(auditLog, et.Json{
+				"user_id": userId,
+				"action":  "update",
+				"date":    now,
+			})
 			return nil
 		}).
 		Where(jdb.STATUS_ID).Eq(utility.ACTIVE).
@@ -230,16 +291,19 @@ func (s *Inbox) UpsertInboxes(projectId, id, userId, appId, inbox string, data e
 		return et.Item{}, err
 	}
 
+	key := strs.Format("inbox:%s", id)
+	dt.Drop(key)
+
 	return result.First(), nil
 }
 
 /**
 * StateInboxes
-* @param id, stateId, createdBy string
+* @param id, status, userId string
 * @return et.Item, error
 **/
-func (s *Inbox) StateInboxes(id, stateId, createdBy string) (et.Item, error) {
-	if !utility.ValidStr(stateId, 0, []string{""}) {
+func (s *Inbox) StateInboxes(id, status, userId string) (et.Item, error) {
+	if !utility.ValidStr(status, 0, []string{""}) {
 		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.STATUS_ID)
 	}
 
@@ -247,19 +311,30 @@ func (s *Inbox) StateInboxes(id, stateId, createdBy string) (et.Item, error) {
 		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.KEY)
 	}
 
+	now := utility.Now()
 	result, err := s.model.
 		Update(et.Json{
-			jdb.STATUS_ID: stateId,
-			"updated_by":  createdBy,
+			jdb.STATUS_ID: status,
+		}).
+		BeforeUpdate(func(tx *jdb.Tx, data et.Json) error {
+			data[jdb.UPDATED_AT] = now
+			auditLog := data.ArrayJson("audit_log")
+			auditLog = append(auditLog, et.Json{
+				"user_id": userId,
+				"action":  fmt.Sprintf("cambios de estado a %s", status),
+				"date":    now,
+			})
+			return nil
 		}).
 		Where(jdb.KEY).Eq(id).
-		And(jdb.STATUS_ID).Neg(stateId).
+		And(jdb.STATUS_ID).Neg(status).
 		One()
 	if err != nil {
 		return et.Item{}, err
 	}
 
-	dt.Drop(id)
+	key := strs.Format("inbox:%s", id)
+	dt.Drop(key)
 
 	return et.Item{
 		Ok: result.Ok,

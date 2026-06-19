@@ -1,11 +1,11 @@
 package postgres
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/strs"
-	"github.com/celsiainternet/elvis/utility"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
 
@@ -14,54 +14,49 @@ import (
 * @param command *jdb.Command
 * @return string
 **/
-func (s *Postgres) sqlInsert(command *jdb.Command) string {
+func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
+	args := []any{}
 	from := command.GetFrom()
 	if from == nil {
-		return ""
+		return "", args
 	}
 
-	columns := utility.NewList()
-	value := ""
-	values := ""
-	atribs := et.Json{}
+	columns := []string{}
+	values := []string{}
+	returns := []string{}
+	_data := et.Json{}
 	for _, val := range command.Values {
 		for key, field := range val {
 			switch field.Column.TypeColumn {
 			case jdb.TpColumn:
-				columns.Add(key)
-				def := strs.Format(`%v`, field.ValueQuoted())
-				value = strs.Append(value, def, ", ")
+				if field.Column.Name == from.SourceField.Name {
+					continue
+				}
+				columns = append(columns, key)
+				arg := strs.Format(`%v`, field.Value)
+				args = append(args, arg)
+				values = append(values, fmt.Sprintf(`$%d`, len(args)))
+				returns = append(returns, strs.Format("'%s', %s", key, key))
 			case jdb.TpAtribute:
-				atribs.Set(key, field.Value)
+				_data.Set(key, field.Value)
 			}
 		}
-
-		if from.SourceField != nil && len(atribs) > 0 {
-			column := from.SourceField.Name
-			columns.Add(column)
-
-			def := strs.Format(`'%v'::jsonb`, atribs.ToString())
-			value = strs.Append(value, def, ", ")
-		}
-
-		value = strs.Format(`(%s)`, value)
-		values = strs.Append(values, value, ",\n")
 	}
 
-	objects := s.sqlObject(from)
-	returns := strs.Format("%s AS result", objects)
-	if len(command.Returns) > 0 {
-		returns := ""
-		for _, fld := range command.Returns {
-			returns = strs.Append(returns, fld.Name, ", ")
-		}
+	table := tableName(from.Model)
+	result := "INSERT INTO %s(\n%s)\nVALUES (%s)\nRETURNING\njsonb_build_object(%s) AS result;"
+	if from.SourceField != nil {
+		column := from.SourceField.Name
+		columns = append(columns, column)
+		arg := strs.Format(`%v`, _data.ToString())
+		args = append(args, arg)
+		values = append(values, fmt.Sprintf(`$%d::jsonb`, len(args)))
+
+		result = "INSERT INTO %s(\n%s)\nVALUES (%s)\nRETURNING\n%s || jsonb_build_object(%s) AS result;"
+		result = strs.Format(result, table, strings.Join(columns, ",\n"), strings.Join(values, ","), from.SourceField.Name, strings.Join(returns, ","))
+	} else {
+		result = strs.Format(result, table, strings.Join(columns, ",\n"), strings.Join(values, ","), strings.Join(returns, ","))
 	}
 
-	columnNames := []string{}
-	for _, column := range columns {
-		columnNames = append(columnNames, column.(string))
-	}
-
-	result := "INSERT INTO %s(%s)\nVALUES %s\nRETURNING\n%s;"
-	return strs.Format(result, tableName(from.Model), strings.Join(columnNames, ", "), values, returns)
+	return result, args
 }

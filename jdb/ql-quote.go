@@ -106,6 +106,7 @@ func JsonQuote(val interface{}) interface{} {
 	f := `'%v'`
 	switch v := val.(type) {
 	case string:
+		v = strs.Replace(v, `'`, `''`)
 		v = fmt.Sprintf(`"%s"`, v)
 		return fmt.Sprintf(f, v)
 	case int:
@@ -150,4 +151,44 @@ func JsonQuote(val interface{}) interface{} {
 		console.Alert(fmt.Sprintf("Not quoted type:%v value:%v", reflect.TypeOf(v), v))
 		return val
 	}
+}
+
+/**
+* EscapeJSON
+* @param val string
+* @return string
+**/
+func EscapeJSON(val string) string {
+	val = strings.ReplaceAll(val, `'`, `''`)
+	return val
+}
+
+/**
+* Normalize
+* @param v any
+* @return any
+**/
+func Normalize(v any) any {
+	switch x := v.(type) {
+
+	case map[string]any:
+		for k, val := range x {
+			x[k] = Normalize(val)
+
+			if s, ok := x[k].(string); ok {
+				var j any
+
+				if json.Unmarshal([]byte(s), &j) == nil {
+					x[k] = j
+				}
+			}
+		}
+
+	case []any:
+		for i, val := range x {
+			x[i] = Normalize(val)
+		}
+	}
+
+	return v
 }

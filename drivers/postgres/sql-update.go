@@ -2,7 +2,9 @@ package postgres
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/strs"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
@@ -12,50 +14,58 @@ import (
 * @param command *jdb.Command
 * @return string
 **/
-func (s *Postgres) sqlUpdate(command *jdb.Command) string {
+func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
+	args := []any{}
 	from := command.GetFrom()
 	if from == nil {
-		return ""
+		return "", args
 	}
 
-	set := ""
-	atribs := ""
-	where := ""
+	set := []string{}
+	returns := []string{}
+	_data := ""
 	for _, value := range command.Values {
 		for key, field := range value {
-			if field.Column.TypeColumn == jdb.TpColumn {
-				val := field.ValueQuoted()				
-				def := strs.Format(`%s = %v`, key, val)
-				set = strs.Append(set, def, ",\n")
-			} else if field.Column.TypeColumn == jdb.TpAtribute && from.SourceField != nil {
-				val := jdb.JsonQuote(field.Value)
-				if val == "null" || val == "NULL" {
+			switch field.Column.TypeColumn {
+			case jdb.TpColumn:
+				if field.Column.Name == from.SourceField.Name {
 					continue
 				}
-				if len(atribs) == 0 {
-					atribs = fmt.Sprintf("COALESCE(%s, '{}')", from.SourceField.Name)
-					atribs = strs.Format("jsonb_set(%s, '{%s}', %v::jsonb, true)", atribs, key, val)
+				arg := strs.Format(`%v`, field.Value)
+				args = append(args, arg)
+				set = append(set, strs.Format(`%s = $%d`, key, len(args)))
+				returns = append(returns, strs.Format("'%s', %s", key, key))
+			case jdb.TpAtribute:
+				val, tp := field.ValueToJSON()
+				if len(fmt.Sprintf(`%v`, val)) == 0 {
+					continue
+				} else if fmt.Sprintf(`%v`, val) == "''" {
+					continue
+				} else if len(_data) == 0 {
+					_data = fmt.Sprintf("COALESCE(%s, '{}')", from.SourceField.Name)
+					_data = strs.Format("jsonb_set(%s,\n'{%s}', to_jsonb(%v::%s), true)", _data, key, val, tp)
 				} else {
-					atribs = strs.Format("jsonb_set(\n%s, \n'{%s}', %v::jsonb, true)", atribs, key, val)
+					_data = strs.Format("jsonb_set(\n%s,\n'{%s}', to_jsonb(%v::%s), true)", _data, key, val, tp)
 				}
 			}
 		}
-		if len(atribs) > 0 {
-			def := strs.Format(`%s = %v`, from.SourceField.Name, atribs)
-			set = strs.Append(set, def, ",\n")
-		}
 	}
 
-	where = whereConditions(command.QlWhere)
-	objects := s.sqlObject(from)
-	returns := strs.Format("%s AS result", objects)
-	if len(command.Returns) > 0 {
-		returns = ""
-		for _, fld := range command.Returns {
-			returns = strs.Append(returns, fld.Name, ", ")
+	where := whereConditions(command.QlWhere)
+	table := tableName(from.Model)
+	result := "UPDATE %s\nSET\n%s\nWHERE %s\nRETURNING\njsonb_build_object(%s) AS result;"
+	if from.SourceField != nil {
+		if len(_data) > 0 {
+			column := from.SourceField.Name
+			set = append(set, strs.Format(`%s = %s`, column, _data))
 		}
+		result = "UPDATE %s\nSET\n%s\nWHERE %s\nRETURNING\n%s || jsonb_build_object(%s) AS result;"
+		result = strs.Format(result, table, strings.Join(set, ",\n"), where, from.SourceField.Name, strings.Join(returns, ","))
+	} else {
+		result = strs.Format(result, table, strings.Join(set, ",\n"), where, strings.Join(returns, ","))
 	}
 
-	result := "UPDATE %s SET\n%s\nWHERE %s\nRETURNING\n%s;"
-	return strs.Format(result, tableName(from.Model), set, where, returns)
+	console.Debug(result)
+
+	return result, args
 }

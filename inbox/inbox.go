@@ -227,7 +227,7 @@ func (s *Inbox) UpsertInboxes(projectId, id, clientId, appId, kind string, data 
 	}
 
 	if !utility.ValidStr(id, 0, []string{""}) {
-		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.KEY)
+		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "service_id")
 	}
 
 	if !utility.ValidStr(clientId, 0, []string{""}) {

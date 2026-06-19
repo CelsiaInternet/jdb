@@ -14,20 +14,27 @@ import (
 **/
 func (s *Postgres) Command(command *jdb.Command) (et.Items, error) {
 	command.Sql = ""
+	command.Args = []any{}
 	switch command.Command {
 	case jdb.Insert:
-		command.Sql = strs.Append(command.Sql, s.sqlInsert(command), "\n")
+		sql, args := s.sqlInsert(command)
+		command.Sql = strs.Append(command.Sql, sql, "\n")
+		command.Args = append(command.Args, args...)
 	case jdb.Update:
-		command.Sql = strs.Append(command.Sql, s.sqlUpdate(command), "\n")
+		sql, args := s.sqlUpdate(command)
+		command.Sql = strs.Append(command.Sql, sql, "\n")
+		command.Args = append(command.Args, args...)
 	case jdb.Delete:
-		command.Sql = strs.Append(command.Sql, s.sqlDelete(command), "\n")
+		sql, args := s.sqlDelete(command)
+		command.Sql = strs.Append(command.Sql, sql, "\n")
+		command.Args = append(command.Args, args...)
 	}
 
 	if command.IsDebug {
-		console.Debug(command.Sql)
+		console.Debug(et.Json{"sql": command.Sql, "args": command.Args}.ToString())
 	}
 
-	result, err := jdb.QueryTx(s.jdb, command.Tx(), command.Sql)
+	result, err := jdb.QueryTx(s.jdb, command.Tx(), command.Sql, command.Args...)
 	if err != nil {
 		return et.Items{}, err
 	}

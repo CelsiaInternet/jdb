@@ -48,6 +48,7 @@ type Command struct {
 	Values       []map[string]*Field `json:"values"`
 	Returns      []*Field            `json:"returns"`
 	Sql          string              `json:"sql"`
+	Args         []any               `json:"args"`
 	Result       et.Items            `json:"result"`
 	Current      et.Items            `json:"current"`
 	CurrentMap   map[string]et.Json  `json:"current_map"`
@@ -80,6 +81,7 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		afterUpdate:  []DataFunctionTx{},
 		afterDelete:  []DataFunctionTx{},
 		Returns:      []*Field{},
+		Args:         []any{},
 		Result:       et.Items{},
 		Current:      et.Items{},
 		CurrentMap:   make(map[string]et.Json),

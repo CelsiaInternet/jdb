@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/strs"
@@ -236,22 +237,68 @@ func (s *Field) setAgregation(agr TypeAgregation) {
 * ValueQuoted
 * @return any
 **/
-func (s *Field) ValueQuoted() any {
-	validaObject := func(value any) any {
-		if s.Column.TypeData == TypeDataObject {
-			return fmt.Sprintf(`%v::jsonb`, value)
-		}
-
-		return value
-	}
-
+func (s *Field) ValueQuoted() interface{} {
 	if s.Unquoted {
-		result := strs.Format(`%v`, s.Value)
-		return validaObject(result)
+		return s.Value
 	}
-
 	result := Quote(s.Value)
-	return validaObject(result)
+	return result
+}
+
+/**
+* ValueToJSON
+* @return any
+**/
+func (s *Field) ValueToJSON() (any, string) {
+	switch v := s.Value.(type) {
+	case string:
+		val := EscapeJSON(v)
+		return fmt.Sprintf(`'%v'`, val), "text"
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return v, "numeric"
+	case float32, float64:
+		return v, "numeric"
+	case bool:
+		return v, "boolean"
+	case time.Time:
+		val := v.Format(time.RFC3339)
+		return fmt.Sprintf(`'%v'`, val), "timestamptz"
+	case et.Json:
+		val := EscapeJSON(v.ToString())
+		return fmt.Sprintf(`'%v'`, val), "jsonb"
+	case et.Items:
+		val := EscapeJSON(v.ToString())
+		return fmt.Sprintf(`'%v'`, val), "jsonb"
+	case et.Item:
+		val := EscapeJSON(v.ToString())
+		return fmt.Sprintf(`'%v'`, val), "jsonb"
+	case map[string]interface{}:
+		result, err := json.Marshal(s.Value)
+		if err != nil {
+			return fmt.Sprintf(`'%v'`, "{}"), "jsonb"
+		}
+		val := EscapeJSON(string(result))
+		return fmt.Sprintf(`'%v'`, val), "jsonb"
+	case []map[string]interface{}:
+		result, err := json.Marshal(s.Value)
+		if err != nil {
+			return fmt.Sprintf(`'%v'`, "[]"), "jsonb"
+		}
+		val := EscapeJSON(string(result))
+		return fmt.Sprintf(`'%v'`, val), "jsonb"
+	case []et.Json:
+		result, err := json.Marshal(s.Value)
+		if err != nil {
+			return fmt.Sprintf(`'%v'`, "[]"), "jsonb"
+		}
+		val := EscapeJSON(string(result))
+		return fmt.Sprintf(`'%v'`, val), "jsonb"
+	default:
+		if v == nil {
+			return fmt.Sprintf(`'%v'`, "null"), "jsonb"
+		}
+		return strs.Format(`%v`, v), "text"
+	}
 }
 
 /**

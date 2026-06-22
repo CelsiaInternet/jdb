@@ -51,6 +51,7 @@ func Quote(val interface{}) any {
 	}
 	switch v := val.(type) {
 	case string:
+		v = EscapeJSON(v)
 		return quote(v)
 	case int:
 		return v

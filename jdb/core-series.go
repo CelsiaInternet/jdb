@@ -62,6 +62,7 @@ func GetSeries(kind, tag string) (string, error) {
 			return nil
 		}).
 		Return("value", "format").
+		Debug().
 		One()
 	if err != nil {
 		return "", err

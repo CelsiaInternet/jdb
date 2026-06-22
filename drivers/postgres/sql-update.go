@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/strs"
 	jdb "github.com/celsiainternet/jdb/jdb"
 )
@@ -31,9 +30,11 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 				if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
 					continue
 				}
-				arg := strs.Format(`%v`, field.Value)
-				args = append(args, arg)
-				set = append(set, strs.Format(`%s = $%d`, key, len(args)))
+				val := field.ValueQuoted()
+				// arg := strs.Format(`%v`, field.Value)
+				// args = append(args, arg)
+				set = append(set, strs.Format(`%s = %v`, key, val))
+				// set = append(set, strs.Format(`%s = $%d`, key, len(args)))
 				returns = append(returns, strs.Format("'%s', %s", key, key))
 			case jdb.TpAtribute:
 				val, tp := field.ValueToJSON()
@@ -64,8 +65,6 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 	} else {
 		result = strs.Format(result, table, strings.Join(set, ",\n"), where, strings.Join(returns, ","))
 	}
-
-	console.Debug(result)
 
 	return result, args
 }

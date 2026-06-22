@@ -114,7 +114,6 @@ func (s *Instance) Set(id, tag string, obj any) error {
 		return nil
 	}
 
-	data := et.Json{}
 	bt, ok := obj.([]byte)
 	if !ok {
 		var err error
@@ -124,7 +123,7 @@ func (s *Instance) Set(id, tag string, obj any) error {
 		}
 	}
 
-	data = et.Json{
+	data := et.Json{
 		jdb.KEY:      id,
 		"tag":        tag,
 		"definition": bt,

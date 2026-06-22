@@ -241,6 +241,7 @@ func (s *Field) ValueQuoted() interface{} {
 	if s.Unquoted {
 		return s.Value
 	}
+
 	result := Quote(s.Value)
 	return result
 }

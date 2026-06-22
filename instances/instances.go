@@ -142,6 +142,7 @@ func (s *Instance) Set(id, tag string, obj any) error {
 			data[jdb.UPDATED_AT] = now
 			return nil
 		}).
+		Debug().
 		Exec()
 	if err != nil {
 		return err

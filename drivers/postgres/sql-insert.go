@@ -29,7 +29,7 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 		for key, field := range val {
 			switch field.Column.TypeColumn {
 			case jdb.TpColumn:
-				if field.Column.Name == from.SourceField.Name {
+				if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
 					continue
 				}
 				columns = append(columns, key)

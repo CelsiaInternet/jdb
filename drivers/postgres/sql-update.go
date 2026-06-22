@@ -28,7 +28,7 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 		for key, field := range value {
 			switch field.Column.TypeColumn {
 			case jdb.TpColumn:
-				if field.Column.Name == from.SourceField.Name {
+				if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
 					continue
 				}
 				arg := strs.Format(`%v`, field.Value)

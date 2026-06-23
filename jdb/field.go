@@ -244,10 +244,10 @@ func (s *Field) ValueArg() string {
 		return fmt.Sprintf(`%v`, val)
 	default:
 		if s.Value == nil {
-			return "NULL"
+			return fmt.Sprintf(`%v`, `NULL`)
 		}
 		if s.Value == "nil" {
-			return "NULL"
+			return fmt.Sprintf(`%v`, `NULL`)
 		}
 		return strs.Format(`%v`, s.Value)
 	}

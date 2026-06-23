@@ -234,6 +234,26 @@ func (s *Field) setAgregation(agr TypeAgregation) {
 }
 
 /**
+* ValueArg
+* @return string
+**/
+func (s *Field) ValueArg() string {
+	switch v := s.Value.(type) {
+	case time.Time:
+		val := v.Format(time.RFC3339)
+		return fmt.Sprintf(`%v`, val)
+	default:
+		if s.Value == nil {
+			return "NULL"
+		}
+		if s.Value == "nil" {
+			return "NULL"
+		}
+		return strs.Format(`%v`, s.Value)
+	}
+}
+
+/**
 * ValueQuoted
 * @return any
 **/

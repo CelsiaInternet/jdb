@@ -33,7 +33,7 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 					continue
 				}
 				columns = append(columns, key)
-				arg := strs.Format(`%v`, field.Value)
+				arg := field.ValueArg()
 				args = append(args, arg)
 				values = append(values, fmt.Sprintf(`$%d`, len(args)))
 				returns = append(returns, strs.Format("'%s', %s", key, key))

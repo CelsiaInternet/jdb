@@ -33,9 +33,12 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 					continue
 				}
 				columns = append(columns, key)
-				arg := field.ValueArg()
-				args = append(args, arg)
-				values = append(values, fmt.Sprintf(`$%d`, len(args)))
+				// arg := field.ValueArg()
+				// args = append(args, arg)
+				// values = append(values, fmt.Sprintf(`$%d`, len(args)))
+				// returns = append(returns, strs.Format("'%s', %s", key, key))
+				val := field.ValueQuoted()
+				values = append(values, strs.Format(`%v`, val))
 				returns = append(returns, strs.Format("'%s', %s", key, key))
 			case jdb.TpAtribute:
 				_data.Set(key, field.Value)

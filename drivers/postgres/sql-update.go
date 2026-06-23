@@ -29,12 +29,12 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 			case jdb.TpColumn:
 				if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
 					continue
-				}
-				val := field.ValueQuoted()
+				}				
 				// arg := strs.Format(`%v`, field.Value)
-				// args = append(args, arg)
-				set = append(set, strs.Format(`%s = %v`, key, val))
+				// args = append(args, arg)				
 				// set = append(set, strs.Format(`%s = $%d`, key, len(args)))
+				val := field.ValueQuoted()
+				set = append(set, strs.Format(`%s = %v`, key, val))
 				returns = append(returns, strs.Format("'%s', %s", key, key))
 			case jdb.TpAtribute:
 				val, tp := field.ValueToJSON()

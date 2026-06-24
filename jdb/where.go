@@ -32,6 +32,7 @@ const (
 	Equal
 	Neg
 	In
+	NotIn
 	Like
 	More
 	Less
@@ -517,6 +518,23 @@ func (s *QlWhere) In(val ...any) *QlWhere {
 	}
 
 	condition.Operator = In
+	condition.setVal(val)
+
+	return s
+}
+
+/**
+* NotIn
+* @param val ...any
+* @return QlWhere
+**/
+func (s *QlWhere) NotIn(val ...any) *QlWhere {
+	condition := s.condition()
+	if condition == nil {
+		return s
+	}
+
+	condition.Operator = NotIn
 	condition.setVal(val)
 
 	return s

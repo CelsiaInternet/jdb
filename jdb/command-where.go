@@ -67,6 +67,17 @@ func (s *Command) In(val ...any) *Command {
 }
 
 /**
+* NotIn
+* @param val ...any
+* @return *Command
+**/
+func (s *Command) NotIn(val ...any) *Command {
+	s.QlWhere.NotIn(val...)
+
+	return s
+}
+
+/**
 * Like
 * @param val interface{}
 * @return *Command

@@ -93,6 +93,17 @@ func (s *Ql) In(val ...any) *Ql {
 }
 
 /**
+* NotIn
+* @param val ...any
+* @return *Ql
+**/
+func (s *Ql) NotIn(val ...any) *Ql {
+	s.QlWhere.NotIn(val...)
+
+	return s
+}
+
+/**
 * Like
 * @param val interface{}
 * @return *Ql

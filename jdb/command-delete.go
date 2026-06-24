@@ -22,10 +22,7 @@ func (s *Command) deleted() error {
 		return nil
 	}
 
-	s.ResultMap, err = model.getMapResultByPk(s.Result.Result)
-	if err != nil {
-		return err
-	}
+	s.ResultMap, _ = model.getMapResultByPk(s.Result.Result)
 
 	for _, before := range s.ResultMap {
 		for _, fn := range model.afterDelete {

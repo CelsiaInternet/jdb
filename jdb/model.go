@@ -605,7 +605,7 @@ func (s *Model) getMapResultByPk(data []et.Json) (map[string]et.Json, error) {
 	for _, item := range data {
 		key, err := s.getKeyByPk(item)
 		if err != nil {
-			return nil, err
+			return result, err
 		}
 
 		result[key] = item

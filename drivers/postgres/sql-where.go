@@ -124,6 +124,8 @@ func whereOperator(condition *jdb.QlCondition, val interface{}) string {
 		return strs.Format("!=%v", val)
 	case jdb.In:
 		return strs.Format(" IN (%v)", val)
+	case jdb.NotIn:
+		return strs.Format(" NOT IN (%v)", val)
 	case jdb.Like:
 		return strs.Format(" ILIKE %v", val)
 	case jdb.More:

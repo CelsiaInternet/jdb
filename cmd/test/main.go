@@ -24,13 +24,19 @@ func main() {
 		console.Panic(err)
 	}
 
-	_, err = jdb.From("users").
-		Where("phone").Eq("").
-		Debug().
-		All()
+	code, err := jdb.GetSeries("users", "phone")
 	if err != nil {
 		console.Panic(err)
 	}
+	console.Log("series:", code)
+
+	// _, err = jdb.From("users").
+	// 	Where("phone").Eq("").
+	// 	Debug().
+	// 	All()
+	// if err != nil {
+	// 	console.Panic(err)
+	// }
 
 	console.Log("db:", db.Name)
 }

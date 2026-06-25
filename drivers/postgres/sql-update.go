@@ -21,7 +21,6 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 	}
 
 	set := []string{}
-	returns := []string{}
 	_data := ""
 	for _, value := range command.Values {
 		for key, field := range value {
@@ -29,13 +28,9 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 			case jdb.TpColumn:
 				if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
 					continue
-				}				
-				// arg := strs.Format(`%v`, field.Value)
-				// args = append(args, arg)				
-				// set = append(set, strs.Format(`%s = $%d`, key, len(args)))
+				}
 				val := field.ValueQuoted()
 				set = append(set, strs.Format(`%s = %v`, key, val))
-				returns = append(returns, strs.Format("'%s', %s", key, key))
 			case jdb.TpAtribute:
 				val, tp := field.ValueToJSON()
 				if len(fmt.Sprintf(`%v`, val)) == 0 {
@@ -49,6 +44,31 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 					_data = strs.Format("jsonb_set(\n%s,\n'{%s}', to_jsonb(%v::%s), true)", _data, key, val, tp)
 				}
 			}
+		}
+	}
+
+	returns := []string{}
+	if len(command.Returns) > 0 {
+		for _, field := range command.Returns {
+			if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
+				continue
+			}
+			if field.Column.TypeColumn != jdb.TpColumn {
+				continue
+			}
+			name := field.Name
+			returns = append(returns, strs.Format("'%s', %s", name, name))
+		}
+	} else {
+		for _, field := range from.Model.Columns {
+			if from.SourceField != nil && field.Name == from.SourceField.Name {
+				continue
+			}
+			if field.TypeColumn != jdb.TpColumn {
+				continue
+			}
+			name := field.Name
+			returns = append(returns, strs.Format("'%s', %s", name, name))
 		}
 	}
 

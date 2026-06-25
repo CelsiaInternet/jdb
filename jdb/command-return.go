@@ -11,11 +11,6 @@ func (s *Command) Return(fields ...string) *Command {
 		return s
 	}
 
-	for _, pK := range model.PrimaryKeys {
-		field := GetField(pK)
-		s.Returns = append(s.Returns, field)
-	}
-
 	for _, name := range fields {
 		field := s.getField(name)
 		if field == nil {

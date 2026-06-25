@@ -20,15 +20,27 @@ func (s *Postgres) sqlDelete(command *jdb.Command) (string, []any) {
 	}
 
 	returns := []string{}
-	for _, val := range command.Values {
-		for key, field := range val {
-			switch field.Column.TypeColumn {
-			case jdb.TpColumn:
-				if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
-					continue
-				}
-				returns = append(returns, strs.Format("'%s', %s", key, key))
+	if len(command.Returns) > 0 {
+		for _, field := range command.Returns {
+			if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
+				continue
 			}
+			if field.Column.TypeColumn != jdb.TpColumn {
+				continue
+			}
+			name := field.Name
+			returns = append(returns, strs.Format("'%s', %s", name, name))
+		}
+	} else {
+		for _, field := range from.Model.Columns {
+			if from.SourceField != nil && field.Name == from.SourceField.Name {
+				continue
+			}
+			if field.TypeColumn != jdb.TpColumn {
+				continue
+			}
+			name := field.Name
+			returns = append(returns, strs.Format("'%s', %s", name, name))
 		}
 	}
 

@@ -17,6 +17,23 @@ import (
 
 var quotedChar = `'`
 
+type Value struct {
+	Type  string `json:"type"`
+	Value any    `json:"value"`
+}
+
+/**
+* CALC
+* @param value interface{}
+* @return *Value
+**/
+func CALC(value interface{}) *Value {
+	return &Value{
+		Type:  "calc",
+		Value: value,
+	}
+}
+
 /**
 * SetQuotedChar
 * @param char string
@@ -67,6 +84,20 @@ func Quote(val interface{}) any {
 		return v
 	case bool:
 		return v
+	case *Value:
+		switch v.Type {
+		case "calc":
+			return fmt.Sprintf(`%v`, v.Value)
+		default:
+			return v.Value
+		}
+	case Value:
+		switch v.Type {
+		case "calc":
+			return fmt.Sprintf(`%v`, v.Value)
+		default:
+			return v.Value
+		}
 	case time.Time:
 		return strs.Format(format, v.Format("2006-01-02 15:04:05"))
 	case []string:

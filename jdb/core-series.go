@@ -58,11 +58,9 @@ func GetSeries(kind, tag string) (string, error) {
 			return nil
 		}).
 		BeforeUpdate(func(tx *Tx, data et.Json) error {
-			data.Set("value", ":value + 1")
+			data.Set("value", CALC(`value + 1`))
 			return nil
 		}).
-		Return("value", "format").
-		Debug().
 		One()
 	if err != nil {
 		return "", err

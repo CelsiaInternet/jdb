@@ -70,7 +70,7 @@ func Define(db *jdb.DB, schema string) (*Inbox, error) {
 		if map[string]bool{
 			utility.FOR_DELETE: true,
 			utility.ARCHIVED:   true,
-			utility.CANCELLED:  true,
+			utility.CANCELED:   true,
 		}[statusId] {
 			data.Set("delete", true)
 		} else {

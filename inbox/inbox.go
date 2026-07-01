@@ -246,6 +246,20 @@ func (s *Inbox) UpsertInboxes(projectId, id, clientId, appId, kind string, data 
 		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "kind")
 	}
 
+	_status := utility.ACTIVE
+	status := data.Str("status")
+	if status == "" {
+		_status = utility.ACTIVE
+		status = "en_process"
+	} else if status == "en_process" {
+		_status = utility.ACTIVE
+	} else if status == "completed" {
+		_status = utility.ARCHIVED
+	} else if status == "failed" {
+		_status = utility.FAILED
+	} else if status == "canceled" {
+		_status = utility.CANCELED
+	}
 	id = s.model.GetId(id)
 	now := utility.Now()
 	data[jdb.PROJECT_ID] = projectId
@@ -263,7 +277,7 @@ func (s *Inbox) UpsertInboxes(projectId, id, clientId, appId, kind string, data 
 			}
 			data[jdb.CREATED_AT] = now
 			data[jdb.UPDATED_AT] = now
-			data[jdb.STATUS_ID] = utility.ACTIVE
+			data[jdb.STATUS_ID] = _status
 			data["app_id"] = appId
 			data["client_id"] = clientId
 			data["user_id"] = userId
@@ -277,6 +291,7 @@ func (s *Inbox) UpsertInboxes(projectId, id, clientId, appId, kind string, data 
 		}).
 		BeforeUpdate(func(tx *jdb.Tx, data et.Json) error {
 			data[jdb.UPDATED_AT] = now
+			data[jdb.STATUS_ID] = _status
 			auditLog := data.ArrayJson("audit_log")
 			auditLog = append(auditLog, et.Json{
 				"user_id": userId,

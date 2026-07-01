@@ -502,3 +502,25 @@ func (s *DB) One(sql string, arg ...any) (et.Item, error) {
 
 	return result.First(), nil
 }
+
+/**
+* JQuery
+* @param query et.Json
+* @return et.Json, error
+**/
+func (s *DB) JQuery(query et.Json) (et.Json, error) {
+	from := query.Str("from")
+	model := s.GetModel(from)
+	if model == nil {
+		return et.Json{}, fmt.Errorf(MSG_MODEL_NOT_FOUND, from)
+	}
+
+	result, err := From(model).
+		Query(query)
+	if err != nil {
+		return et.Json{}, err
+	}
+
+	return result, nil
+
+}

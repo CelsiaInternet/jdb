@@ -262,8 +262,22 @@ func (s *Field) ValueQuoted() interface{} {
 		return s.Value
 	}
 
-	result := Quote(s.Value)
-	return result
+	if s.Column != nil && s.Column.TypeData == TypeDataDateTime {
+		f := "2006/01/02 15:04:05"
+		v := fmt.Sprintf(`%v`, s.Value)
+		t, err := time.Parse(f, v)
+		if err != nil {
+			f = "2006-01-02 15:04:05"
+			t, err = time.Parse(f, v)
+			if err != nil {
+				return v
+			}
+		}
+
+		return Quote(t)
+	}
+
+	return Quote(s.Value)
 }
 
 /**

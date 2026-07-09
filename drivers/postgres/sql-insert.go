@@ -20,6 +20,7 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 		return "", []any{}
 	}
 
+	args := []any{}
 	columns := []string{}
 	values := []string{}
 	returns := []string{}
@@ -47,7 +48,9 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 		column := from.SourceField.Name
 		columns = append(columns, column)
 		arg := strs.Format(`%v`, _data.ToString())
-		values = append(values, fmt.Sprintf(`'%s'::jsonb`, arg))
+		// values = append(values, fmt.Sprintf(`'%s'::jsonb`, arg))
+		args = append(args, arg)
+		values = append(values, fmt.Sprintf(`$%d::jsonb`, len(args)))
 
 		result = "INSERT INTO %s(\n%s)\nVALUES (%s)\nRETURNING\n%s || jsonb_build_object(%s) AS result;"
 		result = strs.Format(result, table, strings.Join(columns, ",\n"), strings.Join(values, ","), from.SourceField.Name, strings.Join(returns, ","))
@@ -55,5 +58,5 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 		result = strs.Format(result, table, strings.Join(columns, ",\n"), strings.Join(values, ","), strings.Join(returns, ","))
 	}
 
-	return result, []any{}
+	return result, args
 }

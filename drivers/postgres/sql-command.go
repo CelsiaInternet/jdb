@@ -36,7 +36,9 @@ func (s *Postgres) Command(command *jdb.Command) (et.Items, error) {
 
 	result, err := jdb.QueryTx(s.jdb, command.Tx(), command.Sql, command.Args...)
 	if err != nil {
-		console.LogK("SQL_ERROR", et.Json{"sql": command.Sql, "args": command.Args}.ToString())
+		console.Error(err)
+		console.Debug(command.Sql)
+		console.Debug(command.Args)
 		return et.Items{}, err
 	}
 

@@ -263,18 +263,22 @@ func (s *Field) ValueQuoted() interface{} {
 	}
 
 	if s.Column != nil && s.Column.TypeData == TypeDataDateTime {
-		f := "2006/01/02 15:04:05"
-		v := fmt.Sprintf(`%v`, s.Value)
-		t, err := time.Parse(f, v)
-		if err != nil {
-			f = "2006-01-02 15:04:05"
-			t, err = time.Parse(f, v)
-			if err != nil {
-				return v
-			}
+		fs := []string{
+			"2006/01/02 15:04:05",
+			"2006-01-02 15:04:05",
+			"2006-01-02 15:04:05.999999999 -0700",
+			time.RFC3339,
+			time.RFC3339Nano,
 		}
 
-		return Quote(t)
+		v := fmt.Sprintf(`%v`, s.Value)
+		for _, f := range fs {
+			t, err := time.Parse(f, v)
+			if err != nil {
+				continue
+			}
+			return Quote(t)
+		}
 	}
 
 	return Quote(s.Value)

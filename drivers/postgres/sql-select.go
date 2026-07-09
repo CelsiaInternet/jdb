@@ -212,9 +212,6 @@ func (s *Postgres) sqlAtributes(selects []*jdb.Field) string {
 func (s *Postgres) sqlColumns(selects []*jdb.Field) string {
 	result := ""
 	for _, fld := range selects {
-		if fld.Hidden {
-			continue
-		}
 		def := aliasAsField(*fld)
 		result = strs.Append(result, def, ",\n")
 	}

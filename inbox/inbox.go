@@ -161,7 +161,6 @@ func (s *Inbox) GetInboxesByUserId(userId, appId, kind, status string, page, row
 		And("kind").Eq(kind).
 		OrderByDesc(jdb.UPDATED_AT).
 		Page(page).
-		Debug().
 		Rows(rows)
 	if err != nil {
 		return et.Items{}, err

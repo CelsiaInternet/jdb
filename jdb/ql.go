@@ -107,7 +107,7 @@ func (s *Ql) getColumnField(name string) *Field {
 * @return *Field
 **/
 func (s *Ql) getField(name string) *Field {
-	return s.Froms.getField(name, false)
+	return s.Froms.getField(name, true)
 }
 
 /**

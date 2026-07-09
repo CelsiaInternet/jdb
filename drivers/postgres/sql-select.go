@@ -36,7 +36,7 @@ func (s *Postgres) sqlSelect(ql *jdb.Ql) string {
 * @param field jdb.Field
 * @return string
 **/
-func asField(field jdb.Field) string {
+func asField(field jdb.Field, netAs bool) string {
 	setAgregaction := func(val string) string {
 		switch field.Agregation {
 		case jdb.AgregationSum:
@@ -80,6 +80,9 @@ func asField(field jdb.Field) string {
 		result = strs.Append(result, field.Source, ".")
 		result = strs.Format(`%s#>>'{%s}'`, result, field.Name)
 		result = strs.Format(`COALESCE(%s, %v)`, result, field.Column.DefaultQuote())
+		if netAs {
+			result = strs.Append(result, field.Alias, " AS ")
+		}
 		result = setAgregaction(result)
 	}
 
@@ -92,7 +95,7 @@ func asField(field jdb.Field) string {
 * @return string
 **/
 func aliasAsField(field jdb.Field) string {
-	result := asField(field)
+	result := asField(field, true)
 	if field.Name == field.Alias {
 		return result
 	}
@@ -150,7 +153,7 @@ func (s *Postgres) sqlBuildObject(selects []*jdb.Field) string {
 			sourceField = append(sourceField, fld)
 			continue
 		}
-		def := asField(*fld)
+		def := asField(*fld, true)
 		if def == "" || fld.Alias == "" {
 			continue
 		}

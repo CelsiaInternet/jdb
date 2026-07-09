@@ -155,19 +155,13 @@ func (s *Inbox) GetInboxesByCode(kind, code string) (et.Item, error) {
 * @return et.Items, error
 **/
 func (s *Inbox) GetInboxesByUserId(userId, appId, kind, status string, page, rows int) (et.Items, error) {
-	ql := s.model.
+	result, err := s.model.
 		Where("user_id").Eq(userId).
 		And("app_id").Eq(appId).
-		And("kind").Eq(kind)
-	if status == "0" {
-		ql = ql.And("_status").In(status, "-2")
-	} else {
-		ql = ql.And("_status").Eq(status)
-	}
-
-	result, err := ql.
+		And("kind").Eq(kind).
 		OrderByDesc(jdb.UPDATED_AT).
 		Page(page).
+		Debug().
 		Rows(rows)
 	if err != nil {
 		return et.Items{}, err
@@ -182,16 +176,9 @@ func (s *Inbox) GetInboxesByUserId(userId, appId, kind, status string, page, row
 * @return et.Items, error
 **/
 func (s *Inbox) GetInboxesByClientId(clientId, appId, status string, page, rows int) (et.Items, error) {
-	ql := s.model.
+	result, err := s.model.
 		Where("client_id").Eq(clientId).
-		And("app_id").Eq(appId)
-	if status == "0" {
-		ql = ql.And("_status").In(status, "-2")
-	} else {
-		ql = ql.And("_status").Eq(status)
-	}
-
-	result, err := ql.
+		And("app_id").Eq(appId).
 		OrderByDesc(jdb.UPDATED_AT).
 		Page(page).
 		Rows(rows)
@@ -300,7 +287,6 @@ func (s *Inbox) UpsertInboxes(projectId, id, clientId, appId, kind string, data 
 			})
 			return nil
 		}).
-		Where(jdb.STATUS_ID).Eq(utility.ACTIVE).
 		Exec()
 	if err != nil {
 		return et.Item{}, err

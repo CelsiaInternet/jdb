@@ -36,7 +36,7 @@ func (s *Postgres) sqlSelect(ql *jdb.Ql) string {
 * @param field jdb.Field
 * @return string
 **/
-func asField(field jdb.Field, netAs bool) string {
+func asField(field jdb.Field) string {
 	setAgregaction := func(val string) string {
 		switch field.Agregation {
 		case jdb.AgregationSum:
@@ -80,9 +80,6 @@ func asField(field jdb.Field, netAs bool) string {
 		result = strs.Append(result, field.Source, ".")
 		result = strs.Format(`%s#>>'{%s}'`, result, field.Name)
 		result = strs.Format(`COALESCE(%s, %v)`, result, field.Column.DefaultQuote())
-		if netAs {
-			result = strs.Append(result, field.Alias, " AS ")
-		}
 		result = setAgregaction(result)
 	}
 
@@ -95,7 +92,7 @@ func asField(field jdb.Field, netAs bool) string {
 * @return string
 **/
 func aliasAsField(field jdb.Field) string {
-	result := asField(field, true)
+	result := asField(field)
 	if field.Name == field.Alias {
 		return result
 	}
@@ -145,15 +142,12 @@ func (s *Postgres) sqlBuildObject(selects []*jdb.Field) string {
 	sourceField := make([]*jdb.Field, 0)
 	for _, fld := range selects {
 		n++
-		if fld.Hidden {
-			continue
-		}
 		col := fld.Column
 		if col == col.Model.SourceField {
 			sourceField = append(sourceField, fld)
 			continue
 		}
-		def := asField(*fld, true)
+		def := asField(*fld)
 		if def == "" || fld.Alias == "" {
 			continue
 		}

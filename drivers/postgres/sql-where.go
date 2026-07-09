@@ -68,9 +68,9 @@ func whereCondition(con *jdb.QlCondition) string {
 func whereValue(val interface{}) string {
 	switch v := val.(type) {
 	case jdb.Field:
-		return asField(v, false)
+		return asField(v)
 	case *jdb.Field:
-		return asField(*v, false)
+		return asField(*v)
 	case jdb.Column:
 		return v.Name
 	case *jdb.Column:

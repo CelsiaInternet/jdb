@@ -48,7 +48,6 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 		column := from.SourceField.Name
 		columns = append(columns, column)
 		arg := strs.Format(`%v`, _data.ToString())
-		// values = append(values, fmt.Sprintf(`'%s'::jsonb`, arg))
 		args = append(args, arg)
 		values = append(values, fmt.Sprintf(`$%d::jsonb`, len(args)))
 

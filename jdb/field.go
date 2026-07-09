@@ -328,6 +328,20 @@ func (s *Field) ValueToJSON() (any, string) {
 		}
 		val := EscapeJSON(string(result))
 		return fmt.Sprintf(`'%v'`, val), "jsonb"
+	case []interface{}:
+		result, err := json.Marshal(s.Value)
+		if err != nil {
+			return fmt.Sprintf(`'%v'`, "[]"), "jsonb"
+		}
+		val := EscapeJSON(string(result))
+		return fmt.Sprintf(`'%v'`, val), "jsonb"
+	case []string:
+		result, err := json.Marshal(s.Value)
+		if err != nil {
+			return fmt.Sprintf(`ARRAY['%v']`, "[]"), "text[]"
+		}
+		val := EscapeJSON(string(result))
+		return fmt.Sprintf(`ARRAY['%v']`, val), "text[]"
 	default:
 		if v == nil {
 			return fmt.Sprintf(`'%v'`, "null"), "jsonb"

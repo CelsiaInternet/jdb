@@ -286,6 +286,7 @@ func (s *Inbox) UpsertInboxes(projectId, id, clientId, appId, kind string, data 
 			})
 			return nil
 		}).
+		Debug().
 		Exec()
 	if err != nil {
 		return et.Item{}, err

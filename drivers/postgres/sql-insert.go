@@ -34,6 +34,9 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 				}
 				columns = append(columns, key)
 				val := field.ValueQuoted()
+				if field.Column.TypeData == jdb.TypeDataObject {
+					val = fmt.Sprintf(`%v::jsonb`, val)
+				}
 				values = append(values, strs.Format(`%v`, val))
 				returns = append(returns, strs.Format("'%s', %s", key, key))
 			case jdb.TpAtribute:

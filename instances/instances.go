@@ -165,6 +165,8 @@ func (s *Instance) Delete(id string) error {
 	if err != nil {
 		return err
 	}
+	
+	s.workFlows.deleteFlow(id)
 
 	return nil
 }

@@ -1093,6 +1093,8 @@ func (rt *Router) query$2(w http.ResponseWriter, r *http.Request) {
 const modelReadme = `
 ## Project $1
 
+Author: $2
+
 ## Create project
 
 go mod init github.com/$1/api

@@ -13,7 +13,7 @@ func MkProject(packageName, name, author, schema string) error {
 	}
 
 	ProgressNext(20)
-	err = MakeReadme(name)
+	err = MakeReadme(name, author)
 	if err != nil {
 		return err
 	}
@@ -71,8 +71,14 @@ func MkMicroservice(packageName, name, schema string) error {
 		return err
 	}
 
-	ProgressNext(40)
+	ProgressNext(30)
 	err = MakeTest(name)
+	if err != nil {
+		return err
+	}
+
+	ProgressNext(10)
+	err = MakeWWW(name)
 	if err != nil {
 		return err
 	}

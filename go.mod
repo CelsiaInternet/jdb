@@ -4,7 +4,6 @@ go 1.23.0
 
 require (
 	github.com/celsiainternet/elvis v1.1.300
-	github.com/go-sql-driver/mysql v1.9.3
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.12.3
 	github.com/manifoldco/promptui v0.9.0
@@ -14,7 +13,6 @@ require (
 )
 
 require (
-	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect

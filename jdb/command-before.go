@@ -115,3 +115,44 @@ func (s *Command) BeforeInsertOrUpdate(fn DataFunctionTx) *Command {
 
 	return s
 }
+
+/**
+* BeforeInsertOrUpdateTrigger
+* @param fn TriggerFunction
+**/
+func (s *Command) BeforeInsertTrigger(fn TriggerFunctionTx) *Command {
+	s.beforeInsertTrigger = append(s.beforeInsertTrigger, fn)
+
+	return s
+}
+
+/**
+* BeforeUpdateTrigger
+* @param fn TriggerFunction
+**/
+func (s *Command) BeforeUpdateTrigger(fn TriggerFunctionTx) *Command {
+	s.beforeUpdateTrigger = append(s.beforeUpdateTrigger, fn)
+
+	return s
+}
+
+/**
+* BeforeDeleteTrigger
+* @param fn TriggerFunction
+**/
+func (s *Command) BeforeDeleteTrigger(fn TriggerFunctionTx) *Command {
+	s.beforeDeleteTrigger = append(s.beforeDeleteTrigger, fn)
+
+	return s
+}
+
+/**
+* BeforeInsertOrUpdateTrigger
+* @param fn TriggerFunction
+**/
+func (s *Command) BeforeInsertOrUpdateTrigger(fn TriggerFunctionTx) *Command {
+	s.beforeInsertTrigger = append(s.beforeInsertTrigger, fn)
+	s.beforeUpdateTrigger = append(s.beforeUpdateTrigger, fn)
+
+	return s
+}

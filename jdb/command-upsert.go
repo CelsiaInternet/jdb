@@ -16,7 +16,7 @@ func (s *Command) upsert() error {
 		return fmt.Errorf(MSG_MANY_INSERT_DATA)
 	}
 
-	s.current()
+	s.getCurrent()
 	if s.Current.Ok {
 		s.Command = Update
 		s.getWhereByPrimaryKeys(s.Data[0])

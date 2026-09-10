@@ -1,127 +1,96 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v0.0.66-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v1.0.86-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
-JDB es una librería de Go que proporciona una interfaz unificada y simplificada para trabajar con múltiples bases de datos. Ofrece soporte para PostgreSQL, MySQL, SQLite y Oracle con una API consistente y fácil de usar.
+JDB (`github.com/celsiainternet/jdb`) es una librería de Go que proporciona una interfaz unificada sobre PostgreSQL, MySQL y SQLite: definición declarativa de modelos, un lenguaje de consulta (`Ql`) y de comandos (`Command`) fluido, transacciones, y un pequeño conjunto de paquetes de features (autorización, configuración, inbox) construidos sobre el mismo patrón.
 
-## Últimas Actualizaciones (v0.0.66)
-
-- **Dependencias actualizadas**: Elvis v1.1.127, Chi router v5.2.2
-- **Drivers mejorados**: MySQL v1.9.3, PostgreSQL v1.10.9, SQLite v1.37.1
-- **Performance**: Optimizaciones en el manejo de conexiones
-- **Estabilidad**: Correcciones de bugs y mejoras en el sistema de daemon
-- **Compatibilidad**: Soporte completo para Go 1.23.0+
+No es una aplicación: `cmd/` no tiene un `main.go` de nivel superior, sino tres binarios independientes (ver [Herramientas de `cmd/`](#herramientas-de-cmd)). Depende de [`github.com/celsiainternet/elvis`](https://github.com/celsiainternet/elvis) para utilidades, logging, tipos JSON (`et.Json`) y eventos.
 
 ## Características
 
-### Multi-Driver Support
+### Multi-driver
 
-- **PostgreSQL**: Driver nativo con soporte completo para características avanzadas
-- **MySQL**: Integración con go-sql-driver/mysql para máximo rendimiento
-- **SQLite**: Soporte con modernc.org/sqlite para aplicaciones embebidas
-- **Oracle**: Driver especializado para entornos empresariales
+- **PostgreSQL** (`drivers/postgres`) — driver nativo sobre `github.com/lib/pq`.
+- **MySQL** (`drivers/mysql`) — sobre `github.com/go-sql-driver/mysql`.
+- **SQLite** (`drivers/sqlite`) — sobre `modernc.org/sqlite`, para uso embebido.
 
-### Arquitectura Moderna
+Cada driver se registra a sí mismo en su propio `init()` vía `jdb.Register(...)` y activa sus valores por defecto desde variables de entorno; se habilita con un import en blanco (`import _ "github.com/celsiainternet/jdb/drivers/postgres"`).
 
-- **API Unificada**: Interfaz consistente independientemente del motor de base de datos
-- **ORM Simplificado**: Definición declarativa de modelos y esquemas
-- **CQRS Ready**: Soporte integrado para Command Query Responsibility Segregation
-- **Core System**: Sistema de metadatos y gestión automática de modelos
+### API declarativa y fluida
 
-### Performance & Scale
+- **Modelos declarativos**: columnas, llaves, índices, relaciones, rollups y campos especiales definidos con métodos `Define*` sobre `*Model`.
+- **`Ql`** (`jdb/ql.go`): consultas de lectura inmutables construidas encadenando métodos (`Where`, `And`, `Or`, `Eq`, `Like`, `In`, `Between`, joins, orden, límites) y ejecutadas con `All()`, `One()`, `First(n)`, `Counted()`, `ItExists()` (o sus variantes `*Tx` dentro de una transacción).
+- **`Command`** (`jdb/command.go`): operaciones de escritura inmutables (`Insert`, `Update`, `Delete`, `Upsert`, `Bulk`) construidas igual que `Ql` y ejecutadas con `Exec()` / `One()` (o `ExecTx(tx)` dentro de una transacción).
+- **Hooks de ciclo de vida**: `BeforeInsert`, `BeforeUpdate`, `BeforeDelete`, `BeforeInsertOrUpdate`, `AfterInsert`, `AfterUpdate`, `AfterDelete`, `AfterInsertOrUpdate` — cada uno recibe `func(tx *jdb.Tx, data et.Json) error`.
+- **Eventos por modelo**: `model.On(channel, handler)` / `model.Emit(channel, data)`, integrados con `elvis/event`.
 
-- **Transacciones**: Soporte completo para transacciones ACID
-- **Bulk Operations**: Operaciones masivas optimizadas
-- **Connection Pooling**: Gestión automática de conexiones
-- **Query Optimization**: Optimización automática de consultas
+### Transacciones
 
-### Developer Experience
+Soporte para transacciones vía `jdb.NewTx()` + `tx.Begin(db.Db)`, con `Commit()` / `Rollback()`, y las variantes `*Tx` de `Ql`/`Command` para ejecutar consultas y comandos dentro de la misma transacción.
 
-- **Debug Mode**: Sistema de depuración avanzado para desarrollo
-- **Type Safety**: Tipado fuerte con validaciones automáticas
-- **Hot Reload**: Recarga automática de configuraciones
-- **JavaScript VM**: Integración con Goja para scripts dinámicos
+### HTTP handlers
 
-### DevOps Features
+`jdb.go` expone cuatro `http.HandlerFunc` listos para montar en cualquier router (Chi u otro):
 
-- **Sistema de Daemon**: Gestión completa de servicios con control de ciclo de vida
-- **Gestión de PID**: Control automático de procesos
-- **Health Checks**: Verificación de estado en tiempo real
-- **Graceful Shutdown**: Cierre controlado con manejo de señales
+- `jdb.ModelDefine` — describe un modelo/schema/DB.
+- `jdb.ModelQuery` — ejecuta un `Ql` a partir de un body JSON.
+- `jdb.ModelCommand` — ejecuta uno o más `Command` a partir de un body JSON.
+- `jdb.ModelDescribe` — describe un objeto por tipo + nombre.
 
-### Security & Management
+### Paquetes de features (`instances`, `authorization`, `config`, `inbox`)
 
-- **Gestión de Usuarios**: Creación y administración de usuarios de base de datos
-- **Auditoría**: Sistema de auditoría automática para compliance
-- **Eventos**: Hooks antes y después de operaciones para logging y validación
-- **Configuration Management**: Configuración dinámica en tiempo de ejecución
+Cuatro paquetes que siguen el mismo patrón: un singleton de paquete (no exportado), poblado una única vez por una función `Load(db, schema, ...)` que no hace nada si ya fue cargado, y construido por una función `Define(...)` que define el schema/modelo contra `jdb` de forma idempotente. Cada uno posee exactamente una tabla/modelo y agrega comportamiento propio (CRUD, handlers HTTP, eventos) encima — por ejemplo, `authorization.Load` también se conecta a `elvis/middleware.SetAuthorizationStore`. Ver [`authorization/authorization.go`](authorization/authorization.go) como referencia de implementación.
 
-### Utilidades Integradas
+### Generación de datos y utilidades
 
-- **ID Generation**: Soporte para ULID, UUID, XID y Snowflake IDs
-- **Cache & Redis**: Integración con Redis para caching distribuido
-- **Message Queue**: Soporte para NATS messaging
-- **Compression**: Algoritmos de compresión integrados
-- **Cryptography**: Funciones criptográficas avanzadas
+- `model.New(fields ...string)` — genera un `et.Json` con los valores por defecto de las columnas del modelo (útil para plantillas/formularios).
+- `jdb.GetSeries(model, field)` — obtiene el siguiente valor de una secuencia interna del `core`.
 
 ## Instalación
 
 ```bash
 go get github.com/celsiainternet/jdb@v1.0.86
-go run github.com/celsiainternet/jdb/cmd/install
-go run github.com/celsiainternet/jdb/cmd/create go
 ```
 
-### Dependencias Principales
+`jdb` depende de `elvis`, así que normalmente también necesitarás:
 
 ```bash
-# Dependencia principal
 go get github.com/celsiainternet/elvis@v1.1.300
-go run github.com/celsiainternet/elvis/cmd/install
-go run github.com/celsiainternet/elvis/cmd/create go
-
-# Drivers de base de datos incluidos
-# - PostgreSQL: github.com/lib/pq v1.10.9
-# - MySQL: github.com/go-sql-driver/mysql v1.9.3
-# - SQLite: modernc.org/sqlite v1.37.1
-# - HTTP Router: github.com/go-chi/chi/v5 v5.2.2
-# - Utilidades adicionales: ULID, UUID, Redis, NATS
 ```
 
-/services/clients/services/all?state=0&search=&page=1&rows=30&select
+### Workspace local (`elvis` + `jdb` en desarrollo conjunto)
+
+Si estás desarrollando `jdb` junto con `elvis` en este mismo workspace (ver `../CLAUDE.md`), enlázalos con un `go.work` en la raíz del workspace en lugar de depender de la versión publicada:
+
+```bash
+go work init ./elvis
+go work use ./elvis
+go work use ./jdb
+```
 
 ## Configuración
 
-### Variables de Entorno
+### Variables de entorno
 
-```bash
-# Configuración básica
-NODEID=1
-DB_NAME=myapp
-DB_DRIVER=postgres  # postgres, mysql, sqlite, oracle
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=password
-APP_NAME=myapp
+| Variable | Default | Propósito |
+|---|---|---|
+| `DB_NAME` | `jdb` | Nombre de la base de datos |
+| `DB_DRIVER` | — | `postgres`, `mysql` o `sqlite` |
+| `DB_HOST` | `localhost` | Host de la base de datos |
+| `DB_PORT` | `5432` | Puerto de la base de datos |
+| `DB_USER` | `admin` | Usuario de la base de datos |
+| `DB_PASSWORD` | `admin` | Contraseña de la base de datos |
+| `APP_NAME` | `jdb` | Nombre de la aplicación (usado en el connection string de PG) |
+| `NODE_ID` | `0` | ID de nodo para generación de IDs distribuidos |
+| `DEBUG` | `false` | Habilita logging de debug |
+| `DB_VERSION` | `13` | Versión del servidor PostgreSQL |
 
-# Configuración adicional
-DB_SSL_MODE=disable
-DB_TIMEZONE=UTC
+## Uso básico
 
-# Configuración Oracle específica
-ORA_DB_SERVICE_NAME_ORACLE=jdb
-ORA_DB_SSL_ORACLE=false
-ORA_DB_SSL_VERIFY_ORACLE=false
-ORA_DB_VERSION_ORACLE=19
-```
-
-## Uso Básico
-
-### Conexión a Base de Datos
+### Conexión a la base de datos
 
 ```go
 package main
@@ -129,29 +98,27 @@ package main
 import (
     "fmt"
 
-    "github.com/celsiainternet/elvis/et"
     jdb "github.com/celsiainternet/jdb/jdb"
-    _ "github.com/celsiainternet/jdb/drivers/postgres" // Importar driver específico
+    "github.com/celsiainternet/jdb/drivers/postgres" // importarlo ya registra el driver en su init()
 )
 
 func main() {
-    // Configuración de conexión
     params := jdb.ConnectParams{
         Driver:   "postgres",
         Name:     "myapp",
-        UserCore: true,
+        UserCore: true, // crea el schema "core" con metadatos internos
         NodeId:   1,
-        Debug:    true,
-        Params: et.Json{
-            "host":     "localhost",
-            "port":     5432,
-            "username": "postgres",
-            "password": "password",
-            "database": "myapp",
+        IsDebug:  true,
+        Params: &postgres.Connection{
+            Host:     "localhost",
+            Port:     5432,
+            Username: "postgres",
+            Password: "password",
+            Database: "myapp",
+            App:      "myapp",
         },
     }
 
-    // Conectar a la base de datos
     db, err := jdb.ConnectTo(params)
     if err != nil {
         panic(err)
@@ -162,33 +129,34 @@ func main() {
 }
 ```
 
-### Definición de Modelos
+También puedes conectar directamente desde las variables de entorno (usa los defaults que registra el driver en su `init()`):
 
 ```go
-// Definir un esquema
-schema := db.GetSchema("public")
+db, err := jdb.Load()
+```
 
-// Definir un modelo
-user := schema.DefineModel("users", "Usuarios del sistema")
-user.DefineColumn("id", jdb.TypeDataKey, jdb.PrimaryKey)
-user.DefineColumn("name", jdb.TypeDataText, jdb.Required)
-user.DefineColumn("email", jdb.TypeDataText, jdb.Unique)
+### Definición de modelos
+
+```go
+schema := jdb.NewSchema(db, "public")
+
+user := jdb.NewModel(schema, "users", 1)
+user.DefineColumn("name", jdb.TypeDataText)
+user.DefineColumn("email", jdb.TypeDataText)
 user.DefineColumn("age", jdb.TypeDataInt)
-user.DefineColumn("active", jdb.TypeDataBool, jdb.Default(true))
-user.DefineColumn("created_at", jdb.TypeDataTime, jdb.Default("NOW()"))
+user.DefineRequired("name", "email")
+user.DefineUnique("email")
 
 // Campos especiales del sistema
-user.DefineCreatedAtField()    // Campo de fecha de creación
-user.DefineUpdatedAtField()    // Campo de fecha de actualización
-user.DefineStatusField()       // Campo de estado
-user.DefineSystemKeyField()    // Campo de clave del sistema
-user.DefineIndexField()        // Campo de índice
-user.DefineSourceField()       // Campo de origen
-user.DefineProjectField()      // Campo de proyecto
+user.DefineCreatedAtField() // fecha de creación
+user.DefineUpdatedAtField() // fecha de actualización
+user.DefineStatusField()    // estado (activo/archivado/etc.)
+user.DefineSystemKeyField() // clave del sistema
+user.DefineIndexField()     // índice
+user.DefineSourceField()    // origen
 
-// Crear el modelo en la base de datos
-err := db.LoadModel(user)
-if err != nil {
+// Crea/registra el modelo en la base de datos
+if err := user.Init(); err != nil {
     panic(err)
 }
 ```
@@ -196,299 +164,172 @@ if err != nil {
 ### Operaciones CRUD
 
 ```go
-import (
-    "github.com/celsiainternet/elvis/et"
-    jdb "github.com/celsiainternet/jdb/jdb"
-)
+import "github.com/celsiainternet/elvis/et"
 
-// Insertar datos
-result, err := db.Command(&jdb.Command{
-    Command: jdb.Insert,
-    From:    user.GetFrom(),
-    Values: []et.Json{
-        {
-            "name":  "Juan Pérez",
-            "email": "juan@example.com",
-            "age":   30,
-        },
-    },
-})
+// Insertar
+item, err := user.Insert(et.Json{
+    "name":  "Juan Pérez",
+    "email": "juan@example.com",
+    "age":   30,
+}).One()
 
-// Consultar datos
-items, err := db.Select(&jdb.Ql{
-    From: user.GetFrom(),
-    Where: &jdb.QlWhere{
-        And: []*jdb.Where{
-            {Field: "active", Op: jdb.Eq, Value: true},
-        },
-    },
-})
+// Consultar
+items, err := user.
+    Where("active").Eq(true).
+    All()
 
-// Actualizar datos
-result, err := db.Command(&jdb.Command{
-    Command: jdb.Update,
-    From:    user.GetFrom(),
-    Values: []et.Json{
-        {"age": 31},
-    },
-    QlWhere: &jdb.QlWhere{
-        And: []*jdb.Where{
-            {Field: "id", Op: jdb.Eq, Value: "user123"},
-        },
-    },
-})
+// Actualizar
+result, err := user.
+    Update(et.Json{"age": 31}).
+    Where("id").Eq("user123").
+    Exec()
 
-// Eliminar datos
-result, err := db.Command(&jdb.Command{
-    Command: jdb.Delete,
-    From:    user.GetFrom(),
-    QlWhere: &jdb.QlWhere{
-        And: []*jdb.Where{
-            {Field: "id", Op: jdb.Eq, Value: "user123"},
-        },
-    },
-})
+// Eliminar
+result, err := user.
+    Delete("id").Eq("user123").
+    Exec()
 ```
 
-### Bulk Insert
+### Bulk insert
 
 ```go
-// Inserción masiva
-result, err := db.Command(&jdb.Command{
-    Command: jdb.Bulk,
-    From:    user.GetFrom(),
-    Data: []et.Json{
-        {"name": "Ana García", "email": "ana@example.com", "age": 25},
-        {"name": "Carlos López", "email": "carlos@example.com", "age": 35},
-        {"name": "María Rodríguez", "email": "maria@example.com", "age": 28},
-    },
-})
+result, err := user.Bulk([]et.Json{
+    {"name": "Ana García", "email": "ana@example.com", "age": 25},
+    {"name": "Carlos López", "email": "carlos@example.com", "age": 35},
+    {"name": "María Rodríguez", "email": "maria@example.com", "age": 28},
+}).Exec()
 ```
 
 ### Transacciones
 
 ```go
-// Iniciar transacción
-tx, err := db.Begin()
-if err != nil {
+tx := jdb.NewTx()
+if err := tx.Begin(db.Db); err != nil {
     panic(err)
 }
 defer tx.Rollback()
 
-// Operaciones en transacción
-result, err := tx.Command(&jdb.Command{
-    Command: jdb.Insert,
-    From:    user.GetFrom(),
-    Values: []et.Json{
-        {"name": "Usuario Transaccional", "email": "tx@example.com"},
-    },
-})
-
-// Commit de la transacción
-err = tx.Commit()
+_, err := user.
+    Insert(et.Json{"name": "Usuario Transaccional", "email": "tx@example.com"}).
+    ExecTx(tx)
 if err != nil {
+    panic(err)
+}
+
+if err := tx.Commit(); err != nil {
     panic(err)
 }
 ```
 
-## Sistema de Daemon
-
-JDB incluye un sistema de daemon robusto para gestionar servicios con control completo del ciclo de vida:
-
-### Características del Daemon
-
-- **Gestión de PID**: Control automático de archivos PID para evitar múltiples instancias
-- **Servidor HTTP**: Servidor web integrado con Chi router
-- **Gestión de señales**: Manejo graceful de SIGINT y SIGTERM
-- **Control de estado**: Verificación en tiempo real del estado del servicio
-- **Configuración dinámica**: Configuración en tiempo de ejecución
-
-### Gestión del Servicio
-
-```bash
-# Mostrar ayuda
-./jdb help
-
-# Mostrar versión del daemon
-./jdb version
-
-# Verificar estado del servicio
-./jdb status
-
-# Configurar el servicio (JSON)
-./jdb conf '{"port": 3500, "debug": true}'
-
-# Iniciar el servicio en segundo plano
-./jdb start
-
-# Detener el servicio gracefully
-./jdb stop
-
-# Reiniciar el servicio
-./jdb restart
-```
-
-### Estructura del Daemon
-
-El daemon utiliza:
-
-- **Archivo PID**: `./tmp/myservice.pid` para control de procesos
-- **Interfaz HTTP**: Servidor web en el puerto configurado
-- **Logs estructurados**: Sistema de logging integrado con Elvis
-- **Configuración JSON**: Parámetros dinámicos en tiempo de ejecución
-
-### Configuración del Daemon
+### Consultas con JOIN, orden y paginación
 
 ```go
-// Ejemplo de configuración programática del daemon
+items, err := user.
+    Join(profile, "id", "=", "user_id").
+    Where("users.active").Eq(true).
+    And("profiles.verified").Eq(true).
+    OrderByDesc("users.created_at").
+    First(10)
+
+// Paginación (página, filas por página)
+list, err := user.Where("active").Eq(true).List(1, 20)
+```
+
+### Hooks (before/after)
+
+```go
+user.BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
+    fmt.Println("Insertando usuario:", data)
+    return nil
+})
+
+user.AfterUpdate(func(tx *jdb.Tx, data et.Json) error {
+    fmt.Println("Usuario actualizado:", data)
+    return nil
+})
+```
+
+### Eventos por modelo
+
+```go
+user.On("custom_event", func(msg event.EvenMessage) {
+    fmt.Println("Evento personalizado:", msg)
+})
+
+user.Emit("custom_event", et.Json{"user_id": "123"})
+```
+
+### Campos especiales
+
+```go
+// Texto completo
+user.DefineFullText("spanish", []string{"name", "description"})
+
+// Relación (uno-a-muchos hacia el modelo actual)
+user.DefineRelation("profile", "profiles", map[string]string{"user_id": "id"}, 1)
+
+// Rollup (agregación desde otra tabla)
+user.DefineRollup("total_orders", "orders", map[string]string{"user_id": "id"}, []string{"amount"})
+
+// Objeto embebido (uno-a-uno)
+user.DefineObject("address", "addresses", map[string]string{"user_id": "id"}, []string{"street", "city", "country"})
+```
+
+### Generación de datos de prueba
+
+```go
+// Valores por defecto para todas las columnas
+data := user.New()
+
+// Solo para las columnas indicadas
+data := user.New("name", "email", "age")
+```
+
+### HTTP handlers
+
+```go
 import (
-    "github.com/celsiainternet/elvis/et"
-    jdb "github.com/celsiainternet/jdb/cmd/jdb"
+    "github.com/go-chi/chi/v5"
+    jdb "github.com/celsiainternet/jdb/jdb"
 )
 
-// Configuración del daemon
-config := et.Json{
-    "port":  3500,
-    "debug": true,
-    "host":  "localhost",
-}
-
-// El daemon se configura automáticamente basado en variables de entorno
-// o mediante el comando: ./jdb conf '{"port": 3500, "debug": true}'
+r := chi.NewRouter()
+r.Post("/model/query", jdb.ModelQuery)
+r.Post("/model/command", jdb.ModelCommand)
+r.Get("/model/define", jdb.ModelDefine)
+r.Get("/model/describe", jdb.ModelDescribe)
 ```
 
-## Gestión de Usuarios
-
-JDB proporciona funcionalidades para gestionar usuarios de base de datos:
-
-### PostgreSQL
-
-```go
-// Crear usuario
-err := db.CreateUser("nuevo_usuario", "password123", "password123")
-
-// Cambiar contraseña
-err := db.ChangePassword("nuevo_usuario", "nueva_password", "nueva_password")
-
-// Otorgar privilegios
-err := db.GrantPrivileges("nuevo_usuario", "myapp")
-
-// Eliminar usuario
-err := db.DeleteUser("nuevo_usuario")
-```
-
-### MySQL
-
-```go
-// Crear usuario
-err := db.CreateUser("nuevo_usuario", "password123", "password123")
-
-// Cambiar contraseña
-err := db.ChangePassword("nuevo_usuario", "nueva_password", "nueva_password")
-
-// Otorgar privilegios
-err := db.GrantPrivileges("nuevo_usuario", "myapp")
-
-// Eliminar usuario
-err := db.DeleteUser("nuevo_usuario")
-```
-
-## Nuevas Funcionalidades
-
-### JavaScript VM Integration
-
-```go
-// Ejecutar scripts JavaScript en el modelo
-user.vm.Set("customFunction", func(data et.Json) et.Json {
-    // Lógica personalizada
-    return data
-})
-
-// Ejecutar script
-result, err := user.vm.RunString(`
-    var data = {name: "Juan", age: 30};
-    customFunction(data);
-`)
-```
-
-### Sistema de Eventos Avanzado
-
-```go
-// Definir eventos personalizados
-user.On("custom_event", func(message event.Message) {
-    console.Log("Evento personalizado:", message)
-})
-
-// Emitir eventos
-user.Emit("custom_event", event.Message{
-    Type: "user_created",
-    Data: et.Json{"user_id": "123"},
-})
-```
-
-### Generación de Datos de Prueba
-
-```go
-// Generar datos de prueba para el modelo
-testData := user.New("name", "email", "age")
-// Resultado: {"name": "", "email": "", "age": 0}
-
-// Generar datos con valores por defecto
-testData := user.New()
-// Resultado: {"id": "users:ulid", "name": "", "email": "", "age": 0, "active": true, "created_at": "2024-01-01T00:00:00Z"}
-```
-
-### Consultas Avanzadas
-
-```go
-// Consulta con campos ocultos
-items, err := db.Select(&jdb.Ql{
-    From: user.GetFrom(),
-    Hidden: []string{"password", "secret_key"},
-})
-
-// Consulta con datos de origen
-items, err := db.Select(&jdb.Ql{
-    From: user.GetFrom(),
-    TypeSelect: jdb.Source,
-})
-```
-
-## Estructura del Proyecto
+## Estructura del proyecto
 
 ```
 jdb/
 ├── jdb/                 # Paquete principal
-│   ├── database.go      # Gestión de conexiones
-│   ├── model.go         # Definición de modelos
-│   ├── command.go       # Comandos CRUD
-│   ├── ql.go           # Query Language
-│   ├── model-new.go     # Generación de datos
-│   ├── model-define.go  # Definición de campos especiales
-│   └── ...
-├── drivers/            # Drivers de base de datos
-│   ├── postgres/       # Driver PostgreSQL
-│   │   ├── users.go    # Gestión de usuarios
-│   │   └── ...
-│   ├── mysql/          # Driver MySQL
-│   │   ├── users.go    # Gestión de usuarios
-│   │   └── ...
-│   ├── sqlite/         # Driver SQLite
-│   ├── oracle/         # Driver Oracle
-│   │   ├── users.go    # Gestión de usuarios
-│   │   └── ...
-│   └── ...
-├── cqrs/              # Patrón CQRS
-└── cmd/               # Aplicación de ejemplo
-    ├── jdb/           # Comando principal
-    │   ├── main.go     # Punto de entrada
-    │   ├── systemd.go  # Sistema de daemon
-    │   ├── pid.go      # Gestión de PID
-    │   └── msg.go      # Mensajes del sistema
-    └── main.go         # Ejemplo de uso
+│   ├── database.go      # *DB: conexión, schemas, modelos
+│   ├── schema.go        # *Schema: namespace dentro de una DB
+│   ├── model.go         # *Model: definición de tabla
+│   ├── model-define.go  # Métodos Define* (columnas, llaves, relaciones...)
+│   ├── column.go        # *Column y tipos de dato (TypeData*)
+│   ├── command*.go      # *Command: Insert/Update/Delete/Upsert/Bulk
+│   ├── ql*.go           # *Ql: consultas (where, joins, orden, límites)
+│   ├── tx.go            # *Tx: transacciones
+│   ├── drivers.go        # interfaz Driver + registro de drivers
+│   └── jdb.go            # singleton global + HTTP handlers
+├── drivers/
+│   ├── postgres/
+│   ├── mysql/
+│   └── sqlite/
+├── instances/           # paquete de feature: singleton CRUD genérico
+├── authorization/       # paquete de feature: modelo de sesión/autorización
+├── config/              # paquete de feature: configuración en runtime
+├── inbox/               # paquete de feature: bandeja de mensajes
+└── cmd/
+    ├── test/            # sandbox manual contra una DB real (no es un ejemplo estable)
+    ├── install/         # instala dependencias de terceros vía `go get`
+    └── create/          # CLI (Cobra) que genera proyectos/modelos desde plantillas
 ```
 
-## Drivers Soportados
+## Drivers soportados
 
 ### PostgreSQL
 
@@ -497,13 +338,13 @@ import _ "github.com/celsiainternet/jdb/drivers/postgres"
 
 params := jdb.ConnectParams{
     Driver: "postgres",
-    Params: et.Json{
-        "host":     "localhost",
-        "port":     5432,
-        "username": "postgres",
-        "password": "password",
-        "database": "myapp",
-        "app":      "myapp",
+    Params: &postgres.Connection{
+        Host:     "localhost",
+        Port:     5432,
+        Username: "postgres",
+        Password: "password",
+        Database: "myapp",
+        App:      "myapp",
     },
 }
 ```
@@ -515,12 +356,12 @@ import _ "github.com/celsiainternet/jdb/drivers/mysql"
 
 params := jdb.ConnectParams{
     Driver: "mysql",
-    Params: et.Json{
-        "host":     "localhost",
-        "port":     3306,
-        "username": "root",
-        "password": "password",
-        "database": "myapp",
+    Params: &mysql.Connection{
+        Host:     "localhost",
+        Port:     3306,
+        Username: "root",
+        Password: "password",
+        Database: "myapp",
     },
 }
 ```
@@ -532,126 +373,34 @@ import _ "github.com/celsiainternet/jdb/drivers/sqlite"
 
 params := jdb.ConnectParams{
     Driver: "sqlite",
-    Params: et.Json{
-        "database": "./data.db",
+    Params: &sqlite.Connection{
+        Database: "./data.db",
     },
 }
 ```
 
-### Oracle
+## Herramientas de `cmd/`
 
-```go
-import _ "github.com/celsiainternet/jdb/drivers/oracle"
-
-params := jdb.ConnectParams{
-    Driver: "oracle",
-    Params: et.Json{
-        "host":         "localhost",
-        "port":         1521,
-        "username":     "system",
-        "password":     "password",
-        "app":          "myapp",
-        "service_name": "XE",
-        "ssl":          false,
-        "ssl_verify":   false,
-        "version":      19,
-    },
-}
-```
-
-## Ejemplos Avanzados
-
-### Consultas Complejas
-
-```go
-// Consulta con JOIN
-items, err := db.Select(&jdb.Ql{
-    From: user.GetFrom(),
-    Joins: []*jdb.QlJoin{
-        {
-            Type:  jdb.InnerJoin,
-            Table: "profiles",
-            On: &jdb.QlWhere{
-                And: []*jdb.Where{
-                    {Field: "users.id", Op: jdb.Eq, Value: "profiles.user_id"},
-                },
-            },
-        },
-    },
-    Where: &jdb.QlWhere{
-        And: []*jdb.Where{
-            {Field: "users.active", Op: jdb.Eq, Value: true},
-            {Field: "profiles.verified", Op: jdb.Eq, Value: true},
-        },
-    },
-    OrderBy: &jdb.QlOrder{
-        Asc: []*jdb.Field{{Name: "users.created_at"}},
-    },
-    Limit: 10,
-})
-```
-
-### Eventos y Hooks
-
-```go
-// Evento antes de insertar
-user.EventsInsert = append(user.EventsInsert, func(model *jdb.Model, before, after jdb.Json) error {
-    fmt.Println("Insertando usuario:", after)
-    return nil
-})
-
-// Evento después de actualizar
-user.EventsUpdate = append(user.EventsUpdate, func(model *jdb.Model, before, after jdb.Json) error {
-    fmt.Println("Usuario actualizado:", after)
-    return nil
-})
-```
-
-### Campos Especiales
-
-```go
-// Definir campo de texto completo
-user.DefineFullText("spanish", []string{"name", "description"})
-
-// Definir relación
-user.DefineRelation("profile", "profiles", map[string]string{
-    "user_id": "id",
-}, 1)
-
-// Definir rollup
-user.DefineRollup("total_orders", "orders", map[string]string{
-    "user_id": "id",
-}, "amount")
-
-// Definir objeto
-user.DefineObject("address", "addresses", map[string]string{
-    "user_id": "id",
-}, []string{"street", "city", "country"})
-```
-
-## Compilación y Ejecución
-
-### Ejecutar en modo desarrollo
+`cmd/` no contiene la librería en sí, sino tres binarios independientes:
 
 ```bash
-# Compilar y ejecutar con race detection
-gofmt -w . && go run --race ./cmd
-gofmt -w . && go run ./cmd
+# Sandbox de desarrollo: conecta a una DB real vía variables de entorno
+gofmt -w . && go run --race ./cmd/test
+
+# Instala un conjunto fijo de dependencias de terceros (bootstrap de un nuevo consumidor)
+go run github.com/celsiainternet/jdb/cmd/install
+
+# CLI para scaffolding de nuevos proyectos/modelos de microservicio
+go run github.com/celsiainternet/jdb/cmd/create go
 ```
 
-### Compilar para producción
+No hay archivos de test (`*_test.go`) en este repositorio.
+
+## Gestión de versiones (`version.sh`)
 
 ```bash
-# Compilación optimizada
-gofmt -w . && go build -a -o ./jdb ./cmd
-
-```
-
-### Gestión de Versiones Automática
-
-```bash
-# Incrementar versión de revisión (X.Y.Z+1)
-./version.sh --v
+# Incrementar versión de parche (X.Y.Z+1), etiquetar y hacer push de tags
+git add . && git commit -m 'Update version' && ./version.sh --r
 
 # Incrementar versión menor (X.Y+1.0)
 ./version.sh --n
@@ -659,26 +408,8 @@ gofmt -w . && go build -a -o ./jdb ./cmd
 # Incrementar versión mayor (X+1.0.0)
 ./version.sh --m
 
-# Solo crear tag sin commit
-./version.sh --version
+# Ayuda
+./version.sh --h
 ```
 
-## API Reference
-
-### Información de Versión
-
-**Versión Actual**: v0.0.66
-
-El sistema de versionado es automático y sigue el estándar semántico (SemVer):
-
-- **Major**: Cambios incompatibles en la API
-- **Minor**: Nuevas funcionalidades compatibles hacia atrás
-- **Patch**: Correcciones de bugs compatibles
-
-```bash
-# Para desarrolladores: proceso de release
-git add .
-git commit -m 'Update version'
-./version.sh --v  # Incrementa patch
-git push origin --tags
-```
+`version.sh` reescribe la versión anterior en este `README.md` (badge de versión) y crea/empuja el tag de Git correspondiente — sigue el estándar semántico (SemVer).

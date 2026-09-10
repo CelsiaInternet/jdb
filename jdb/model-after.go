@@ -75,3 +75,48 @@ func (s *Model) AfterInsertOrUpdate(fn DataFunctionTx) *Model {
 
 	return s
 }
+
+/**
+* AfterInsertTrigger
+* @param fn TriggerFunction
+* @return *Command
+**/
+func (s *Model) AfterInsertTrigger(fn TriggerFunctionTx) *Model {
+	s.afterInsertTrigger = append(s.afterInsertTrigger, fn)
+
+	return s
+}
+
+/**
+* AfterUpdateTrigger
+* @param fn TriggerFunction
+* @return *Command
+**/
+func (s *Model) AfterUpdateTrigger(fn TriggerFunctionTx) *Model {
+	s.afterUpdateTrigger = append(s.afterUpdateTrigger, fn)
+
+	return s
+}
+
+/**
+* AfterDeleteTrigger
+* @param fn TriggerFunction
+* @return *Command
+**/
+func (s *Model) AfterDeleteTrigger(fn TriggerFunctionTx) *Model {
+	s.afterDeleteTrigger = append(s.afterDeleteTrigger, fn)
+
+	return s
+}
+
+/**
+* AfterInsertOrUpdateTrigger
+* @param fn TriggerFunction
+* @return *Command
+**/
+func (s *Model) AfterInsertOrUpdateTrigger(fn TriggerFunctionTx) *Model {
+	s.afterInsertTrigger = append(s.afterInsertTrigger, fn)
+	s.afterUpdateTrigger = append(s.afterUpdateTrigger, fn)
+
+	return s
+}

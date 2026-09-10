@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (s *Command) current() error {
+func (s *Command) getCurrent() error {
 	model := s.getModel()
 	if model == nil {
 		return fmt.Errorf(MSG_MODEL_REQUIRED)

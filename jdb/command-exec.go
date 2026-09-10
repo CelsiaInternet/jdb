@@ -45,7 +45,7 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 			return et.Items{}, err
 		}
 	case Update:
-		err = s.current()
+		err = s.getCurrent()
 		if err != nil {
 			return et.Items{}, err
 		}

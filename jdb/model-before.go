@@ -40,3 +40,44 @@ func (s *Model) BeforeInsertOrUpdate(fn DataFunctionTx) *Model {
 
 	return s
 }
+
+/**
+* BeforeInsertTrigger
+* @param fn TriggerFunction
+**/
+func (s *Model) BeforeInsertTrigger(fn TriggerFunctionTx) *Model {
+	s.beforeInsertTrigger = append(s.beforeInsertTrigger, fn)
+
+	return s
+}
+
+/**
+* BeforeUpdateTrigger
+* @param fn TriggerFunction
+**/
+func (s *Model) BeforeUpdateTrigger(fn TriggerFunctionTx) *Model {
+	s.beforeUpdateTrigger = append(s.beforeUpdateTrigger, fn)
+
+	return s
+}
+
+/**
+* BeforeDeleteTrigger
+* @param fn TriggerFunction
+**/
+func (s *Model) BeforeDeleteTrigger(fn TriggerFunctionTx) *Model {
+	s.beforeDeleteTrigger = append(s.beforeDeleteTrigger, fn)
+
+	return s
+}
+
+/**
+* AfterInsertTrigger
+* @param fn TriggerFunction
+**/
+func (s *Model) BeforeInsertOrUpdateTrigger(fn TriggerFunctionTx) *Model {
+	s.beforeInsertTrigger = append(s.beforeInsertTrigger, fn)
+	s.beforeUpdateTrigger = append(s.beforeUpdateTrigger, fn)
+
+	return s
+}

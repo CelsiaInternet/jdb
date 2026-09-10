@@ -35,30 +35,38 @@ func (s TypeCommand) Str() string {
 
 type Function func() error
 type DataFunction func(data et.Json)
-type DataFunctionTx func(tx *Tx, data et.Json) error
+type DataFunctionTx func(tx *Tx, new et.Json) error
+type TriggerFunctionTx func(tx *Tx, old, new et.Json) error
 
 type Command struct {
 	*QlWhere
-	Id           string              `json:"id"`
-	tx           *Tx                 `json:"-"`
-	Command      TypeCommand         `json:"command"`
-	Db           *DB                 `json:"-"`
-	From         *QlFroms            `json:"-"`
-	Data         []et.Json           `json:"data"`
-	Values       []map[string]*Field `json:"values"`
-	Returns      []*Field            `json:"returns"`
-	Sql          string              `json:"sql"`
-	Args         []any               `json:"args"`
-	Result       et.Items            `json:"result"`
-	Current      et.Items            `json:"current"`
-	CurrentMap   map[string]et.Json  `json:"current_map"`
-	ResultMap    map[string]et.Json  `json:"result_map"`
-	beforeInsert []DataFunctionTx    `json:"-"`
-	beforeUpdate []DataFunctionTx    `json:"-"`
-	beforeDelete []DataFunctionTx    `json:"-"`
-	afterInsert  []DataFunctionTx    `json:"-"`
-	afterUpdate  []DataFunctionTx    `json:"-"`
-	afterDelete  []DataFunctionTx    `json:"-"`
+	Id                  string              `json:"id"`
+	tx                  *Tx                 `json:"-"`
+	Command             TypeCommand         `json:"command"`
+	Db                  *DB                 `json:"-"`
+	From                *QlFroms            `json:"-"`
+	Data                []et.Json           `json:"data"`
+	Values              []map[string]*Field `json:"values"`
+	Returns             []*Field            `json:"returns"`
+	Sql                 string              `json:"sql"`
+	Args                []any               `json:"args"`
+	Result              et.Items            `json:"result"`
+	Current             et.Items            `json:"current"`
+	CurrentMap          map[string]et.Json  `json:"current_map"`
+	ResultMap           map[string]et.Json  `json:"result_map"`
+	current             et.Json             `json:"-"`
+	beforeInsert        []DataFunctionTx    `json:"-"`
+	beforeUpdate        []DataFunctionTx    `json:"-"`
+	beforeDelete        []DataFunctionTx    `json:"-"`
+	afterInsert         []DataFunctionTx    `json:"-"`
+	afterUpdate         []DataFunctionTx    `json:"-"`
+	afterDelete         []DataFunctionTx    `json:"-"`
+	beforeInsertTrigger []TriggerFunctionTx `json:"-"`
+	beforeUpdateTrigger []TriggerFunctionTx `json:"-"`
+	beforeDeleteTrigger []TriggerFunctionTx `json:"-"`
+	afterInsertTrigger  []TriggerFunctionTx `json:"-"`
+	afterUpdateTrigger  []TriggerFunctionTx `json:"-"`
+	afterDeleteTrigger  []TriggerFunctionTx `json:"-"`
 }
 
 /**
@@ -68,24 +76,31 @@ type Command struct {
 **/
 func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 	result := &Command{
-		Id:           utility.UUID(),
-		Command:      command,
-		Db:           model.Db,
-		From:         setForms(model),
-		Data:         data,
-		Values:       make([]map[string]*Field, 0),
-		beforeInsert: []DataFunctionTx{},
-		beforeUpdate: []DataFunctionTx{},
-		beforeDelete: []DataFunctionTx{},
-		afterInsert:  []DataFunctionTx{},
-		afterUpdate:  []DataFunctionTx{},
-		afterDelete:  []DataFunctionTx{},
-		Returns:      []*Field{},
-		Args:         []any{},
-		Result:       et.Items{},
-		Current:      et.Items{},
-		CurrentMap:   make(map[string]et.Json),
-		ResultMap:    make(map[string]et.Json),
+		Id:                  utility.UUID(),
+		Command:             command,
+		Db:                  model.Db,
+		From:                setForms(model),
+		Data:                data,
+		Values:              make([]map[string]*Field, 0),
+		current:             et.Json{},
+		beforeInsert:        []DataFunctionTx{},
+		beforeUpdate:        []DataFunctionTx{},
+		beforeDelete:        []DataFunctionTx{},
+		afterInsert:         []DataFunctionTx{},
+		afterUpdate:         []DataFunctionTx{},
+		afterDelete:         []DataFunctionTx{},
+		beforeInsertTrigger: []TriggerFunctionTx{},
+		beforeUpdateTrigger: []TriggerFunctionTx{},
+		beforeDeleteTrigger: []TriggerFunctionTx{},
+		afterInsertTrigger:  []TriggerFunctionTx{},
+		afterUpdateTrigger:  []TriggerFunctionTx{},
+		afterDeleteTrigger:  []TriggerFunctionTx{},
+		Returns:             []*Field{},
+		Args:                []any{},
+		Result:              et.Items{},
+		Current:             et.Items{},
+		CurrentMap:          make(map[string]et.Json),
+		ResultMap:           make(map[string]et.Json),
 	}
 	result.QlWhere = newQlWhere(result.validator)
 	result.IsDebug = model.IsDebug
@@ -115,6 +130,30 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 
 	for _, fn := range model.afterDelete {
 		result.afterDelete = append(result.afterDelete, fn)
+	}
+
+	for _, fn := range model.beforeInsertTrigger {
+		result.beforeInsertTrigger = append(result.beforeInsertTrigger, fn)
+	}
+
+	for _, fn := range model.beforeUpdateTrigger {
+		result.beforeUpdateTrigger = append(result.beforeUpdateTrigger, fn)
+	}
+
+	for _, fn := range model.beforeDeleteTrigger {
+		result.beforeDeleteTrigger = append(result.beforeDeleteTrigger, fn)
+	}
+
+	for _, fn := range model.afterInsertTrigger {
+		result.afterInsertTrigger = append(result.afterInsertTrigger, fn)
+	}
+
+	for _, fn := range model.afterUpdateTrigger {
+		result.afterUpdateTrigger = append(result.afterUpdateTrigger, fn)
+	}
+
+	for _, fn := range model.afterDeleteTrigger {
+		result.afterDeleteTrigger = append(result.afterDeleteTrigger, fn)
 	}
 
 	return result

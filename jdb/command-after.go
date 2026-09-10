@@ -44,3 +44,44 @@ func (s *Command) AfterInsertOrUpdate(fn DataFunctionTx) *Command {
 
 	return s
 }
+
+/**
+* AfterInsertTrigger
+* @param fn TriggerFunction
+**/
+func (s *Command) AfterInsertTrigger(fn TriggerFunctionTx) *Command {
+	s.afterInsertTrigger = append(s.afterInsertTrigger, fn)
+
+	return s
+}
+
+/**
+* AfterUpdateTrigger
+* @param fn TriggerFunction
+**/
+func (s *Command) AfterUpdateTrigger(fn TriggerFunctionTx) *Command {
+	s.afterUpdateTrigger = append(s.afterUpdateTrigger, fn)
+
+	return s
+}
+
+/**
+* AfterDeleteTrigger
+* @param fn TriggerFunction
+**/
+func (s *Command) AfterDeleteTrigger(fn TriggerFunctionTx) *Command {
+	s.afterDeleteTrigger = append(s.afterDeleteTrigger, fn)
+
+	return s
+}
+
+/**
+* AfterInsertOrUpdateTrigger
+* @param fn TriggerFunction
+**/
+func (s *Command) AfterInsertOrUpdateTrigger(fn TriggerFunctionTx) *Command {
+	s.afterInsertTrigger = append(s.afterInsertTrigger, fn)
+	s.afterUpdateTrigger = append(s.afterUpdateTrigger, fn)
+
+	return s
+}

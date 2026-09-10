@@ -45,49 +45,55 @@ var (
 )
 
 type Model struct {
-	Db                 *DB                      `json:"-"`
-	schema             *Schema                  `json:"-"`
-	Schema             string                   `json:"schema"`
-	Table              string                   `json:"table"`
-	CreatedAt          time.Time                `json:"created_at"`
-	UpdateAt           time.Time                `json:"updated_at"`
-	Id                 string                   `json:"id"`
-	Name               string                   `json:"name"`
-	Description        string                   `json:"description"`
-	UseCore            bool                     `json:"use_core"`
-	Integrity          bool                     `json:"integrity"`
-	Definitions        et.Json                  `json:"definitions"`
-	Columns            []*Column                `json:"-"`
-	PrimaryKeys        map[string]*Column       `json:"-"`
-	ForeignKeys        map[string]*Relation     `json:"-"`
-	Indices            map[string]*Index        `json:"-"`
-	Uniques            map[string]*Index        `json:"-"`
-	RelationsTo        map[string]*Relation     `json:"-"`
-	RelationsFrom      map[string]*Relation     `json:"-"`
-	Joins              map[string]*Join         `json:"-"`
-	Required           map[string]bool          `json:"-"`
-	TpId               TypeId                   `json:"tp_id"`
-	CreatedAtField     *Column                  `json:"-"`
-	UpdatedAtField     *Column                  `json:"-"`
-	SystemKeyField     *Column                  `json:"-"`
-	StatusField        *Column                  `json:"-"`
-	IndexField         *Column                  `json:"-"`
-	SourceField        *Column                  `json:"-"`
-	FullTextField      *Column                  `json:"-"`
-	ProjectField       *Column                  `json:"-"`
-	Version            int                      `json:"version"`
-	beforeInsert       []DataFunctionTx         `json:"-"`
-	beforeUpdate       []DataFunctionTx         `json:"-"`
-	beforeDelete       []DataFunctionTx         `json:"-"`
-	afterInsert        []DataFunctionTx         `json:"-"`
-	afterUpdate        []DataFunctionTx         `json:"-"`
-	afterDelete        []DataFunctionTx         `json:"-"`
-	eventEmiterChannel chan event.EvenMessage   `json:"-"`
-	eventsEmiter       map[string]event.Handler `json:"-"`
-	IsDebug            bool                     `json:"-"`
-	isLocked           bool                     `json:"-"`
-	isInit             bool                     `json:"-"`
-	needMutate         bool                     `json:"-"`
+	Db                  *DB                      `json:"-"`
+	schema              *Schema                  `json:"-"`
+	Schema              string                   `json:"schema"`
+	Table               string                   `json:"table"`
+	CreatedAt           time.Time                `json:"created_at"`
+	UpdateAt            time.Time                `json:"updated_at"`
+	Id                  string                   `json:"id"`
+	Name                string                   `json:"name"`
+	Description         string                   `json:"description"`
+	UseCore             bool                     `json:"use_core"`
+	Integrity           bool                     `json:"integrity"`
+	Definitions         et.Json                  `json:"definitions"`
+	Columns             []*Column                `json:"-"`
+	PrimaryKeys         map[string]*Column       `json:"-"`
+	ForeignKeys         map[string]*Relation     `json:"-"`
+	Indices             map[string]*Index        `json:"-"`
+	Uniques             map[string]*Index        `json:"-"`
+	RelationsTo         map[string]*Relation     `json:"-"`
+	RelationsFrom       map[string]*Relation     `json:"-"`
+	Joins               map[string]*Join         `json:"-"`
+	Required            map[string]bool          `json:"-"`
+	TpId                TypeId                   `json:"tp_id"`
+	CreatedAtField      *Column                  `json:"-"`
+	UpdatedAtField      *Column                  `json:"-"`
+	SystemKeyField      *Column                  `json:"-"`
+	StatusField         *Column                  `json:"-"`
+	IndexField          *Column                  `json:"-"`
+	SourceField         *Column                  `json:"-"`
+	FullTextField       *Column                  `json:"-"`
+	ProjectField        *Column                  `json:"-"`
+	Version             int                      `json:"version"`
+	beforeInsert        []DataFunctionTx         `json:"-"`
+	beforeUpdate        []DataFunctionTx         `json:"-"`
+	beforeDelete        []DataFunctionTx         `json:"-"`
+	afterInsert         []DataFunctionTx         `json:"-"`
+	afterUpdate         []DataFunctionTx         `json:"-"`
+	afterDelete         []DataFunctionTx         `json:"-"`
+	beforeInsertTrigger []TriggerFunctionTx      `json:"-"`
+	beforeUpdateTrigger []TriggerFunctionTx      `json:"-"`
+	beforeDeleteTrigger []TriggerFunctionTx      `json:"-"`
+	afterInsertTrigger  []TriggerFunctionTx      `json:"-"`
+	afterUpdateTrigger  []TriggerFunctionTx      `json:"-"`
+	afterDeleteTrigger  []TriggerFunctionTx      `json:"-"`
+	eventEmiterChannel  chan event.EvenMessage   `json:"-"`
+	eventsEmiter        map[string]event.Handler `json:"-"`
+	IsDebug             bool                     `json:"-"`
+	isLocked            bool                     `json:"-"`
+	isInit              bool                     `json:"-"`
+	needMutate          bool                     `json:"-"`
 }
 
 /**
@@ -111,36 +117,42 @@ func NewTable(db *DB, table string) *Model {
 	schema := NewSchema(db, schemaName)
 	now := timezone.NowTime()
 	result := &Model{
-		Db:                 db,
-		schema:             schema,
-		Schema:             schema.Name,
-		Table:              tableName,
-		CreatedAt:          now,
-		UpdateAt:           now,
-		Id:                 reg.GenUlId("table"),
-		Name:               table,
-		UseCore:            false,
-		Definitions:        et.Json{},
-		Columns:            make([]*Column, 0),
-		PrimaryKeys:        make(map[string]*Column),
-		ForeignKeys:        make(map[string]*Relation),
-		Indices:            make(map[string]*Index),
-		Uniques:            make(map[string]*Index),
-		RelationsTo:        make(map[string]*Relation),
-		RelationsFrom:      make(map[string]*Relation),
-		Joins:              make(map[string]*Join),
-		Required:           make(map[string]bool),
-		TpId:               TpUUId,
-		beforeInsert:       []DataFunctionTx{},
-		beforeUpdate:       []DataFunctionTx{},
-		beforeDelete:       []DataFunctionTx{},
-		afterInsert:        []DataFunctionTx{},
-		afterUpdate:        []DataFunctionTx{},
-		afterDelete:        []DataFunctionTx{},
-		eventEmiterChannel: make(chan event.EvenMessage),
-		eventsEmiter:       make(map[string]event.Handler),
-		Version:            1,
-		IsDebug:            db.IsDebug,
+		Db:                  db,
+		schema:              schema,
+		Schema:              schema.Name,
+		Table:               tableName,
+		CreatedAt:           now,
+		UpdateAt:            now,
+		Id:                  reg.GenUlId("table"),
+		Name:                table,
+		UseCore:             false,
+		Definitions:         et.Json{},
+		Columns:             make([]*Column, 0),
+		PrimaryKeys:         make(map[string]*Column),
+		ForeignKeys:         make(map[string]*Relation),
+		Indices:             make(map[string]*Index),
+		Uniques:             make(map[string]*Index),
+		RelationsTo:         make(map[string]*Relation),
+		RelationsFrom:       make(map[string]*Relation),
+		Joins:               make(map[string]*Join),
+		Required:            make(map[string]bool),
+		TpId:                TpUUId,
+		beforeInsert:        []DataFunctionTx{},
+		beforeUpdate:        []DataFunctionTx{},
+		beforeDelete:        []DataFunctionTx{},
+		afterInsert:         []DataFunctionTx{},
+		afterUpdate:         []DataFunctionTx{},
+		afterDelete:         []DataFunctionTx{},
+		beforeInsertTrigger: []TriggerFunctionTx{},
+		beforeUpdateTrigger: []TriggerFunctionTx{},
+		beforeDeleteTrigger: []TriggerFunctionTx{},
+		afterInsertTrigger:  []TriggerFunctionTx{},
+		afterUpdateTrigger:  []TriggerFunctionTx{},
+		afterDeleteTrigger:  []TriggerFunctionTx{},
+		eventEmiterChannel:  make(chan event.EvenMessage),
+		eventsEmiter:        make(map[string]event.Handler),
+		Version:             1,
+		IsDebug:             db.IsDebug,
 	}
 	result.AfterInsert(result.afterInsertDefault)
 	result.AfterUpdate(result.afterUpdateDefault)
@@ -163,36 +175,42 @@ func NewModel(schema *Schema, name string, version int) *Model {
 
 	now := timezone.NowTime()
 	result := &Model{
-		Db:                 schema.Db,
-		schema:             schema,
-		Schema:             schema.Name,
-		Table:              name,
-		CreatedAt:          now,
-		UpdateAt:           now,
-		Id:                 reg.GenUlId("model"),
-		Name:               name,
-		UseCore:            schema.UseCore,
-		Definitions:        et.Json{},
-		Columns:            make([]*Column, 0),
-		PrimaryKeys:        make(map[string]*Column),
-		ForeignKeys:        make(map[string]*Relation),
-		Indices:            make(map[string]*Index),
-		Uniques:            make(map[string]*Index),
-		RelationsTo:        make(map[string]*Relation),
-		RelationsFrom:      make(map[string]*Relation),
-		Joins:              make(map[string]*Join),
-		Required:           make(map[string]bool),
-		TpId:               TpUUId,
-		beforeInsert:       []DataFunctionTx{},
-		beforeUpdate:       []DataFunctionTx{},
-		beforeDelete:       []DataFunctionTx{},
-		afterInsert:        []DataFunctionTx{},
-		afterUpdate:        []DataFunctionTx{},
-		afterDelete:        []DataFunctionTx{},
-		eventEmiterChannel: make(chan event.EvenMessage),
-		eventsEmiter:       make(map[string]event.Handler),
-		Version:            version,
-		IsDebug:            schema.Db.IsDebug,
+		Db:                  schema.Db,
+		schema:              schema,
+		Schema:              schema.Name,
+		Table:               name,
+		CreatedAt:           now,
+		UpdateAt:            now,
+		Id:                  reg.GenUlId("model"),
+		Name:                name,
+		UseCore:             schema.UseCore,
+		Definitions:         et.Json{},
+		Columns:             make([]*Column, 0),
+		PrimaryKeys:         make(map[string]*Column),
+		ForeignKeys:         make(map[string]*Relation),
+		Indices:             make(map[string]*Index),
+		Uniques:             make(map[string]*Index),
+		RelationsTo:         make(map[string]*Relation),
+		RelationsFrom:       make(map[string]*Relation),
+		Joins:               make(map[string]*Join),
+		Required:            make(map[string]bool),
+		TpId:                TpUUId,
+		beforeInsert:        []DataFunctionTx{},
+		beforeUpdate:        []DataFunctionTx{},
+		beforeDelete:        []DataFunctionTx{},
+		afterInsert:         []DataFunctionTx{},
+		afterUpdate:         []DataFunctionTx{},
+		afterDelete:         []DataFunctionTx{},
+		beforeInsertTrigger: []TriggerFunctionTx{},
+		beforeUpdateTrigger: []TriggerFunctionTx{},
+		beforeDeleteTrigger: []TriggerFunctionTx{},
+		afterInsertTrigger:  []TriggerFunctionTx{},
+		afterUpdateTrigger:  []TriggerFunctionTx{},
+		afterDeleteTrigger:  []TriggerFunctionTx{},
+		eventEmiterChannel:  make(chan event.EvenMessage),
+		eventsEmiter:        make(map[string]event.Handler),
+		Version:             version,
+		IsDebug:             schema.Db.IsDebug,
 	}
 	result.AfterInsert(result.afterInsertDefault)
 	result.AfterUpdate(result.afterUpdateDefault)

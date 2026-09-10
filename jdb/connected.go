@@ -17,6 +17,7 @@ type Connected interface {
 type ConnectParams struct {
 	Id       string    `json:"id"`
 	Driver   string    `json:"driver"`
+	HostName string    `json:"host_name"`
 	Name     string    `json:"name"`
 	UserCore bool      `json:"user_core"`
 	NodeId   int       `json:"node_id"`
@@ -82,6 +83,7 @@ func load() (*ConnectParams, error) {
 	result := &ConnectParams{
 		Id:       params.Id,
 		Driver:   params.Driver,
+		HostName: params.HostName,
 		Name:     params.Name,
 		UserCore: params.UserCore,
 		NodeId:   params.NodeId,

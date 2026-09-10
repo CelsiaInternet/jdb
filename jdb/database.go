@@ -19,6 +19,7 @@ type DB struct {
 	CreatedAt     time.Time     `json:"created_at"`
 	UpdateAt      time.Time     `json:"update_at"`
 	Id            string        `json:"id"`
+	Host          string        `json:"host"`
 	Name          string        `json:"name"`
 	Description   string        `json:"description"`
 	UseCore       bool          `json:"use_core"`

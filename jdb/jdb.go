@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"slices"
 
+	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/response"
 	"github.com/celsiainternet/elvis/strs"
@@ -99,6 +100,7 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 		return nil, err
 	}
 
+	result.Host = connection.HostName
 	result.IsDebug = connection.IsDebug
 	result.UseCore = connection.UserCore
 	result.NodeId = connection.NodeId
@@ -141,10 +143,16 @@ func Load() (*DB, error) {
 * @param database string
 * @return *DB, error
 **/
-func LoadTo(database string) (*DB, error) {
+func LoadTo(database string, hostname ...string) (*DB, error) {
 	params, err := load()
 	if err != nil {
 		return nil, err
+	}
+
+	if len(hostname) > 0 {
+		params.HostName = hostname[0]
+	} else {
+		params.HostName = envar.GetStr("", "DB_HOST")
 	}
 
 	params.Name = database

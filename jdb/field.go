@@ -10,52 +10,6 @@ import (
 	"github.com/celsiainternet/elvis/strs"
 )
 
-type TypeAgregation int
-
-const (
-	Nag TypeAgregation = iota
-	AgregationSum
-	AgregationCount
-	AgregationAvg
-	AgregationMin
-	AgregationMax
-	ExtractYear
-	ExtractMonth
-	ExtractDay
-	ExtractHour
-	ExtractMinute
-	ExtractSecond
-)
-
-func (s TypeAgregation) Str() string {
-	switch s {
-	case AgregationSum:
-		return "SUM"
-	case AgregationCount:
-		return "COUNT"
-	case AgregationAvg:
-		return "AVG"
-	case AgregationMin:
-		return "MIN"
-	case AgregationMax:
-		return "MAX"
-	case ExtractYear:
-		return "YEAR"
-	case ExtractMonth:
-		return "MONTH"
-	case ExtractDay:
-		return "DAY"
-	case ExtractHour:
-		return "HOUR"
-	case ExtractMinute:
-		return "MINUTE"
-	case ExtractSecond:
-		return "SECOND"
-	}
-
-	return ""
-}
-
 type TypeResult int
 
 const (

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/event"
-	"github.com/celsiainternet/elvis/reg"
 	"github.com/celsiainternet/elvis/strs"
 	"github.com/celsiainternet/elvis/timezone"
 	"github.com/google/uuid"
@@ -45,55 +45,56 @@ var (
 )
 
 type Model struct {
-	Db                  *DB                      `json:"-"`
-	schema              *Schema                  `json:"-"`
-	Schema              string                   `json:"schema"`
-	Table               string                   `json:"table"`
-	CreatedAt           time.Time                `json:"created_at"`
-	UpdateAt            time.Time                `json:"updated_at"`
-	Id                  string                   `json:"id"`
-	Name                string                   `json:"name"`
-	Description         string                   `json:"description"`
-	UseCore             bool                     `json:"use_core"`
-	Integrity           bool                     `json:"integrity"`
-	Definitions         et.Json                  `json:"definitions"`
-	Columns             []*Column                `json:"-"`
-	PrimaryKeys         map[string]*Column       `json:"-"`
-	ForeignKeys         map[string]*Relation     `json:"-"`
-	Indices             map[string]*Index        `json:"-"`
-	Uniques             map[string]*Index        `json:"-"`
-	RelationsTo         map[string]*Relation     `json:"-"`
-	RelationsFrom       map[string]*Relation     `json:"-"`
-	Joins               map[string]*Join         `json:"-"`
-	Required            map[string]bool          `json:"-"`
-	TpId                TypeId                   `json:"tp_id"`
-	CreatedAtField      *Column                  `json:"-"`
-	UpdatedAtField      *Column                  `json:"-"`
-	SystemKeyField      *Column                  `json:"-"`
-	StatusField         *Column                  `json:"-"`
-	IndexField          *Column                  `json:"-"`
-	SourceField         *Column                  `json:"-"`
-	FullTextField       *Column                  `json:"-"`
-	ProjectField        *Column                  `json:"-"`
-	Version             int                      `json:"version"`
-	beforeInsert        []DataFunctionTx         `json:"-"`
-	beforeUpdate        []DataFunctionTx         `json:"-"`
-	beforeDelete        []DataFunctionTx         `json:"-"`
-	afterInsert         []DataFunctionTx         `json:"-"`
-	afterUpdate         []DataFunctionTx         `json:"-"`
-	afterDelete         []DataFunctionTx         `json:"-"`
-	beforeInsertTrigger []TriggerFunctionTx      `json:"-"`
-	beforeUpdateTrigger []TriggerFunctionTx      `json:"-"`
-	beforeDeleteTrigger []TriggerFunctionTx      `json:"-"`
-	afterInsertTrigger  []TriggerFunctionTx      `json:"-"`
-	afterUpdateTrigger  []TriggerFunctionTx      `json:"-"`
-	afterDeleteTrigger  []TriggerFunctionTx      `json:"-"`
-	eventEmiterChannel  chan event.EvenMessage   `json:"-"`
-	eventsEmiter        map[string]event.Handler `json:"-"`
-	IsDebug             bool                     `json:"-"`
-	isLocked            bool                     `json:"-"`
-	isInit              bool                     `json:"-"`
-	needMutate          bool                     `json:"-"`
+	Db                  *DB                       `json:"-"`
+	schema              *Schema                   `json:"-"`
+	Schema              string                    `json:"schema"`
+	Table               string                    `json:"table"`
+	CreatedAt           time.Time                 `json:"created_at"`
+	UpdateAt            time.Time                 `json:"updated_at"`
+	Id                  string                    `json:"id"`
+	Name                string                    `json:"name"`
+	Description         string                    `json:"description"`
+	UseCore             bool                      `json:"use_core"`
+	Integrity           bool                      `json:"integrity"`
+	Definitions         et.Json                   `json:"definitions"`
+	Columns             []*Column                 `json:"-"`
+	PrimaryKeys         map[string]*Column        `json:"-"`
+	ForeignKeys         map[string]*Relation      `json:"-"`
+	Indices             map[string]*Index         `json:"-"`
+	Uniques             map[string]*Index         `json:"-"`
+	Required            map[string]bool           `json:"-"`
+	Detail              map[string]*Relation      `json:"detail"`
+	Rollup              map[string]*Rollup        `json:"rollup"`
+	FullText            map[string]*FullText      `json:"fulltext"`
+	CalcFunction        map[string]DataFunctionTx `json:"-"`
+	RelationsTo         map[string]*Relation      `json:"-"`
+	CreatedAtField      *Column                   `json:"-"`
+	UpdatedAtField      *Column                   `json:"-"`
+	SystemKeyField      *Column                   `json:"-"`
+	StatusField         *Column                   `json:"-"`
+	IndexField          *Column                   `json:"-"`
+	SourceField         *Column                   `json:"-"`
+	FullTextField       *Column                   `json:"-"`
+	ProjectField        *Column                   `json:"-"`
+	Version             int                       `json:"version"`
+	beforeInsert        []DataFunctionTx          `json:"-"`
+	beforeUpdate        []DataFunctionTx          `json:"-"`
+	beforeDelete        []DataFunctionTx          `json:"-"`
+	afterInsert         []DataFunctionTx          `json:"-"`
+	afterUpdate         []DataFunctionTx          `json:"-"`
+	afterDelete         []DataFunctionTx          `json:"-"`
+	beforeInsertTrigger []TriggerFunctionTx       `json:"-"`
+	beforeUpdateTrigger []TriggerFunctionTx       `json:"-"`
+	beforeDeleteTrigger []TriggerFunctionTx       `json:"-"`
+	afterInsertTrigger  []TriggerFunctionTx       `json:"-"`
+	afterUpdateTrigger  []TriggerFunctionTx       `json:"-"`
+	afterDeleteTrigger  []TriggerFunctionTx       `json:"-"`
+	eventEmiterChannel  chan event.EvenMessage    `json:"-"`
+	eventsEmiter        map[string]event.Handler  `json:"-"`
+	IsDebug             bool                      `json:"-"`
+	isLocked            bool                      `json:"-"`
+	isInit              bool                      `json:"-"`
+	needMutate          bool                      `json:"-"`
 }
 
 /**
@@ -111,7 +112,7 @@ func NewTable(db *DB, table string) *Model {
 	if len(list) < 2 {
 		return nil
 	}
-	tableName := list[1]
+	name := list[1]
 	schemaName := list[0]
 
 	schema := NewSchema(db, schemaName)
@@ -120,10 +121,10 @@ func NewTable(db *DB, table string) *Model {
 		Db:                  db,
 		schema:              schema,
 		Schema:              schema.Name,
-		Table:               tableName,
+		Table:               name,
 		CreatedAt:           now,
 		UpdateAt:            now,
-		Id:                  reg.GenUlId("table"),
+		Id:                  fmt.Sprintf("%s.%s.%s", schema.Db.Name, schema.Name, name),
 		Name:                table,
 		UseCore:             false,
 		Definitions:         et.Json{},
@@ -133,10 +134,7 @@ func NewTable(db *DB, table string) *Model {
 		Indices:             make(map[string]*Index),
 		Uniques:             make(map[string]*Index),
 		RelationsTo:         make(map[string]*Relation),
-		RelationsFrom:       make(map[string]*Relation),
-		Joins:               make(map[string]*Join),
 		Required:            make(map[string]bool),
-		TpId:                TpUUId,
 		beforeInsert:        []DataFunctionTx{},
 		beforeUpdate:        []DataFunctionTx{},
 		beforeDelete:        []DataFunctionTx{},
@@ -181,7 +179,7 @@ func NewModel(schema *Schema, name string, version int) *Model {
 		Table:               name,
 		CreatedAt:           now,
 		UpdateAt:            now,
-		Id:                  reg.GenUlId("model"),
+		Id:                  fmt.Sprintf("%s.%s.%s", schema.Db.Name, schema.Name, name),
 		Name:                name,
 		UseCore:             schema.UseCore,
 		Definitions:         et.Json{},
@@ -191,10 +189,7 @@ func NewModel(schema *Schema, name string, version int) *Model {
 		Indices:             make(map[string]*Index),
 		Uniques:             make(map[string]*Index),
 		RelationsTo:         make(map[string]*Relation),
-		RelationsFrom:       make(map[string]*Relation),
-		Joins:               make(map[string]*Join),
 		Required:            make(map[string]bool),
-		TpId:                TpUUId,
 		beforeInsert:        []DataFunctionTx{},
 		beforeUpdate:        []DataFunctionTx{},
 		beforeDelete:        []DataFunctionTx{},
@@ -241,7 +236,6 @@ func loadModel(schema *Schema, model *Model) (*Model, error) {
 	model.Indices = make(map[string]*Index)
 	model.Uniques = make(map[string]*Index)
 	model.RelationsTo = make(map[string]*Relation)
-	model.RelationsFrom = make(map[string]*Relation)
 	model.Required = make(map[string]bool)
 	/* Event */
 	model.eventEmiterChannel = make(chan event.EvenMessage)
@@ -373,7 +367,6 @@ func (s *Model) Describe() et.Json {
 	result["indices"] = s.Indices
 	result["uniques"] = s.Uniques
 	result["relations_to"] = s.RelationsTo
-	result["relations_from"] = s.RelationsFrom
 	result["required"] = s.Required
 	result["system_key_field"] = s.SystemKeyField
 	result["status_field"] = s.StatusField
@@ -518,36 +511,6 @@ func (s *Model) CheckRequired(data et.Json) error {
 }
 
 /**
-* CheckForeignKeys
-* @param data et.Json
-* @return error
-**/
-func (s *Model) CheckForeignKeys(data et.Json) error {
-	for name, relation := range s.ForeignKeys {
-		with := relation.With
-		if with == nil {
-			return fmt.Errorf(MSG_RELATION_WITH_REQUIRED, name)
-		}
-
-		where := relation.GetWhere(data)
-		ql := From(with)
-		ql.setWheres(where)
-		exist, err := ql.
-			setDebug(s.IsDebug).
-			ItExists()
-		if err != nil {
-			return err
-		}
-
-		if !exist {
-			return fmt.Errorf(MSG_FOREIGN_KEY_NOT_EXIST, name, where.ToString())
-		}
-	}
-
-	return nil
-}
-
-/**
 * GetId
 * @param id string
 * @return string
@@ -556,15 +519,7 @@ func (s *Model) GetId(id string) string {
 	if !map[string]bool{"": true, "*": true, "new": true}[id] {
 		return id
 	}
-
-	switch s.TpId {
-	case TpXId:
-		return strs.Format(`%s:%s`, s.Name, reg.XID())
-	case TpULId:
-		return strs.Format(`%s:%s`, s.Name, reg.ULID())
-	default:
-		return strs.Format(`%s`, uuid.NewString())
-	}
+	return strs.Format(`%s`, uuid.NewString())
 }
 
 /**
@@ -573,104 +528,6 @@ func (s *Model) GetId(id string) string {
 **/
 func (s *Model) GenId() string {
 	return s.GetId("new")
-}
-
-/**
-* getKeyByPk
-* @param data et.Json
-* @return string, error
-**/
-func (s *Model) getKeyByPk(data et.Json) (string, error) {
-	result := ""
-	for name := range s.PrimaryKeys {
-		val := data.Get(name)
-		if val == nil {
-			return "", fmt.Errorf(MSG_PRIMARY_KEY_REQUIRED, name, s.Name, data.ToString())
-		}
-
-		result = strs.Append(result, fmt.Sprintf(`%v`, val), ":")
-	}
-
-	return result, nil
-}
-
-/**
-* getMapByPk
-* @param data []et.Json
-* @return map[string]et.Json, error
-**/
-func (s *Model) getMapByPk(data []et.Json) (map[string]et.Json, error) {
-	result := map[string]et.Json{}
-	for _, item := range data {
-		key, err := s.getKeyByPk(item)
-		if err != nil {
-			return nil, err
-		}
-
-		result[key] = item
-	}
-
-	return result, nil
-}
-
-/**
-* getMapResultByPk
-* @param data []et.Json
-* @return map[string]et.Json, error
-**/
-func (s *Model) getMapResultByPk(data []et.Json) (map[string]et.Json, error) {
-	result := map[string]et.Json{}
-	for _, item := range data {
-		key, err := s.getKeyByPk(item)
-		if err != nil {
-			return result, err
-		}
-
-		result[key] = item
-	}
-
-	return result, nil
-}
-
-/**
-* GetWhereByRequired
-* @param data et.Json
-* @return et.Json
-**/
-func (s *Model) GetWhereByRequired(data et.Json) (et.Json, error) {
-	result := et.Json{}
-	and := []et.Json{}
-	n := 0
-	for name := range s.Required {
-		val := data.Get(name)
-		if val == nil {
-			return et.Json{}, fmt.Errorf(MSG_FIELD_REQUIRED, name, s.Name)
-		}
-
-		col := s.getColumn(name)
-		if col != nil && col.IsKeyfield {
-			vs := fmt.Sprintf(`%v`, val)
-			val = s.GetId(vs)
-		}
-
-		if n == 0 {
-			result[name] = et.Json{
-				"eq": val,
-			}
-		} else {
-			and = append(and, et.Json{
-				name: et.Json{
-					"eq": val,
-				}})
-		}
-		n++
-	}
-
-	if len(and) > 0 {
-		result["AND"] = and
-	}
-
-	return result, nil
 }
 
 /**
@@ -700,7 +557,7 @@ func (s *Model) Debug() *Model {
 * @param column *Column
 **/
 func (s *Model) addColumn(column *Column) {
-	idx := slices.IndexFunc(s.Columns, func(e *Column) bool { return e.Name == column.Name })
+	idx := slices.IndexFunc(s.Columns, func(e *Column) bool { return strings.ToLower(e.Name) == strings.ToLower(column.Name) })
 	if idx == -1 {
 		s.Columns = append(s.Columns, column)
 	}
@@ -765,7 +622,6 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 		}
 
 		result := newAtribute(s, name, TypeDataText)
-
 		return GetField(result)
 	}
 
@@ -775,55 +631,6 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 	}
 
 	return nil
-}
-
-/**
-* getColumns
-* @param name string
-* @return *Column
-*
- */
-func (s *Model) getColumns(names ...string) []*Column {
-	result := []*Column{}
-	for _, name := range names {
-		if col := s.getColumn(name); col != nil {
-			result = append(result, col)
-		}
-	}
-
-	return result
-}
-
-/**
-* getColumnsByType
-* @param tp TypeColumn
-* @return []*Column
-**/
-func (s *Model) getColumnsByType(tp TypeColumn) []interface{} {
-	result := make([]interface{}, 0)
-	for _, col := range s.Columns {
-		if col.TypeColumn == tp {
-			result = append(result, col)
-		}
-	}
-
-	return result
-}
-
-/**
-* getColumnsArray
-* @param names ...string
-* @return []string
-**/
-func (s *Model) getColumnsArray(names ...string) []string {
-	result := []string{}
-	for _, name := range names {
-		if col := s.getColumn(name); col != nil {
-			result = append(result, col.Name)
-		}
-	}
-
-	return result
 }
 
 /**
@@ -853,9 +660,9 @@ func (s *Model) Counted() (int, error) {
 * @param tx *Tx, params et.Json
 * @return et.Json, error
 **/
-func (s *Model) QueryTx(tx *Tx, params et.Json) (et.Json, error) {
+func (s *Model) QueryTx(tx *Tx, query et.Json) (et.Json, error) {
 	return From(s).
-		queryTx(tx, params)
+		queryTx(tx, query)
 }
 
 /**

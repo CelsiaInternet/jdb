@@ -34,7 +34,6 @@ func (s TypeCommand) Str() string {
 }
 
 type Function func() error
-type DataFunction func(data et.Json)
 type DataFunctionTx func(tx *Tx, new et.Json) error
 type TriggerFunctionTx func(tx *Tx, old, new et.Json) error
 
@@ -46,15 +45,10 @@ type Command struct {
 	Db                  *DB                 `json:"-"`
 	From                *QlFroms            `json:"-"`
 	Data                []et.Json           `json:"data"`
-	Values              []map[string]*Field `json:"values"`
-	Returns             []*Field            `json:"returns"`
+	Current             []et.Json           `json:"-"`
+	Result              et.Items            `json:"result"`
 	Sql                 string              `json:"sql"`
 	Args                []any               `json:"args"`
-	Result              et.Items            `json:"result"`
-	Current             et.Items            `json:"current"`
-	CurrentMap          map[string]et.Json  `json:"current_map"`
-	ResultMap           map[string]et.Json  `json:"result_map"`
-	current             et.Json             `json:"-"`
 	beforeInsert        []DataFunctionTx    `json:"-"`
 	beforeUpdate        []DataFunctionTx    `json:"-"`
 	beforeDelete        []DataFunctionTx    `json:"-"`
@@ -81,8 +75,7 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		Db:                  model.Db,
 		From:                setForms(model),
 		Data:                data,
-		Values:              make([]map[string]*Field, 0),
-		current:             et.Json{},
+		Current:             []et.Json{},
 		beforeInsert:        []DataFunctionTx{},
 		beforeUpdate:        []DataFunctionTx{},
 		beforeDelete:        []DataFunctionTx{},
@@ -95,12 +88,8 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		afterInsertTrigger:  []TriggerFunctionTx{},
 		afterUpdateTrigger:  []TriggerFunctionTx{},
 		afterDeleteTrigger:  []TriggerFunctionTx{},
-		Returns:             []*Field{},
 		Args:                []any{},
 		Result:              et.Items{},
-		Current:             et.Items{},
-		CurrentMap:          make(map[string]et.Json),
-		ResultMap:           make(map[string]et.Json),
 	}
 	result.QlWhere = newQlWhere(result.validator)
 	result.IsDebug = model.IsDebug
@@ -208,16 +197,8 @@ func (s *Command) Describe() et.Json {
 		return et.Json{}
 	}
 
-	values := []et.Json{}
-	for _, val := range s.Values {
-		for _, field := range val {
-			values = append(values, field.describe())
-		}
-	}
-
 	result["command"] = s.Command.Str()
 	result["wheres"] = s.getWheres()
-	result["values"] = values
 
 	return result
 }

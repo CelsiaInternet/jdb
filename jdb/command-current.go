@@ -2,21 +2,19 @@ package jdb
 
 import (
 	"fmt"
+
+	"github.com/celsiainternet/elvis/et"
 )
 
-func (s *Command) getCurrent() error {
+func (s *Command) getCurrent(data et.Json) error {
 	model := s.getModel()
 	if model == nil {
 		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
-	if len(s.Data) != 1 {
-		return fmt.Errorf(MSG_MANY_INSERT_DATA)
-	}
-
 	ql := From(model)
 	if s.Command == Upsert {
-		err := ql.getWhereByPrimaryKeys(s.Data[0])
+		err := ql.getWhereByPrimaryKeys(data)
 		if err != nil {
 			return err
 		}

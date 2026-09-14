@@ -1,17 +1,13 @@
 package jdb
 
-import "fmt"
+import "github.com/celsiainternet/elvis/et"
 
 func (s *Command) deleted() error {
-	model := s.getModel()
-	if model == nil {
-		return fmt.Errorf(MSG_MODEL_REQUIRED)
-	}
-
 	if err := s.prepare(); err != nil {
 		return err
 	}
 
+	model := s.getModel()
 	results, err := s.Db.Command(s)
 	if err != nil {
 		return err
@@ -22,16 +18,19 @@ func (s *Command) deleted() error {
 		return nil
 	}
 
-	s.ResultMap, _ = model.getMapResultByPk(s.Result.Result)
-
-	for _, before := range s.ResultMap {
+	for _, before := range results.Result {
 		for _, fn := range model.afterDelete {
 			err := fn(s.tx, before)
 			if err != nil {
 				return err
 			}
 		}
-
+		for _, fn := range model.afterDeleteTrigger {
+			err := fn(s.tx, before, et.Json{})
+			if err != nil {
+				return err
+			}
+		}
 		for _, fn := range s.afterDelete {
 			err := fn(s.tx, before)
 			if err != nil {

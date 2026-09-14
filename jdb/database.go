@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/celsiainternet/elvis/console"
@@ -302,9 +303,17 @@ func (s *DB) GetSchema(name string) *Schema {
 * @return *Model
 **/
 func (s *DB) GetModel(name string) *Model {
-	idx := slices.IndexFunc(s.models, func(e *Model) bool { return e.Name == name })
-	if idx != -1 {
-		return s.models[idx]
+	split := strings.Split(name, ".")
+	if len(split) == 2 {
+		schema := s.GetSchema(split[0])
+		if schema != nil {
+			return schema.GetModel(split[1])
+		}
+	} else if len(split) == 1 {
+		idx := slices.IndexFunc(s.models, func(e *Model) bool { return e.Name == name })
+		if idx != -1 {
+			return s.models[idx]
+		}
 	}
 
 	return nil

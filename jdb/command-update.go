@@ -2,20 +2,18 @@ package jdb
 
 import (
 	"fmt"
+
+	"github.com/celsiainternet/elvis/et"
 )
 
 func (s *Command) updated() error {
-	model := s.getModel()
-	if model == nil {
-		return fmt.Errorf(MSG_MODEL_REQUIRED)
-	}
-
-	if len(s.Data) != 1 {
-		return fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), model.Name)
-	}
-
 	if err := s.prepare(); err != nil {
 		return err
+	}
+
+	model := s.getModel()
+	if len(s.Data) != 1 {
+		return fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), model.Name)
 	}
 
 	results, err := s.Db.Command(s)
@@ -28,11 +26,15 @@ func (s *Command) updated() error {
 		return nil
 	}
 
-	s.ResultMap, _ = model.getMapResultByPk(s.Result.Result)
-
-	for _, after := range s.ResultMap {
+	for _, after := range results.Result {
 		for _, fn := range model.afterUpdate {
 			err := fn(s.tx, after)
+			if err != nil {
+				return err
+			}
+		}
+		for _, fn := range model.afterUpdateTrigger {
+			err := fn(s.tx, et.Json{}, after)
 			if err != nil {
 				return err
 			}

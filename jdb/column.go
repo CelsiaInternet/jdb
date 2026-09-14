@@ -14,26 +14,24 @@ type TypeColumn int
 const (
 	TpColumn TypeColumn = iota
 	TpAtribute
-	TpCalc
-	TpRelatedTo
 	TpRollup
+	TpRelatedTo
+	TpCalc
 )
 
 func (s TypeColumn) Str() string {
 	switch s {
 	case TpColumn:
 		return "column"
-	case TpAtribute:
-		return "attribute"
-	case TpCalc:
-		return "calc"
-	case TpRelatedTo:
-		return "related_to"
 	case TpRollup:
 		return "rollup"
+	case TpRelatedTo:
+		return "related_to"
+	case TpCalc:
+		return "calc"
+	default:
+		return "attribute"
 	}
-
-	return "attribute"
 }
 
 /**
@@ -383,10 +381,10 @@ func (s *Relation) GetWhere(from et.Json) et.Json {
 }
 
 /**
-* Serialize
+* serialize
 * @return []byte, error
 **/
-func (s *Relation) Serialize() ([]byte, error) {
+func (s *Relation) serialize() ([]byte, error) {
 	result, err := json.Marshal(s)
 	if err != nil {
 		return []byte{}, err
@@ -400,7 +398,7 @@ func (s *Relation) Serialize() ([]byte, error) {
 * @return et.Json
 **/
 func (s *Relation) describe() et.Json {
-	definition, err := s.Serialize()
+	definition, err := s.serialize()
 	if err != nil {
 		return et.Json{}
 	}
@@ -518,22 +516,15 @@ func (s *FullText) describe() et.Json {
 }
 
 type Column struct {
-	Model        *Model       `json:"-"`
-	Source       *Column      `json:"-"`
-	Name         string       `json:"name"`
-	Description  string       `json:"description"`
-	TypeColumn   TypeColumn   `json:"type_column"`
-	TypeData     TypeData     `json:"type_data"`
-	Default      interface{}  `json:"default"`
-	IsKeyfield   bool         `json:"is_keyfield"`
-	Max          float64      `json:"max"`
-	Min          float64      `json:"min"`
-	Hidden       bool         `json:"hidden"`
-	Detail       *Relation    `json:"detail"`
-	Rollup       *Rollup      `json:"rollup"`
-	FullText     *FullText    `json:"fulltext"`
-	Values       interface{}  `json:"values"`
-	CalcFunction DataFunction `json:"-"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	TypeColumn  TypeColumn  `json:"type_column"`
+	TypeData    TypeData    `json:"type_data"`
+	Default     interface{} `json:"default"`
+	Max         float64     `json:"max"`
+	Min         float64     `json:"min"`
+	Hidden      bool        `json:"hidden"`
+	model       *Model      `json:"-"`
 }
 
 func init() {
@@ -547,7 +538,7 @@ func init() {
 **/
 func newColumn(model *Model, name string, description string, typeColumn TypeColumn, typeData TypeData, def interface{}) *Column {
 	return &Column{
-		Model:       model,
+		model:       model,
 		Name:        name,
 		Description: description,
 		TypeColumn:  typeColumn,
@@ -555,7 +546,6 @@ func newColumn(model *Model, name string, description string, typeColumn TypeCol
 		Default:     def,
 		Max:         0,
 		Min:         0,
-		Values:      "",
 	}
 }
 
@@ -575,8 +565,6 @@ func newAtribute(model *Model, name string, typeData TypeData) *Column {
 	}
 
 	result = newColumn(model, name, "", TpAtribute, typeData, typeData.DefaultValue())
-	result.Source = model.SourceField
-
 	return result
 }
 
@@ -585,28 +573,7 @@ func newAtribute(model *Model, name string, typeData TypeData) *Column {
 * @return et.Json
 **/
 func (s *Column) Describe() et.Json {
-	detail := et.Json{}
-	if s.Detail != nil {
-		detail = s.Detail.describe()
-	}
-
-	rollup := et.Json{}
-	if s.Rollup != nil {
-		rollup = s.Rollup.describe()
-	}
-
-	source := ""
-	if s.Source != nil {
-		source = s.Source.Name
-	}
-
-	fulltext := et.Json{}
-	if s.FullText != nil {
-		fulltext = s.FullText.describe()
-	}
-
 	result := et.Json{
-		"source":      source,
 		"name":        s.Name,
 		"description": s.Description,
 		"type_column": s.TypeColumn.Str(),
@@ -615,10 +582,6 @@ func (s *Column) Describe() et.Json {
 		"max":         s.Max,
 		"min":         s.Min,
 		"hidden":      s.Hidden,
-		"detail":      detail,
-		"rollup":      rollup,
-		"fulltext":    fulltext,
-		"values":      s.Values,
 	}
 
 	return result
@@ -629,20 +592,11 @@ func (s *Column) Describe() et.Json {
 * @return int
 **/
 func (s *Column) idx() int {
-	if s.Model == nil {
+	if s.model == nil {
 		return -1
 	}
 
-	return slices.IndexFunc(s.Model.Columns, func(e *Column) bool { return e.Name == s.Name })
-}
-
-/**
-* SetValue
-* @param value interface{}
-**/
-func (s *Column) SetValue(value interface{}) *Column {
-	s.Values = value
-	return s
+	return slices.IndexFunc(s.model.Columns, func(e *Column) bool { return e.Name == s.Name })
 }
 
 /**
@@ -695,15 +649,4 @@ func (s *Column) DefaultValue() interface{} {
 	}
 
 	return s.Default
-}
-
-/**
-* DefaultQuote
-* @return interface{}
-**/
-func (s *Column) DefaultQuote() interface{} {
-	result := s.DefaultValue()
-	result = Quote(result)
-
-	return result
 }

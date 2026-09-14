@@ -2,12 +2,12 @@ package jdb
 
 import (
 	"encoding/json"
+	"fmt"
 	"slices"
 	"time"
 
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/timezone"
-	"github.com/celsiainternet/elvis/utility"
 )
 
 type Schema struct {
@@ -37,7 +37,7 @@ func NewSchema(db *DB, name string) *Schema {
 		Db:        db,
 		CreatedAt: now,
 		UpdateAt:  now,
-		Id:        utility.UUID(),
+		Id:        fmt.Sprintf("%s.%s", db.Name, name),
 		Name:      name,
 		UseCore:   db.UseCore,
 		models:    make([]*Model, 0),
@@ -117,14 +117,6 @@ func (s *Schema) Describe() et.Json {
 	result["models"] = models
 
 	return result
-}
-
-/**
-* Mutate
-* @return error
-**/
-func (s *Schema) Drop() error {
-	return s.Db.DropSchema(s.Name)
 }
 
 /**

@@ -17,23 +17,6 @@ import (
 
 var quotedChar = `'`
 
-type Value struct {
-	Type  string `json:"type"`
-	Value any    `json:"value"`
-}
-
-/**
-* CALC
-* @param value interface{}
-* @return *Value
-**/
-func CALC(value interface{}) *Value {
-	return &Value{
-		Type:  "calc",
-		Value: value,
-	}
-}
-
 /**
 * SetQuotedChar
 * @param char string

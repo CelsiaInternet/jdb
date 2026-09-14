@@ -195,19 +195,19 @@ func (s *Ql) Query(params et.Json) (et.Json, error) {
 * @param tx *Tx, params et.Json
 * @return et.Items, error
 **/
-func (s *Ql) queryTx(tx *Tx, params et.Json) (et.Json, error) {
-	selects := params.Array("select")
-	joins := params.ArrayJson("join")
-	where := params.Json("where")
-	groups := params.ArrayStr("group_by")
-	havings := params.Json("having")
-	orderBy := params.Json("order_by")
-	page := params.Int("page")
-	limit := params.ValInt(1000, "limit")
-	debug := params.Bool("debug")
+func (s *Ql) queryTx(tx *Tx, query et.Json) (et.Json, error) {
+	selects := query.Array("select")
+	joins := query.ArrayJson("join")
+	where := query.Json("where")
+	groups := query.ArrayStr("group_by")
+	havings := query.Json("having")
+	orderBy := query.Json("order_by")
+	page := query.Int("page")
+	limit := query.ValInt(1000, "limit")
+	debug := query.Bool("debug")
 
 	if debug {
-		console.Debug(params.ToEscapeHTML())
+		console.Debug(query.ToEscapeHTML())
 	}
 
 	result, err := s.

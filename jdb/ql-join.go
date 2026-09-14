@@ -18,13 +18,10 @@ const (
 )
 
 type QlJoin struct {
-	Ql       *Ql         `json:"-"`
-	TypeJoin TypeJoin    `json:"type_join"`
-	From     *QlFrom     `json:"from"`
-	With     *QlFrom     `json:"with"`
-	Field    *Field      `json:"field"`
-	Operator string      `json:"operator"`
-	Value    interface{} `json:"value"`
+	TypeJoin  TypeJoin       `json:"type_join"`
+	From      *QlFrom        `json:"from"`
+	With      *QlFrom        `json:"with"`
+	Condition []*QlCondition `json:"condition"`
 }
 
 /**
@@ -32,29 +29,18 @@ type QlJoin struct {
 * @param name interface{}
 * @return *Ql
 **/
-func (s *Ql) join(tp TypeJoin, from *QlFrom, with *Model, field string, operator string, value interface{}) *Ql {
+func (s *Ql) join(tp TypeJoin, from *QlFrom, with *Model, condition []*QlCondition) *Ql {
 	if from == nil {
 		return s
 	}
 
 	result := &QlJoin{
-		Ql:       s,
-		TypeJoin: tp,
-		From:     from,
-		With:     s.Froms.add(with),
-		Operator: operator,
+		TypeJoin:  tp,
+		From:      from,
+		With:      s.Froms.add(with),
+		Condition: condition,
 	}
-
-	result.Field = from.getField(field, false)
-	switch v := value.(type) {
-	case string:
-		result.Value = with.getField(v, false)
-	default:
-		result.Value = v
-	}
-
 	s.Joins = append(s.Joins, result)
-
 	return s
 }
 

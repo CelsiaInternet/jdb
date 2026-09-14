@@ -47,11 +47,8 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 		current, err := s.getCurrent(et.Json{})
 		if err != nil {
 			return et.Items{}, err
-		}
-		if !current.Ok {
-			return et.Items{}, fmt.Errorf(MSG_DATA_REQUIRED)
-		}
-		err = s.updated(current.Result)
+		}		
+		err = s.updated(current)
 		if err != nil {
 			return et.Items{}, err
 		}

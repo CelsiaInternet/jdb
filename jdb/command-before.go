@@ -13,27 +13,27 @@ import (
 * @param tx *Tx, data et.Json
 * @return error
 **/
-func (s *Command) beforeInsertDefault(tx *Tx, data et.Json) error {
+func (s *Command) beforeInsertDefault(tx *Tx, old, new et.Json) error {
 	model := s.getModel()
 	if model == nil {
 		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
-	if model.IndexField != nil && data.Int(model.IndexField.Name) == 0 {
-		data[model.IndexField.Name] = reg.GenIndex()
+	if model.IndexField != nil && new.Int(model.IndexField.Name) == 0 {
+		new[model.IndexField.Name] = reg.GenIndex()
 	}
 
-	if model.SystemKeyField != nil && data.Str(model.SystemKeyField.Name) == "" {
-		data[model.SystemKeyField.Name] = model.GenId()
+	if model.SystemKeyField != nil && new.Str(model.SystemKeyField.Name) == "" {
+		new[model.SystemKeyField.Name] = model.GenId()
 	}
 
 	now := utility.Now()
-	if model.CreatedAtField != nil && data.Str(model.CreatedAtField.Name) == "" {
-		data[model.CreatedAtField.Name] = now
+	if model.CreatedAtField != nil && new.Str(model.CreatedAtField.Name) == "" {
+		new[model.CreatedAtField.Name] = now
 	}
 
-	if model.UpdatedAtField != nil && data.Str(model.UpdatedAtField.Name) == "" {
-		data[model.UpdatedAtField.Name] = now
+	if model.UpdatedAtField != nil && new.Str(model.UpdatedAtField.Name) == "" {
+		new[model.UpdatedAtField.Name] = now
 	}
 
 	return nil
@@ -44,7 +44,7 @@ func (s *Command) beforeInsertDefault(tx *Tx, data et.Json) error {
 * @param tx *Tx, data et.Json
 * @return error
 **/
-func (s *Command) beforeUpdateDefault(tx *Tx, data et.Json) error {
+func (s *Command) beforeUpdateDefault(tx *Tx, old, new et.Json) error {
 	model := s.getModel()
 	if model == nil {
 		return fmt.Errorf(MSG_MODEL_REQUIRED)
@@ -52,11 +52,11 @@ func (s *Command) beforeUpdateDefault(tx *Tx, data et.Json) error {
 
 	now := utility.Now()
 	if model.CreatedAtField != nil {
-		delete(data, model.CreatedAtField.Name)
+		delete(new, model.CreatedAtField.Name)
 	}
 
-	if model.UpdatedAtField != nil && data.Str(model.UpdatedAtField.Name) == "" {
-		data[model.UpdatedAtField.Name] = now
+	if model.UpdatedAtField != nil && new.Str(model.UpdatedAtField.Name) == "" {
+		new[model.UpdatedAtField.Name] = now
 	}
 
 	return nil
@@ -67,7 +67,7 @@ func (s *Command) beforeUpdateDefault(tx *Tx, data et.Json) error {
 * @param tx *Tx, data et.Json
 * @return error
 **/
-func (s *Command) beforeDeleteDefault(tx *Tx, data et.Json) error {
+func (s *Command) beforeDeleteDefault(tx *Tx, old, new et.Json) error {
 	if s.From == nil {
 		return fmt.Errorf(MSG_MODEL_REQUIRED)
 	}

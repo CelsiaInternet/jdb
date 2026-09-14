@@ -6,13 +6,13 @@ import (
 	"github.com/celsiainternet/elvis/et"
 )
 
-func (s *Command) updated(current []et.Json) error {
+func (s *Command) updated(current et.Items) error {
 	if err := s.prepare(); err != nil {
 		return err
 	}
 
 	model := s.getModel()
-	if len(s.Data) != 1 {
+	if !current.Ok {
 		return fmt.Errorf(MSG_NOT_DATA, s.Command.Str(), model.Name)
 	}
 

@@ -44,7 +44,7 @@ type Command struct {
 	Db                  *DB                 `json:"-"`
 	From                *QlFroms            `json:"-"`
 	Data                []et.Json           `json:"data"`
-	Current             []et.Json           `json:"-"`
+	New                 et.Json             `json:"new"`
 	Result              et.Items            `json:"result"`
 	Sql                 string              `json:"sql"`
 	Args                []any               `json:"args"`
@@ -74,7 +74,7 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		Db:                  model.Db,
 		From:                newForms(),
 		Data:                data,
-		Current:             []et.Json{},
+		New:                 et.Json{},
 		beforeInsert:        []DataFunctionTx{},
 		beforeUpdate:        []DataFunctionTx{},
 		beforeDelete:        []DataFunctionTx{},
@@ -93,58 +93,9 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 	result.From.add(model)
 	result.QlWhere = newQlWhere()
 	result.IsDebug = model.IsDebug
-	result.beforeInsert = append(result.beforeInsert, result.beforeInsertDefault)
-	result.beforeUpdate = append(result.beforeUpdate, result.beforeUpdateDefault)
-	result.beforeDelete = append(result.beforeDelete, result.beforeDeleteDefault)
-
-	for _, fn := range model.beforeInsert {
-		result.beforeInsert = append(result.beforeInsert, fn)
-	}
-
-	for _, fn := range model.beforeUpdate {
-		result.beforeUpdate = append(result.beforeUpdate, fn)
-	}
-
-	for _, fn := range model.beforeDelete {
-		result.beforeDelete = append(result.beforeDelete, fn)
-	}
-
-	for _, fn := range model.afterInsert {
-		result.afterInsert = append(result.afterInsert, fn)
-	}
-
-	for _, fn := range model.afterUpdate {
-		result.afterUpdate = append(result.afterUpdate, fn)
-	}
-
-	for _, fn := range model.afterDelete {
-		result.afterDelete = append(result.afterDelete, fn)
-	}
-
-	for _, fn := range model.beforeInsertTrigger {
-		result.beforeInsertTrigger = append(result.beforeInsertTrigger, fn)
-	}
-
-	for _, fn := range model.beforeUpdateTrigger {
-		result.beforeUpdateTrigger = append(result.beforeUpdateTrigger, fn)
-	}
-
-	for _, fn := range model.beforeDeleteTrigger {
-		result.beforeDeleteTrigger = append(result.beforeDeleteTrigger, fn)
-	}
-
-	for _, fn := range model.afterInsertTrigger {
-		result.afterInsertTrigger = append(result.afterInsertTrigger, fn)
-	}
-
-	for _, fn := range model.afterUpdateTrigger {
-		result.afterUpdateTrigger = append(result.afterUpdateTrigger, fn)
-	}
-
-	for _, fn := range model.afterDeleteTrigger {
-		result.afterDeleteTrigger = append(result.afterDeleteTrigger, fn)
-	}
-
+	result.beforeInsertTrigger = append(result.beforeInsertTrigger, result.beforeInsertDefault)
+	result.beforeUpdateTrigger = append(result.beforeUpdateTrigger, result.beforeUpdateDefault)
+	result.beforeDeleteTrigger = append(result.beforeDeleteTrigger, result.beforeDeleteDefault)
 	return result
 }
 

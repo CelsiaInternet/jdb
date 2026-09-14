@@ -7,36 +7,73 @@ import (
 )
 
 /**
+* getField
+* @param name string
+* @return *Field
+**/
+func (s *Ql) getField(name string) *Field {
+	return s.Froms.getField(name)
+}
+
+/**
 * setSelect
 * @param field *Field
 * @return *Ql
 **/
 func (s *Ql) setSelect(field *Field) *Ql {
-	if field == nil || field.Column == nil {
+	if field == nil {
 		return s
 	}
 
-	if slices.Contains([]TypeColumn{TpColumn, TpAtribute}, field.Column.TypeColumn) {
+	if slices.Contains([]TypeColumn{TpColumn, TpAtribute}, field.TypeColumn) {
 		idx := slices.IndexFunc(s.Selects, func(e *Field) bool { return e == field })
 		if idx == -1 {
 			s.Selects = append(s.Selects, field)
 		}
-
-		if field.Column.CalcFunction != nil {
-			s.addDetail(field)
-		}
-	} else {
-		if slices.Contains([]TypeColumn{TpRollup}, field.Column.TypeColumn) {
-			rollup := field.Column.Rollup
-			for _, name := range rollup.Fields {
-				field.Select = append(field.Select, name)
-			}
+	} else if field.TypeColumn == TpRollup {
+		if field.Model == nil || field.Model.Model == nil {
+			return s
 		}
 
-		idx := slices.IndexFunc(s.Details, func(e *Field) bool { return e == field })
-		if idx == -1 {
-			s.addDetail(field)
+		rollup, exist := field.Model.Model.Rollup[field.Name]
+		if !exist {
+			return s
 		}
+
+		s.Rollups = append(s.Rollups, rollup)
+	} else if field.TypeColumn == TpRelatedTo {
+		if field.Model == nil || field.Model.Model == nil {
+			return s
+		}
+
+		relation, exist := field.Model.Model.RelationsTo[field.Name]
+		if !exist {
+			return s
+		}
+
+		s.Details[field.Name] = relation
+	} else if field.TypeColumn == TpDetail {
+		if field.Model == nil || field.Model.Model == nil {
+			return s
+		}
+
+		detail, exist := field.Model.Model.Detail[field.Name]
+		if !exist {
+			return s
+		}
+
+		s.Details[field.Name] = detail
+	} else if field.TypeColumn == TpCalc {
+		if field.Model == nil || field.Model.Model == nil {
+			return s
+		}
+
+		calc, exist := field.Model.Model.CalcFunction[field.Name]
+		if !exist {
+			return s
+		}
+
+		s.CalcFunction[field.Name] = calc
 	}
 
 	return s
@@ -51,8 +88,8 @@ func (s *Ql) Select(fields ...interface{}) *Ql {
 	setRelationTo := func(v map[string]interface{}) {
 		for key := range v {
 			field := s.getField(key)
-			if field.Column.TypeColumn == TpRelatedTo {
-				s.setDetail(v)
+			if field != nil {
+				s.setSelect(field)
 			}
 		}
 	}
@@ -71,8 +108,8 @@ func (s *Ql) Select(fields ...interface{}) *Ql {
 			setRelationTo(v)
 		}
 	}
-	s.TypeSelect = Select
 
+	s.TypeSelect = Select
 	return s
 }
 
@@ -84,7 +121,6 @@ func (s *Ql) Select(fields ...interface{}) *Ql {
 func (s *Ql) Data(fields ...interface{}) *Ql {
 	result := s.Select(fields...)
 	result.TypeSelect = Source
-
 	return result
 }
 
@@ -96,8 +132,8 @@ func (s *Ql) Data(fields ...interface{}) *Ql {
 func (s *Ql) Detail(fields ...interface{}) *Ql {
 	setDetail := func(name string) {
 		field := s.getField(name)
-		if map[TypeColumn]bool{TpRelatedTo: true, TpCalc: true, TpRollup: true}[field.Column.TypeColumn] {
-			s.Details = append(s.Details, field)
+		if map[TypeColumn]bool{TpRelatedTo: true, TpCalc: true, TpRollup: true}[field.TypeColumn] {
+			s.setSelect(field)
 		}
 	}
 
@@ -165,7 +201,7 @@ func (s *Ql) setHidden(columns ...string) *Ql {
 func (s *Ql) getSelects() []string {
 	result := []string{}
 	for _, sel := range s.Selects {
-		result = append(result, sel.asField())
+		result = append(result, sel.asName())
 	}
 
 	return result

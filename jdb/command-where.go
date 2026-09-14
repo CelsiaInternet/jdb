@@ -1,5 +1,7 @@
 package jdb
 
+import "github.com/celsiainternet/elvis/et"
+
 /**
 * Where
 * @param field string
@@ -145,17 +147,6 @@ func (s *Command) Between(vals interface{}) *Command {
 }
 
 /**
-* Search
-* @param language string, val interface{}
-* @return *Command
-**/
-func (s *Command) Search(language string, val interface{}) *Command {
-	s.QlWhere.Search(language, val)
-
-	return s
-}
-
-/**
 * IsNull
 * @return *Command
 **/
@@ -176,23 +167,14 @@ func (s *Command) NotNull() *Command {
 }
 
 /**
-* Debug
-* @param v bool
+* setWhere
+* @param setWheres et.Json
 * @return *Command
 **/
-func (s *Command) Debug() *Command {
-	s.QlWhere.Debug()
-
-	return s
-}
-
-/**
-* setDebug
-* @param debug bool
-* @return *Command
-**/
-func (s *Command) setDebug(debug bool) *Command {
-	s.QlWhere.setDebug(debug)
-
+func (s *Command) setWheres(wheres et.Json) *Command {
+	if s.QlWhere == nil {
+		s.QlWhere = newQlWhere()
+	}
+	s.QlWhere.setWheres(wheres)
 	return s
 }

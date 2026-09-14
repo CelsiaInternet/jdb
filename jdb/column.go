@@ -15,6 +15,7 @@ const (
 	TpColumn TypeColumn = iota
 	TpAtribute
 	TpRollup
+	TpDetail
 	TpRelatedTo
 	TpCalc
 )

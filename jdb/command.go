@@ -2,8 +2,7 @@ package jdb
 
 import (
 	"encoding/json"
-	"slices"
-	"strings"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/utility"
@@ -73,7 +72,7 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		Id:                  utility.UUID(),
 		Command:             command,
 		Db:                  model.Db,
-		From:                setForms(model),
+		From:                newForms(),
 		Data:                data,
 		Current:             []et.Json{},
 		beforeInsert:        []DataFunctionTx{},
@@ -91,7 +90,8 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		Args:                []any{},
 		Result:              et.Items{},
 	}
-	result.QlWhere = newQlWhere(result.validator)
+	result.From.add(model)
+	result.QlWhere = newQlWhere()
 	result.IsDebug = model.IsDebug
 	result.beforeInsert = append(result.beforeInsert, result.beforeInsertDefault)
 	result.beforeUpdate = append(result.beforeUpdate, result.beforeUpdateDefault)
@@ -149,15 +149,6 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 }
 
 /**
-* validator
-* validate this val is a field or basic type
-* @return interface{}
-**/
-func (s *Command) validator(val interface{}) interface{} {
-	return s.From.validator(val)
-}
-
-/**
 * setTx
 * @param tx *Tx
 * @return *Command
@@ -204,6 +195,16 @@ func (s *Command) Describe() et.Json {
 }
 
 /**
+* Debug
+* @param v bool
+* @return *Command
+**/
+func (s *Command) Debug() *Command {
+	s.QlWhere.Debug()
+	return s
+}
+
+/**
 * getModel
 * @return *Model
 **/
@@ -225,51 +226,36 @@ func (s *Command) GetFrom() *QlFrom {
 * @return *Field
 **/
 func (s *Command) getField(name string) *Field {
-	return s.From.getField(name, false)
+	return s.From.getField(name)
 }
 
 /**
-* setWhere
-* @param setWheres et.Json
-* @return *Command
+* getCurrent
+* @param data et.Json
+* @return et.Items, error
 **/
-func (s *Command) setWheres(wheres et.Json) *Command {
-	and := func(vals []et.Json) {
-		for _, val := range vals {
-			for key := range val {
-				s.And(key).setValue(val.Json(key))
-			}
-		}
+func (s *Command) getCurrent(data et.Json) (et.Items, error) {
+	model := s.getModel()
+	if model == nil {
+		return et.Items{}, fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
-	or := func(vals []et.Json) {
-		for _, val := range vals {
-			for key := range val {
-				s.Or(key).setValue(val.Json(key))
-			}
+	ql := From(model)
+	if s.Command == Upsert {
+		err := ql.getWhereByPrimaryKeys(data)
+		if err != nil {
+			return et.Items{}, err
 		}
 	}
-
-	for key := range wheres {
-		key = strings.ToLower(key)
-		if slices.Contains([]string{"and", "or"}, key) {
-			continue
-		}
-
-		val := wheres.Json(key)
-		s.Where(key).setValue(val)
+	for _, w := range s.Wheres {
+		ql.addCondition(w)
+	}
+	ql.IsDebug = s.IsDebug
+	current, err := ql.
+		AllTx(s.tx)
+	if err != nil {
+		return et.Items{}, err
 	}
 
-	for key := range wheres {
-		switch strings.ToLower(key) {
-		case "and":
-			vals := wheres.ArrayJson(key)
-			and(vals)
-		case "or":
-			vals := wheres.ArrayJson(key)
-			or(vals)
-		}
-	}
-
-	return s
+	return current, nil
 }

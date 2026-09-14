@@ -412,6 +412,16 @@ func (s *QlWhere) Debug() *QlWhere {
 }
 
 /**
+* addCondition
+* @param condition *QlCondition
+* @return *QlWhere
+**/
+func (s *QlWhere) addCondition(condition *QlCondition) *QlWhere {
+	s.Wheres = append(s.Wheres, condition)
+	return s
+}
+
+/**
 * setWhere
 * @param val field interface{}
 * @return *QlWhere
@@ -422,8 +432,7 @@ func (s *QlWhere) setWhere(field interface{}) *QlWhere {
 		where.Connector = And
 	}
 
-	s.Wheres = append(s.Wheres, where)
-	return s
+	return s.addCondition(where)
 }
 
 /**
@@ -434,8 +443,7 @@ func (s *QlWhere) setWhere(field interface{}) *QlWhere {
 func (s *QlWhere) setOr(field interface{}) *QlWhere {
 	where := newQlCondition(field)
 	where.Connector = Or
-	s.Wheres = append(s.Wheres, where)
-	return s
+	return s.addCondition(where)
 }
 
 /**

@@ -69,51 +69,6 @@ func helpQl(model *Model) et.Json {
 }
 
 /**
-* From
-* @param model *Model
-* @return *Ql
-**/
-func From(name interface{}) *Ql {
-	var model *Model
-	switch v := name.(type) {
-	case *Model:
-		model = v
-	default:
-		str := fmt.Sprintf("%v", v)
-		model = GetModel(str)
-	}
-
-	tpSelect := Select
-	if model.SourceField != nil {
-		tpSelect = Source
-	}
-
-	result := &Ql{
-		Id:         utility.UUID(),
-		Db:         model.Db,
-		TypeSelect: tpSelect,
-		Froms:      newForms(),
-		Joins:      make([]*QlJoin, 0),
-		Selects:    make([]*Field, 0),
-		Hiddens:    make([]string, 0),
-		Details:    make([]*Field, 0),
-		Groups: make([]*Field, 0),
-		Orders: &QlOrder{Asc: make([]*Field, 0), Desc: make([]*Field, 0)},
-		Offset: 0,
-		Limit:  0,
-		Sheet:  0,
-		Help:   helpQl(model),
-		wg:     &sync.WaitGroup{},
-	}
-	result.QlWhere = newQlWhere(result.validator)
-	result.IsDebug = model.IsDebug
-	result.Havings = NewQlHaving(result)
-	result.Froms.add(model)
-
-	return result
-}
-
-/**
 * getForms
 * @return []string
 **/

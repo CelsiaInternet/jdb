@@ -52,4 +52,6 @@ var (
 	MSG_RELATION_WITH_REQUIRED   = "Relation with required (%s)"
 	MSG_FOREIGN_KEY_NOT_EXIST    = "Foreign key not exist (%s) keys:%s"
 	MSG_REQUIRED_FIELD_REQUIRED  = "Required field required (%s)"
+	MSG_DATA_REQUIRED            = "Data is required"
+	MSG_DATA_MAX_ONE             = "Data max one"
 )

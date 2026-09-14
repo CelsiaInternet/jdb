@@ -37,7 +37,6 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 	}
 
 	s.setTx(tx)
-
 	switch s.Command {
 	case Insert:
 		err := s.inserted()
@@ -45,11 +44,14 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 			return et.Items{}, err
 		}
 	case Update:
-		err = s.getCurrent()
+		current, err := s.getCurrent(et.Json{})
 		if err != nil {
 			return et.Items{}, err
 		}
-		err = s.updated()
+		if !current.Ok {
+			return et.Items{}, fmt.Errorf(MSG_DATA_REQUIRED)
+		}
+		err = s.updated(current.Result)
 		if err != nil {
 			return et.Items{}, err
 		}

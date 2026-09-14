@@ -6,7 +6,7 @@ import (
 	"github.com/celsiainternet/elvis/et"
 )
 
-func (s *Command) updated() error {
+func (s *Command) updated(current []et.Json) error {
 	if err := s.prepare(); err != nil {
 		return err
 	}

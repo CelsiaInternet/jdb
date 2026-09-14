@@ -191,6 +191,84 @@ func (s *Ql) Query(params et.Json) (et.Json, error) {
 }
 
 /**
+* setJoins
+* @param joins []et.Json
+**/
+func (s *Ql) setJoins(joins []et.Json) *Ql {
+	for _, join := range joins {
+		sWith := join.Str("with")
+		with := s.Db.GetModel(sWith)
+		if with == nil {
+			continue
+		}
+
+		field := join.Str("field")
+		operator := join.Str("operator")
+		value := join.Str("value")
+		s.Join(with, field, operator, value)
+	}
+
+	return s
+}
+
+/**
+* SetPage
+* @param page int
+* @return *Ql
+**/
+func (s *Ql) setPage(page int) *Ql {
+	s.Page(page)
+
+	return s
+}
+
+/**
+* SetLimitTx
+* @param tx *Tx, limit int
+* @return et.Json, error
+**/
+func (s *Ql) setLimitTx(tx *Tx, limit int) (et.Json, error) {
+	s.Limit = limit
+	if s.Limit <= 0 {
+		result, err := s.AllTx(tx)
+		if err != nil {
+			return nil, err
+		}
+
+		res := result.ToJson()
+		if s.IsDebug {
+			res["sql"] = s.Sql
+		}
+
+		return res, nil
+	} else if s.Limit == 1 {
+		result, err := s.OneTx(tx)
+		if err != nil {
+			return nil, err
+		}
+
+		res := result.ToJson()
+		if s.IsDebug {
+			res["sql"] = s.Sql
+		}
+
+		return res, nil
+	} else {
+		result, err := s.FirstTx(tx, s.Limit)
+		if err != nil {
+			return nil, err
+		}
+
+		res := result.ToJson()
+		if s.IsDebug {
+			res["sql"] = s.Sql
+		}
+
+		return res, nil
+	}
+}
+
+/**
 * queryTx
 * @param tx *Tx, params et.Json
 * @return et.Items, error

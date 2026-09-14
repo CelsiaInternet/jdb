@@ -149,27 +149,6 @@ func (s *QlJoin) Describe() et.Json {
 }
 
 /**
-* SetJoins
-* @param joins []et.Json
-**/
-func (s *Ql) setJoins(joins []et.Json) *Ql {
-	for _, join := range joins {
-		sWith := join.Str("with")
-		with := s.Db.GetModel(sWith)
-		if with == nil {
-			continue
-		}
-
-		field := join.Str("field")
-		operator := join.Str("operator")
-		value := join.Str("value")
-		s.Join(with, field, operator, value)
-	}
-
-	return s
-}
-
-/**
 * getJoins
 * @return []et.Json
 **/

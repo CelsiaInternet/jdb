@@ -18,6 +18,34 @@ func (s *Command) updated(current et.Items) error {
 
 	for _, old := range current.Result {
 		s.New = s.Data[0]
+		for _, fn := range model.beforeUpdate {
+			err := fn(s.tx, s.New)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, fn := range model.beforeUpdateTrigger {
+			err := fn(s.tx, old, s.New)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, fn := range s.afterUpdate {
+			err := fn(s.tx, s.New)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, fn := range s.beforeUpdateTrigger {
+			err := fn(s.tx, old, s.New)
+			if err != nil {
+				return err
+			}
+		}
+
 		results, err := s.Db.Command(s)
 		if err != nil {
 			return err
@@ -28,24 +56,32 @@ func (s *Command) updated(current et.Items) error {
 			return nil
 		}
 
-		for _, new := range results.Result {
-			for _, fn := range model.afterUpdate {
-				err := fn(s.tx, new)
-				if err != nil {
-					return err
-				}
+		new := results.Result[0]
+		for _, fn := range model.afterUpdate {
+			err := fn(s.tx, new)
+			if err != nil {
+				return err
 			}
-			for _, fn := range model.afterUpdateTrigger {
-				err := fn(s.tx, old, new)
-				if err != nil {
-					return err
-				}
+		}
+
+		for _, fn := range model.afterUpdateTrigger {
+			err := fn(s.tx, old, new)
+			if err != nil {
+				return err
 			}
-			for _, fn := range s.afterUpdate {
-				err := fn(s.tx, new)
-				if err != nil {
-					return err
-				}
+		}
+
+		for _, fn := range s.afterUpdate {
+			err := fn(s.tx, new)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, fn := range s.afterUpdateTrigger {
+			err := fn(s.tx, old, new)
+			if err != nil {
+				return err
 			}
 		}
 	}

@@ -10,6 +10,7 @@ func (s *Command) upsert() error {
 	if len(s.Data) != 1 {
 		return fmt.Errorf(MSG_MANY_INSERT_DATA)
 	}
+
 	data := s.Data[0]
 	current, err := s.getCurrent(data)
 	if err != nil {
@@ -20,24 +21,7 @@ func (s *Command) upsert() error {
 		return s.inserted()
 	}
 
-	model := s.getModel()
-	if model == nil {
-		return fmt.Errorf(MSG_MODEL_REQUIRED)
-	}
-
-	if len(s.Data) != 1 {
-		return fmt.Errorf(MSG_MANY_INSERT_DATA)
-	}
-
-	s.getCurrent()
-	if s.Current.Ok {
-		s.Command = Update
-		s.getWhereByPrimaryKeys(s.Data[0])
-		return s.updated()
-	}
-
-	s.Command = Insert
-	return s.inserted()
+	return s.updated(current)
 }
 
 /**

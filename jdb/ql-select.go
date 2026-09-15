@@ -20,7 +20,7 @@ func (s *Ql) getField(name string) *Field {
 * @param field *Field
 * @return *Ql
 **/
-func (s *Ql) setSelect(field *Field) *Ql {
+func (s *Ql) setSelectField(field *Field) *Ql {
 	if field == nil {
 		return s
 	}
@@ -89,7 +89,7 @@ func (s *Ql) Select(fields ...interface{}) *Ql {
 		for key := range v {
 			field := s.getField(key)
 			if field != nil {
-				s.setSelect(field)
+				s.setSelectField(field)
 			}
 		}
 	}
@@ -98,10 +98,19 @@ func (s *Ql) Select(fields ...interface{}) *Ql {
 		switch v := name.(type) {
 		case string:
 			field := s.getField(v)
-			s.setSelect(field)
+			s.setSelectField(field)
 		case *Column:
 			field := s.getField(v.Name)
-			s.setSelect(field)
+			s.setSelectField(field)
+		case Column:
+			field := s.getField(v.Name)
+			s.setSelectField(field)
+		case *Field:
+			s.setSelectField(v)
+		case *Agregation:
+			s.setSelectAgregation(v)
+		case Agregation:
+			s.setSelectAgregation(v)
 		case et.Json:
 			setRelationTo(v)
 		case map[string]interface{}:

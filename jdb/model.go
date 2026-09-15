@@ -625,8 +625,16 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 		return GetField(result)
 	}
 
+	split := strings.Split(name, ":")
+	as := name
+	if len(split) > 1 {
+		name = split[0]
+		as = split[1]
+	}
+
 	result := getField(name)
 	if result != nil {
+		result.As = as
 		return result
 	}
 

@@ -167,6 +167,7 @@ const (
 	AgregationMin
 	AgregationMax
 	AgregationValue
+	AgregationCalc
 )
 
 func (s TypeAgregation) Str() string {
@@ -235,6 +236,13 @@ func MAX(value interface{}) *Agregation {
 func VALUE(value interface{}) *Agregation {
 	return &Agregation{
 		Agregation: AgregationValue,
+		Value:      value,
+	}
+}
+
+func CALC(value string) *Agregation {
+	return &Agregation{
+		Agregation: AgregationCalc,
 		Value:      value,
 	}
 }

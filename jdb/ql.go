@@ -28,6 +28,7 @@ func (s *QlFroms) getField(name string) *Field {
 	for _, from := range s.Froms {
 		result := from.getField(name, false)
 		if result != nil {
+			result.As = from.As
 			return result
 		}
 	}
@@ -99,7 +100,7 @@ type Ql struct {
 	Db           *DB                       `json:"-"`
 	TypeSelect   TypeSelect                `json:"type_select"`
 	Froms        *QlFroms                  `json:"froms"`
-	Selects      []*Field                  `json:"selects"`
+	Selects      []interface{}             `json:"selects"`
 	Rollups      []*Rollup                 `json:"rollups"`
 	Joins        []*QlJoin                 `json:"joins"`
 	Hiddens      []string                  `json:"hiddens"`

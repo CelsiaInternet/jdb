@@ -1,10 +1,6 @@
 package jdb
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 )
 
@@ -26,19 +22,15 @@ type QlJoin struct {
 
 /**
 * QlJoin
-* @param name interface{}
+* @param tp TypeJoin, from, with string, conditions []*QlCondition
 * @return *Ql
 **/
-func (s *Ql) join(tp TypeJoin, from *QlFrom, with *Model, condition []*QlCondition) *Ql {
-	if from == nil {
-		return s
-	}
-
+func (s *Ql) join(tp TypeJoin, from, with *QlFrom, conditions []*QlCondition) *Ql {
 	result := &QlJoin{
 		TypeJoin:  tp,
 		From:      from,
-		With:      s.Froms.add(with),
-		Condition: condition,
+		With:      with,
+		Condition: conditions,
 	}
 	s.Joins = append(s.Joins, result)
 	return s
@@ -46,36 +38,68 @@ func (s *Ql) join(tp TypeJoin, from *QlFrom, with *Model, condition []*QlConditi
 
 /**
 * Join
-* @param with *Model, field string, operator string, value interface{}
+* @param withName string, field interface{}, operator Operator, value interface{}
 * @return *Ql
 **/
-func (s *Ql) Join(with *Model, field string, operator string, value interface{}) *Ql {
-	var from *QlFrom
-	n := len(s.Joins)
-	if n == 0 {
-		from = s.Froms.getForm(0)
-	} else {
-		from = s.Joins[n-1].With
+func (s *Ql) Join(withName string, fieldFrom string, operator Operator, value interface{}) *Ql {
+	with := s.Froms.getFrom(withName)
+	if with == nil {
+		withForm := s.GetModel(withName)
+		if withForm == nil {
+			return s
+		}
+		with = s.Froms.add(withForm)
 	}
 
-	return s.join(InnerJoin, from, with, field, operator, value)
+	field := s.getField(fieldFrom)
+	if field == nil {
+		return s
+	}
+
+	from := field.Model
+	if from == nil {
+		return s
+	}
+
+	condition := &QlCondition{
+		Field:    field,
+		Operator: operator,
+	}
+	condition.setValue(value)
+	return s.join(InnerJoin, from, with, []*QlCondition{condition})
 }
 
 /**
 * LeftJoin
-* @param with *Model, field string, operator string, value interface{}
+* @param withName string, fieldFrom string, operator Operator, value interface{}
 * @return *Ql
 **/
-func (s *Ql) LeftJoin(with *Model, field string, operator string, value interface{}) *Ql {
-	var from *QlFrom
-	n := len(s.Joins)
-	if n == 0 {
-		from = s.Froms.getForm(0)
-	} else {
-		from = s.Joins[n-1].With
+func (s *Ql) LeftJoin(withName string, fieldFrom string, operator Operator, value interface{}) *Ql {
+	with := s.Froms.getFrom(withName)
+	if with == nil {
+		withForm := s.GetModel(withName)
+		if withForm == nil {
+			return s
+		}
+		with = s.Froms.add(withForm)
 	}
 
-	return s.join(LeftJoin, from, with, field, operator, value)
+	field := s.getField(fieldFrom)
+	if field == nil {
+		return s
+	}
+
+	from := field.Model
+	if from == nil {
+		return s
+	}
+
+	condition := &QlCondition{
+		Field:    field,
+		Operator: operator,
+	}
+	condition.setValue(value)
+	return s.join(LeftJoin, from, with, []*QlCondition{condition})
 }
 
 /**
@@ -83,16 +107,32 @@ func (s *Ql) LeftJoin(with *Model, field string, operator string, value interfac
 * @param with *Model, field string, operator string, value interface{}
 * @return *Ql
 **/
-func (s *Ql) RightJoin(with *Model, field string, operator string, value interface{}) *Ql {
-	var from *QlFrom
-	n := len(s.Joins)
-	if n == 0 {
-		from = s.Froms.getForm(0)
-	} else {
-		from = s.Joins[n-1].With
+func (s *Ql) RightJoin(withName string, fieldFrom string, operator Operator, value interface{}) *Ql {
+	with := s.Froms.getFrom(withName)
+	if with == nil {
+		withForm := s.GetModel(withName)
+		if withForm == nil {
+			return s
+		}
+		with = s.Froms.add(withForm)
 	}
 
-	return s.join(RightJoin, from, with, field, operator, value)
+	field := s.getField(fieldFrom)
+	if field == nil {
+		return s
+	}
+
+	from := field.Model
+	if from == nil {
+		return s
+	}
+
+	condition := &QlCondition{
+		Field:    field,
+		Operator: operator,
+	}
+	condition.setValue(value)
+	return s.join(RightJoin, from, with, []*QlCondition{condition})
 }
 
 /**
@@ -100,69 +140,48 @@ func (s *Ql) RightJoin(with *Model, field string, operator string, value interfa
 * @param with *Model, field string, operator string, value interface{}
 * @return *Ql
 **/
-func (s *Ql) FullJoin(with *Model, field string, operator string, value interface{}) *Ql {
-	var from *QlFrom
-	n := len(s.Joins)
-	if n == 0 {
-		from = s.Froms.getForm(0)
-	} else {
-		from = s.Joins[n-1].With
+func (s *Ql) FullJoin(withName string, fieldFrom string, operator Operator, value interface{}) *Ql {
+	with := s.Froms.getFrom(withName)
+	if with == nil {
+		withForm := s.GetModel(withName)
+		if withForm == nil {
+			return s
+		}
+		with = s.Froms.add(withForm)
 	}
 
-	return s.join(FullJoin, from, with, field, operator, value)
+	field := s.getField(fieldFrom)
+	if field == nil {
+		return s
+	}
+
+	from := field.Model
+	if from == nil {
+		return s
+	}
+
+	condition := &QlCondition{
+		Field:    field,
+		Operator: operator,
+	}
+	condition.setValue(value)
+	return s.join(FullJoin, from, with, []*QlCondition{condition})
 }
 
 /**
-* Serialize
-* @return []byte, error
-**/
-func (s *QlJoin) Serialize() ([]byte, error) {
-	result, err := json.Marshal(s)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return result, nil
-}
-
-/**
-* Describe
+* ToJson
 * @return *et.Json
 **/
-func (s *QlJoin) Describe() et.Json {
-	definition, err := s.Serialize()
-	if err != nil {
-		console.Alert(fmt.Sprintf("QlJoin error: %s", err.Error()))
-		return et.Json{}
+func (s *QlJoin) ToJson() et.Json {
+	conditions := []et.Json{}
+	for _, condition := range s.Condition {
+		conditions = append(conditions, condition.ToJson())
 	}
-
-	result := et.Json{}
-	err = json.Unmarshal(definition, &result)
-	if err != nil {
-		console.Alert(fmt.Sprintf("QlJoin error: %s", err.Error()))
-		return et.Json{}
+	result := et.Json{
+		"type_join": s.TypeJoin,
+		"from":      s.From.ToJson(),
+		"with":      s.With.ToJson(),
+		"condition": conditions,
 	}
-
-	result["ql"] = s.Ql.Describe()
-
-	return result
-}
-
-/**
-* getJoins
-* @return []et.Json
-**/
-func (s *Ql) getJoins() []et.Json {
-	result := []et.Json{}
-	for _, join := range s.Joins {
-		item := et.Json{
-			"with":     join.With.Name,
-			"field":    join.Field.Name,
-			"operator": join.Operator,
-			"value":    join.Value,
-		}
-		result = append(result, item)
-	}
-
 	return result
 }

@@ -179,7 +179,7 @@ func (s *Command) getModel() *Model {
 * @return *QlFrom
 **/
 func (s *Command) GetFrom() *QlFrom {
-	return s.From.getForm(0)
+	return s.From.getFromByIndex(0)
 }
 
 /**

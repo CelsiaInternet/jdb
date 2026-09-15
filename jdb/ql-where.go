@@ -20,6 +20,19 @@ func (s *Ql) setWheres(wheres et.Json) *Ql {
 }
 
 /**
+* setHavings
+* @param havings et.Json
+* @return *Ql
+**/
+func (s *Ql) setHavings(havings et.Json) *Ql {
+	if s.Havings == nil {
+		s.Havings = newQlWhere()
+	}
+	s.Havings.setWhere(havings)
+	return s
+}
+
+/**
 * getWhereByPrimaryKeys
 * @param data et.Json
 * @return error

@@ -2,6 +2,7 @@ package jdb
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/celsiainternet/elvis/envar"
@@ -14,11 +15,36 @@ type QlFrom struct {
 	As string
 }
 
+func (s *QlFrom) ToJson() et.Json {
+	return et.Json{
+		"model": et.Json{
+			"schema": s.Model.Schema,
+			"model":  s.Model.Name,
+		},
+		"as": s.As,
+	}
+}
+
 type QlFroms struct {
 	Froms []*QlFrom
 	index int
 }
 
+/**
+* newForms
+* @return *QlFroms
+**/
+func newForms() *QlFroms {
+	return &QlFroms{
+		Froms: make([]*QlFrom, 0),
+		index: 65,
+	}
+}
+
+/**
+* ToJson
+* @return et.Json
+**/
 func (s *QlFroms) ToJson() et.Json {
 	result := et.Json{}
 	for _, from := range s.Froms {
@@ -42,17 +68,6 @@ func (s *QlFroms) getField(name string) *Field {
 	}
 
 	return nil
-}
-
-/**
-* newForms
-* @return *QlFroms
-**/
-func newForms() *QlFroms {
-	return &QlFroms{
-		Froms: make([]*QlFrom, 0),
-		index: 65,
-	}
 }
 
 /**
@@ -87,11 +102,30 @@ func (s *QlFroms) getModel(idx int) *Model {
 }
 
 /**
-* getForm
+* getFrom
+* @param name string
+* @return *QlFrom
+**/
+func (s *QlFroms) getFrom(name string) *QlFrom {
+	for _, from := range s.Froms {
+		split := strings.Split(name, ":")
+		if len(split) == 2 {
+			name = split[0]
+		}
+		if from.Model.Name == name || from.As == name {
+			return from
+		}
+	}
+
+	return nil
+}
+
+/**
+* getFromByIndex
 * @param idx int
 * @return *QlFrom
 **/
-func (s *QlFroms) getForm(idx int) *QlFrom {
+func (s *QlFroms) getFromByIndex(idx int) *QlFrom {
 	return s.Froms[idx]
 }
 
@@ -178,9 +212,13 @@ func From(name interface{}) *Ql {
 * @return et.Json
 **/
 func (s *Ql) Describe() et.Json {
+	joins := []et.Json{}
+	for _, join := range s.Joins {
+		joins = append(joins, join.ToJson())
+	}
 	return et.Json{
 		"from":     s.Froms.ToJson(),
-		"join":     s.getJoins(),
+		"join":     joins,
 		"where":    s.getWheres(),
 		"group_by": s.getGroupsBy(),
 		"having":   s.Havings.getWheres(),
@@ -228,4 +266,13 @@ func (s *Ql) setDebug(value bool) *Ql {
 func (s *Ql) Debug() *Ql {
 	s.QlWhere.Debug()
 	return s
+}
+
+/**
+* GetModel
+* @param name string
+* @return *Model
+**/
+func (s *Ql) GetModel(name string) *Model {
+	return s.Db.GetModel(name)
 }

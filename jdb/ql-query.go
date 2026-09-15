@@ -8,28 +8,12 @@ import (
 )
 
 /**
-* FirstTx
-* @param tx *Tx, n int
-* @return et.Items, error
+* getDetailsTx
+* @param tx *Tx, item et.Json
+* @return et.Json
 **/
-func (s *Ql) FirstTx(tx *Tx, n int) (et.Items, error) {
-	if s.Db == nil {
-		return et.Items{}, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
-	}
-
-	s.setTx(tx)
-	s.Limit = n
-	s.prepare()
-	result, err := s.Db.Select(s)
-	if err != nil {
-		return et.Items{}, err
-	}
-
-	for _, data := range result.Result {
-		s.GetDetailsTx(tx, data)
-	}
-
-	return result, nil
+func (s *Ql) getDetailsTx(tx *Tx, item et.Json) et.Json {
+	return item
 }
 
 /**
@@ -38,7 +22,50 @@ func (s *Ql) FirstTx(tx *Tx, n int) (et.Items, error) {
 * @return et.Items, error
 **/
 func (s *Ql) AllTx(tx *Tx) (et.Items, error) {
-	return s.FirstTx(tx, 0)
+	if s.Db == nil {
+		return et.Items{}, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
+	}
+
+	s.setTx(tx)
+	result, err := s.Db.Select(s)
+	if err != nil {
+		return et.Items{}, err
+	}
+
+	for _, data := range result.Result {
+		s.getDetailsTx(tx, data)
+	}
+
+	return result, nil
+}
+
+/**
+* FirstTx
+* @param tx *Tx, n int
+* @return et.Item, error
+**/
+func (s *Ql) FirstTx(tx *Tx, n int) (et.Item, error) {
+	result, err := s.AllTx(tx)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	if !result.Ok {
+		return et.Item{}, fmt.Errorf(MSG_RESULT_IS_NOT_OK)
+	}
+
+	if n > result.Count {
+		return et.Item{}, fmt.Errorf(MSG_LIMIT_IS_GREATER_THAN_COUNT)
+	}
+
+	if n < 0 {
+		n = result.Count + n
+	}
+
+	return et.Item{
+		Ok:     true,
+		Result: result.Result[n],
+	}, nil
 }
 
 /**
@@ -46,7 +73,7 @@ func (s *Ql) AllTx(tx *Tx) (et.Items, error) {
 * @param tx *Tx, n int
 * @return et.Items, error
 **/
-func (s *Ql) LastTx(tx *Tx, n int) (et.Items, error) {
+func (s *Ql) LastTx(tx *Tx, n int) (et.Item, error) {
 	return s.FirstTx(tx, n*-1)
 }
 
@@ -56,12 +83,12 @@ func (s *Ql) LastTx(tx *Tx, n int) (et.Items, error) {
 * @return et.Item, error
 **/
 func (s *Ql) OneTx(tx *Tx) (et.Item, error) {
-	result, err := s.FirstTx(tx, 1)
+	result, err := s.FirstTx(tx, 0)
 	if err != nil {
 		return et.Item{}, err
 	}
 
-	return result.First(), nil
+	return result, nil
 }
 
 /**
@@ -70,7 +97,12 @@ func (s *Ql) OneTx(tx *Tx) (et.Item, error) {
 * @return et.Items, error
 **/
 func (s *Ql) RowsTx(tx *Tx, val int) (et.Items, error) {
-	return s.FirstTx(tx, val)
+	s.Limit = val
+	s.Offset = (s.Sheet - 1) * s.Limit
+	if s.Offset < 0 {
+		s.Offset = 0
+	}
+	return s.AllTx(tx)
 }
 
 /**
@@ -84,7 +116,6 @@ func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 	}
 
 	s.setTx(tx)
-	s.prepare()
 	result, err := s.Db.Exists(s)
 	if err != nil {
 		return false, err
@@ -104,22 +135,12 @@ func (s *Ql) CountedTx(tx *Tx) (int, error) {
 	}
 
 	s.setTx(tx)
-	s.prepare()
 	result, err := s.Db.Count(s)
 	if err != nil {
 		return 0, err
 	}
 
 	return result, nil
-}
-
-/**
-* First
-* @param n int
-* @return et.Items, error
-**/
-func (s *Ql) First(n int) (et.Items, error) {
-	return s.FirstTx(nil, n)
 }
 
 /**
@@ -131,11 +152,20 @@ func (s *Ql) All() (et.Items, error) {
 }
 
 /**
+* First
+* @param n int
+* @return et.Item, error
+**/
+func (s *Ql) First(n int) (et.Item, error) {
+	return s.FirstTx(nil, n)
+}
+
+/**
 * Last
 * @param n int
 * @return et.Items, error
 **/
-func (s *Ql) Last(n int) (et.Items, error) {
+func (s *Ql) Last(n int) (et.Item, error) {
 	return s.LastTx(nil, n)
 }
 
@@ -196,14 +226,9 @@ func (s *Ql) Query(params et.Json) (et.Json, error) {
 **/
 func (s *Ql) setJoins(joins []et.Json) *Ql {
 	for _, join := range joins {
-		sWith := join.Str("with")
-		with := s.Db.GetModel(sWith)
-		if with == nil {
-			continue
-		}
-
+		with := join.Str("with")
 		field := join.Str("field")
-		operator := join.Str("operator")
+		operator := StrToOperator(join.Str("operator"))
 		value := join.Str("value")
 		s.Join(with, field, operator, value)
 	}

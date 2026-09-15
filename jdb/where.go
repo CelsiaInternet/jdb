@@ -113,15 +113,6 @@ func (s *Operator) str() string {
 }
 
 /**
-* OperatorToCommand
-* @param op Operator
-* @return string
-**/
-func OperatorToCommand(op Operator) string {
-	return op.command()
-}
-
-/**
 * StrToOperator
 * @param str string
 * @return Operator

@@ -14,9 +14,9 @@ type QlOrder struct {
 * @param asc bool, columns ...string
 * @return *Ql
 **/
-func (s *Ql) orderBy(asc bool, columns ...string) *Ql {
-	for _, col := range columns {
-		field := s.getField(col)
+func (s *Ql) orderBy(asc bool, fields ...string) *Ql {
+	for _, name := range fields {
+		field := s.getField(name)
 		if field != nil {
 			if asc {
 				s.Orders.Asc = append(s.Orders.Asc, field)
@@ -34,8 +34,8 @@ func (s *Ql) orderBy(asc bool, columns ...string) *Ql {
 * @param columns ...any
 * @return *Ql
 **/
-func (s *Ql) OrderByAsc(columns ...string) *Ql {
-	return s.orderBy(true, columns...)
+func (s *Ql) OrderByAsc(fields ...string) *Ql {
+	return s.orderBy(true, fields...)
 }
 
 /**
@@ -43,8 +43,8 @@ func (s *Ql) OrderByAsc(columns ...string) *Ql {
 * @param columns ...any
 * @return *Ql
 **/
-func (s *Ql) OrderByDesc(columns ...string) *Ql {
-	return s.orderBy(false, columns...)
+func (s *Ql) OrderByDesc(fields ...string) *Ql {
+	return s.orderBy(false, fields...)
 }
 
 /**
@@ -52,8 +52,8 @@ func (s *Ql) OrderByDesc(columns ...string) *Ql {
 * @param columns ...any
 * @return *Ql
 **/
-func (s *Ql) OrderBy(columns ...string) *Ql {
-	return s.OrderByAsc(columns...)
+func (s *Ql) OrderBy(fields ...string) *Ql {
+	return s.OrderByAsc(fields...)
 }
 
 /**
@@ -88,10 +88,10 @@ func (s *Ql) getOrders() et.Json {
 	asc := []string{}
 	desc := []string{}
 	for _, sel := range s.Orders.Asc {
-		asc = append(asc, sel.asField())
+		asc = append(asc, sel.asName())
 	}
 	for _, sel := range s.Orders.Desc {
-		desc = append(desc, sel.asField())
+		desc = append(desc, sel.asName())
 	}
 
 	return et.Json{

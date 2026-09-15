@@ -56,12 +56,11 @@ type Model struct {
 	Description         string                    `json:"description"`
 	UseCore             bool                      `json:"use_core"`
 	Integrity           bool                      `json:"integrity"`
-	Definitions         et.Json                   `json:"definitions"`
 	Columns             []*Column                 `json:"-"`
 	PrimaryKeys         map[string]*Column        `json:"-"`
 	ForeignKeys         map[string]*Relation      `json:"-"`
 	Indices             map[string]*Index         `json:"-"`
-	Uniques             map[string]*Index         `json:"-"`
+	Uniques             map[string]*Column        `json:"-"`
 	Required            map[string]bool           `json:"-"`
 	Detail              map[string]*Relation      `json:"detail"`
 	Rollup              map[string]*Rollup        `json:"rollup"`
@@ -127,12 +126,11 @@ func NewTable(db *DB, table string) *Model {
 		Id:                  fmt.Sprintf("%s.%s.%s", schema.Db.Name, schema.Name, name),
 		Name:                table,
 		UseCore:             false,
-		Definitions:         et.Json{},
 		Columns:             make([]*Column, 0),
 		PrimaryKeys:         make(map[string]*Column),
 		ForeignKeys:         make(map[string]*Relation),
 		Indices:             make(map[string]*Index),
-		Uniques:             make(map[string]*Index),
+		Uniques:             make(map[string]*Column),
 		RelationsTo:         make(map[string]*Relation),
 		Required:            make(map[string]bool),
 		beforeInsert:        []DataFunctionTx{},
@@ -182,12 +180,11 @@ func NewModel(schema *Schema, name string, version int) *Model {
 		Id:                  fmt.Sprintf("%s.%s.%s", schema.Db.Name, schema.Name, name),
 		Name:                name,
 		UseCore:             schema.UseCore,
-		Definitions:         et.Json{},
 		Columns:             make([]*Column, 0),
 		PrimaryKeys:         make(map[string]*Column),
 		ForeignKeys:         make(map[string]*Relation),
 		Indices:             make(map[string]*Index),
-		Uniques:             make(map[string]*Index),
+		Uniques:             make(map[string]*Column),
 		RelationsTo:         make(map[string]*Relation),
 		Required:            make(map[string]bool),
 		beforeInsert:        []DataFunctionTx{},
@@ -213,102 +210,6 @@ func NewModel(schema *Schema, name string, version int) *Model {
 
 	schema.addModel(result)
 	return result
-}
-
-/**
-* loadModel
-* @param schema *Schema, model *Model
-* @return *Model, error
-**/
-func loadModel(schema *Schema, model *Model) (*Model, error) {
-	idx := slices.IndexFunc(schema.Db.models, func(e *Model) bool { return e.Name == model.Name })
-	if idx != -1 {
-		return schema.Db.models[idx], nil
-	}
-
-	schema.addModel(model)
-	model.schema = schema
-	model.Db = schema.Db
-	model.Schema = schema.Name
-	model.Columns = make([]*Column, 0)
-	model.PrimaryKeys = make(map[string]*Column)
-	model.ForeignKeys = make(map[string]*Relation)
-	model.Indices = make(map[string]*Index)
-	model.Uniques = make(map[string]*Index)
-	model.RelationsTo = make(map[string]*Relation)
-	model.Required = make(map[string]bool)
-	/* Event */
-	model.eventEmiterChannel = make(chan event.EvenMessage)
-	model.eventsEmiter = make(map[string]event.Handler)
-	model.afterInsert = make([]DataFunctionTx, 0)
-	model.afterUpdate = make([]DataFunctionTx, 0)
-	model.afterDelete = make([]DataFunctionTx, 0)
-	model.beforeInsert = make([]DataFunctionTx, 0)
-	model.beforeUpdate = make([]DataFunctionTx, 0)
-	model.beforeDelete = make([]DataFunctionTx, 0)
-	model.AfterInsert(model.afterInsertDefault)
-	model.AfterUpdate(model.afterUpdateDefault)
-	model.AfterDelete(model.afterDeleteDefault)
-	model.IsDebug = schema.Db.IsDebug
-	/* Define columns */
-	for name := range model.Definitions {
-		definition := model.Definitions.Json(name)
-		args := definition.Array("args")
-		tp := definition.Int("tp")
-		model.defineColumns(tp, args...)
-	}
-
-	return model, nil
-}
-
-/**
-* LoadModel
-* @param db *DB, name string
-* @return *Model, error
-**/
-func LoadModel(db *DB, name string) (*Model, error) {
-	idx := slices.IndexFunc(db.models, func(e *Model) bool { return e.Name == name })
-	if idx != -1 {
-		return db.models[idx], nil
-	}
-
-	var result *Model
-	err := db.Load("model", name, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	if result != nil {
-		schema := NewSchema(db, result.Schema)
-		return loadModel(schema, result)
-	}
-
-	return result, nil
-}
-
-/**
-* Collection
-* @param db *DB, name string
-* @return *Model, error
-**/
-func Collection(db *DB, name string) (*Model, error) {
-	result, err := LoadModel(db, name)
-	if err != nil {
-		return nil, err
-	}
-
-	if result != nil {
-		return result, nil
-	}
-
-	schema := NewSchema(db, "collections")
-	result = NewModel(schema, name, 1)
-	result.DefineProjectModel()
-	if err := result.Init(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
 }
 
 /**
@@ -540,6 +441,45 @@ func (s *Model) sourceIdx() int {
 	}
 
 	return s.SourceField.idx()
+}
+
+/**
+* primaryKeyIndex
+* @return int
+**/
+func (s *Model) primaryKeyIndex() int {
+	result := -1
+	for _, pk := range s.PrimaryKeys {
+		if pk.idx() > result {
+			result = pk.idx()
+		}
+	}
+
+	return result
+}
+
+/**
+* statusIndex
+* @return int
+**/
+func (s *Model) statusIndex() int {
+	if s.StatusField == nil {
+		return -1
+	}
+
+	return s.StatusField.idx()
+}
+
+/**
+* projectIndex
+* @return int
+**/
+func (s *Model) projectIndex() int {
+	if s.ProjectField == nil {
+		return -1
+	}
+
+	return s.ProjectField.idx()
 }
 
 /**

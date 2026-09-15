@@ -26,10 +26,7 @@ func (s *Ql) setSelectField(field *Field) *Ql {
 	}
 
 	if slices.Contains([]TypeColumn{TpColumn, TpAtribute}, field.TypeColumn) {
-		idx := slices.IndexFunc(s.Selects, func(e *Field) bool { return e == field })
-		if idx == -1 {
-			s.Selects = append(s.Selects, field)
-		}
+		s.Selects = append(s.Selects, field)
 	} else if field.TypeColumn == TpRollup {
 		if field.Model == nil || field.Model.Model == nil {
 			return s
@@ -108,9 +105,9 @@ func (s *Ql) Select(fields ...interface{}) *Ql {
 		case *Field:
 			s.setSelectField(v)
 		case *Agregation:
-			s.setSelectAgregation(v)
+			s.Selects = append(s.Selects, v)
 		case Agregation:
-			s.setSelectAgregation(v)
+			s.Selects = append(s.Selects, v)
 		case et.Json:
 			setRelationTo(v)
 		case map[string]interface{}:
@@ -142,7 +139,7 @@ func (s *Ql) Detail(fields ...interface{}) *Ql {
 	setDetail := func(name string) {
 		field := s.getField(name)
 		if map[TypeColumn]bool{TpRelatedTo: true, TpCalc: true, TpRollup: true}[field.TypeColumn] {
-			s.setSelect(field)
+			s.setSelectField(field)
 		}
 	}
 
@@ -210,7 +207,12 @@ func (s *Ql) setHidden(columns ...string) *Ql {
 func (s *Ql) getSelects() []string {
 	result := []string{}
 	for _, sel := range s.Selects {
-		result = append(result, sel.asName())
+		switch v := sel.(type) {
+		case *Field:
+			result = append(result, v.asName())
+		case *Agregation:
+			result = append(result, v.asName())
+		}
 	}
 
 	return result

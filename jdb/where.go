@@ -166,8 +166,14 @@ const (
 	AgregationAvg
 	AgregationMin
 	AgregationMax
-	AgregationValue
-	AgregationCalc
+	CommandValue
+	CommandCalc
+	CommandExtractYear
+	CommandExtractMonth
+	CommandExtractDay
+	CommandExtractHour
+	CommandExtractMinute
+	CommandExtractSecond
 )
 
 func (s TypeAgregation) Str() string {
@@ -182,8 +188,22 @@ func (s TypeAgregation) Str() string {
 		return "MIN"
 	case AgregationMax:
 		return "MAX"
-	case AgregationValue:
+	case CommandValue:
 		return "VALUE"
+	case CommandCalc:
+		return "CALC"
+	case CommandExtractYear:
+		return "EXTRACT_YEAR"
+	case CommandExtractMonth:
+		return "EXTRACT_MONTH"
+	case CommandExtractDay:
+		return "EXTRACT_DAY"
+	case CommandExtractHour:
+		return "EXTRACT_HOUR"
+	case CommandExtractMinute:
+		return "EXTRACT_MINUTE"
+	case CommandExtractSecond:
+		return "EXTRACT_SECOND"
 	default:
 		return ""
 	}
@@ -192,58 +212,169 @@ func (s TypeAgregation) Str() string {
 type Agregation struct {
 	Agregation TypeAgregation
 	Value      interface{}
+	As         string
 }
 
-func (s *Agregation) Str() string {
-	return fmt.Sprintf("%s(%v)", s.Agregation.Str(), s.Value)
+func (s *Agregation) asName() string {
+	if s.As != "" {
+		return fmt.Sprintf("%s(%v):%s", s.Agregation.Str(), s.Value, s.As)
+	}
+	return fmt.Sprintf("%s(%v):", s.Agregation.Str(), s.Value, s.Agregation.Str())
 }
 
-func SUM(value interface{}) *Agregation {
+func SUM(value interface{}, as ...string) *Agregation {
+	aS := AgregationSum.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
 	return &Agregation{
 		Agregation: AgregationSum,
 		Value:      value,
+		As:         aS,
 	}
 }
 
-func COUNT(value interface{}) *Agregation {
+func COUNT(value interface{}, as ...string) *Agregation {
+	aS := AgregationCount.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
 	return &Agregation{
 		Agregation: AgregationCount,
 		Value:      value,
+		As:         aS,
 	}
 }
 
-func AVG(value interface{}) *Agregation {
+func AVG(value interface{}, as ...string) *Agregation {
+	aS := AgregationAvg.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
 	return &Agregation{
 		Agregation: AgregationAvg,
 		Value:      value,
+		As:         aS,
 	}
 }
 
-func MIN(value interface{}) *Agregation {
+func MIN(value interface{}, as ...string) *Agregation {
+	aS := AgregationMin.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
 	return &Agregation{
 		Agregation: AgregationMin,
 		Value:      value,
+		As:         aS,
 	}
 }
 
-func MAX(value interface{}) *Agregation {
+func MAX(value interface{}, as ...string) *Agregation {
+	aS := AgregationMax.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
 	return &Agregation{
 		Agregation: AgregationMax,
 		Value:      value,
+		As:         aS,
 	}
 }
 
-func VALUE(value interface{}) *Agregation {
+func VALUE(value interface{}, as ...string) *Agregation {
+	aS := CommandValue.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
 	return &Agregation{
-		Agregation: AgregationValue,
+		Agregation: CommandValue,
 		Value:      value,
+		As:         aS,
 	}
 }
 
-func CALC(value string) *Agregation {
+func CALC(value string, as ...string) *Agregation {
+	aS := CommandCalc.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
 	return &Agregation{
-		Agregation: AgregationCalc,
+		Agregation: CommandCalc,
 		Value:      value,
+		As:         aS,
+	}
+}
+
+func EXTRACT_YEAR(value interface{}, as ...string) *Agregation {
+	aS := CommandExtractYear.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
+	return &Agregation{
+		Agregation: CommandExtractYear,
+		Value:      value,
+		As:         aS,
+	}
+}
+
+func EXTRACT_MONTH(value interface{}, as ...string) *Agregation {
+	aS := CommandExtractMonth.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
+	return &Agregation{
+		Agregation: CommandExtractMonth,
+		Value:      value,
+		As:         aS,
+	}
+}
+
+func EXTRACT_DAY(value interface{}, as ...string) *Agregation {
+	aS := CommandExtractDay.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
+	return &Agregation{
+		Agregation: CommandExtractDay,
+		Value:      value,
+		As:         aS,
+	}
+}
+
+func EXTRACT_HOUR(value interface{}, as ...string) *Agregation {
+	aS := CommandExtractHour.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
+	return &Agregation{
+		Agregation: CommandExtractHour,
+		Value:      value,
+		As:         aS,
+	}
+}
+
+func EXTRACT_MINUTE(value interface{}, as ...string) *Agregation {
+	aS := CommandExtractMinute.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
+	return &Agregation{
+		Agregation: CommandExtractMinute,
+		Value:      value,
+		As:         aS,
+	}
+}
+
+func EXTRACT_SECOND(value interface{}, as ...string) *Agregation {
+	aS := CommandExtractSecond.Str()
+	if len(as) > 0 {
+		aS = as[0]
+	}
+	return &Agregation{
+		Agregation: CommandExtractSecond,
+		Value:      value,
+		As:         aS,
 	}
 }
 
@@ -299,7 +430,7 @@ func (s *QlCondition) fieldToString() string {
 	case Field:
 		return v.asName()
 	case *Agregation:
-		return v.Str()
+		return v.asName()
 	default:
 		return fmt.Sprintf(`%v`, Quote(v))
 	}

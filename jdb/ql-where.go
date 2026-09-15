@@ -7,6 +7,37 @@ import (
 )
 
 /**
+* setWheres
+* @param wheres et.Json
+* @return *Ql
+**/
+func (s *Ql) setWheres(wheres et.Json) *Ql {
+	if s.QlWhere == nil {
+		s.QlWhere = newQlWhere()
+	}
+	s.QlWhere.setWheres(wheres)
+	return s
+}
+
+/**
+* getWhereByPrimaryKeys
+* @param data et.Json
+* @return error
+**/
+func (s *Ql) getWhereByPrimaryKeys(data et.Json) error {
+	from := s.Froms.Froms[0]
+	for name, col := range from.PrimaryKeys {
+		val, exists := data[name]
+		if !exists {
+			return fmt.Errorf("primary key %s is required in model:%s", name, from.Name)
+		}
+		s.Where(col.Name).Eq(val)
+	}
+
+	return nil
+}
+
+/**
 * Where
 * @param fld interface{}
 * @return *Ql
@@ -162,32 +193,11 @@ func (s *Ql) NotNull() *Ql {
 }
 
 /**
-* setWheres
-* @param wheres et.Json
-* @return *Ql
+* Having
+* @param field string
+* @return *QlWhere
 **/
-func (s *Ql) setWheres(wheres et.Json) *Ql {
-	if s.QlWhere == nil {
-		s.QlWhere = newQlWhere()
-	}
-	s.QlWhere.setWheres(wheres)
-	return s
-}
-
-/**
-* getWhereByPrimaryKeys
-* @param data et.Json
-* @return error
-**/
-func (s *Ql) getWhereByPrimaryKeys(data et.Json) error {
-	from := s.Froms.Froms[0]
-	for name, col := range from.PrimaryKeys {
-		val, exists := data[name]
-		if !exists {
-			return fmt.Errorf("primary key %s is required in model:%s", name, from.Name)
-		}
-		s.Where(col.Name).Eq(val)
-	}
-
-	return nil
+func (s *Ql) Having(val interface{}) *QlWhere {
+	s.Havings.Where(val)
+	return s.Havings
 }

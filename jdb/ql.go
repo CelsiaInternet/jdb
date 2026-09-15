@@ -19,6 +19,14 @@ type QlFroms struct {
 	index int
 }
 
+func (s *QlFroms) ToJson() et.Json {
+	result := et.Json{}
+	for _, from := range s.Froms {
+		result[from.As] = from.Model.Name
+	}
+	return result
+}
+
 /**
 * getField
 * @param name string
@@ -107,13 +115,12 @@ type Ql struct {
 	Details      map[string]*Relation      `json:"details"`
 	CalcFunction map[string]DataFunctionTx `json:"-"`
 	Groups       []*Field                  `json:"group_bys"`
-	Havings      *QlHaving                 `json:"havings"`
+	Havings      *QlWhere                  `json:"havings"`
 	Orders       *QlOrder                  `json:"orders"`
 	Sheet        int                       `json:"sheet"`
 	Offset       int                       `json:"offset"`
 	Limit        int                       `json:"limit"`
 	Sql          string                    `json:"sql"`
-	Help         et.Json                   `json:"help"`
 	tx           *Tx                       `json:"-"`
 	wg           *sync.WaitGroup           `json:"-"`
 }
@@ -143,7 +150,7 @@ func From(name interface{}) *Ql {
 		Db:           model.Db,
 		TypeSelect:   tpSelect,
 		Froms:        newForms(),
-		Selects:      make([]*Field, 0),
+		Selects:      make([]interface{}, 0),
 		Rollups:      make([]*Rollup, 0),
 		Joins:        make([]*QlJoin, 0),
 		Hiddens:      make([]string, 0),
@@ -152,12 +159,11 @@ func From(name interface{}) *Ql {
 		Groups:       make([]*Field, 0),
 		Offset:       0,
 		Sheet:        0,
-		Help:         helpQl(model),
 		wg:           &sync.WaitGroup{},
 	}
 	result.QlWhere = newQlWhere()
 	result.IsDebug = model.IsDebug
-	result.Havings = NewQlHaving(result)
+	result.Havings = newQlWhere()
 	result.Froms.add(model)
 	max := envar.GetInt(1000, "DB_RECORD_LIMIT")
 	if result.Limit > max {
@@ -173,16 +179,15 @@ func From(name interface{}) *Ql {
 **/
 func (s *Ql) Describe() et.Json {
 	return et.Json{
-		"from":     s.getForms(),
+		"from":     s.Froms.ToJson(),
 		"join":     s.getJoins(),
 		"where":    s.getWheres(),
 		"group_by": s.getGroupsBy(),
-		"having":   s.getHavings(),
+		"having":   s.Havings.getWheres(),
 		"order_by": s.getOrders(),
 		"select":   s.getSelects(),
 		"limit":    s.getLimit(),
 		"sql":      s.Sql,
-		"help":     s.Help,
 	}
 }
 

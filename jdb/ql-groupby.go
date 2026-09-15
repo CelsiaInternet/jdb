@@ -36,7 +36,7 @@ func (s *Ql) setGroupBy(fields ...string) *Ql {
 func (s *Ql) getGroupsBy() []string {
 	result := []string{}
 	for _, field := range s.Groups {
-		def := s.asField(field)
+		def := field.asName()
 		result = append(result, def)
 	}
 

@@ -3,6 +3,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/strs"
@@ -171,6 +172,107 @@ func newDriver(db *jdb.DB) jdb.Driver {
 
 func (s *Postgres) Name() string {
 	return s.name
+}
+
+/**
+* LoadModel
+* @param model *jdb.Model
+* @return (bool, error)
+**/
+func (s *Postgres) LoadModel(model *jdb.Model) (bool, error) {
+	model.Table = tableName(model)
+	err := s.loadSchema(model.Schema)
+	if err != nil {
+		return false, err
+	}
+
+	exist, err := s.existTable(model.Schema, model.Table)
+	if err != nil {
+		return false, err
+	}
+
+	if exist {
+		return true, nil
+	}
+
+	sql := s.ddlTable(model)
+	sqlIndex := s.ddlTableIndex(model)
+	sql = strs.Append(sql, sqlIndex, "\n")
+	if model.IsDebug {
+		console.Debug(sql)
+	}
+
+	_, err = jdb.Query(s.jdb, sql)
+	if err != nil {
+		return false, err
+	}
+
+	console.LogKF("Model", "Create %s", model.Table)
+
+	return false, nil
+}
+
+/**
+* DropModel
+* @param model *jdb.Model
+* @return error
+**/
+func (s *Postgres) DropModel(model *jdb.Model) error {
+	sql := s.ddlTableDrop(tableName(model))
+	if model.IsDebug {
+		console.Debug(sql)
+	}
+
+	_, err := jdb.Query(s.jdb, sql)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/**
+* EmptyModel
+* @param model *jdb.Model
+* @return error
+**/
+func (s *Postgres) EmptyModel(model *jdb.Model) error {
+	sql := s.ddlTableEmpty(tableName(model))
+	if model.IsDebug {
+		console.Debug(sql)
+	}
+
+	_, err := jdb.Query(s.jdb, sql)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/**
+* MutateModel
+* @param model *jdb.Model
+* @return error
+**/
+func (s *Postgres) MutateModel(model *jdb.Model) error {
+	backupTable := strs.Format(`%s_backup`, tableName(model))
+	sql := "\n"
+	sql = strs.Append(sql, s.ddlTableRename(tableName(model), backupTable), "\n")
+	sql = strs.Append(sql, s.ddlTable(model), "\n")
+	sql = strs.Append(sql, s.ddlTableInsertTo(model, backupTable), "\n\n")
+	sql = strs.Append(sql, s.ddlTableIndex(model), "\n\n")
+	sql = strs.Append(sql, s.ddlTableDrop(backupTable), "\n\n")
+	if model.IsDebug {
+		console.Debug(sql)
+	}
+
+	_, err := jdb.Query(s.jdb, sql)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func init() {

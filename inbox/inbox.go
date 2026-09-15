@@ -65,7 +65,7 @@ func Define(db *jdb.DB, schema string) (*Inbox, error) {
 		"title",
 		"client_id",
 	)
-	model.DefineCalc("delete", func(data et.Json) {
+	model.DefineCalc("delete", func(tx *jdb.Tx, data et.Json) error {
 		statusId := data.Str(jdb.STATUS_ID)
 		if map[string]bool{
 			utility.FOR_DELETE: true,
@@ -76,6 +76,7 @@ func Define(db *jdb.DB, schema string) (*Inbox, error) {
 		} else {
 			data.Set("delete", false)
 		}
+		return nil
 	})
 	model.BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
 		id := data.Str(jdb.KEY)

@@ -47,6 +47,7 @@ type Command struct {
 	Data                []et.Json           `json:"data"`
 	New                 et.Json             `json:"new"`
 	Result              et.Items            `json:"result"`
+	Returning           []*Field            `json:"returning"`
 	Sql                 string              `json:"sql"`
 	Args                []any               `json:"args"`
 	beforeInsert        []DataFunctionTx    `json:"-"`
@@ -76,6 +77,8 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		From:                newForms(),
 		Data:                data,
 		New:                 et.Json{},
+		Result:              et.Items{},
+		Returning:           []*Field{},
 		beforeInsert:        []DataFunctionTx{},
 		beforeUpdate:        []DataFunctionTx{},
 		beforeDelete:        []DataFunctionTx{},
@@ -89,7 +92,6 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 		afterUpdateTrigger:  []TriggerFunctionTx{},
 		afterDeleteTrigger:  []TriggerFunctionTx{},
 		Args:                []any{},
-		Result:              et.Items{},
 	}
 	result.From.add(model)
 	result.QlWhere = newQlWhere()
@@ -107,7 +109,6 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 **/
 func (s *Command) setTx(tx *Tx) *Command {
 	s.tx = tx
-
 	return s
 }
 
@@ -183,6 +184,52 @@ func (s *Command) GetFrom() *QlFrom {
 }
 
 /**
+* getField
+* @param name string
+* @return *Field
+**/
+func (s *Command) getField(name string) *Field {
+	return s.From.getField(name)
+}
+
+/**
+* getReturns
+* @return []*Field
+**/
+func (s *Command) Returns(fields ...interface{}) *Command {
+	model := s.getModel()
+	if model == nil {
+		return s
+	}
+
+	for _, name := range fields {
+		switch v := name.(type) {
+		case string:
+			field := s.getField(v)
+			if field != nil {
+				s.Returning = append(s.Returning, field)
+			}
+		case *Column:
+			field := s.getField(v.Name)
+			if field != nil {
+				s.Returning = append(s.Returning, field)
+			}
+		case Column:
+			field := s.getField(v.Name)
+			if field != nil {
+				s.Returning = append(s.Returning, field)
+			}
+		case *Field:
+			s.Returning = append(s.Returning, v)
+		case Field:
+			s.Returning = append(s.Returning, &v)
+		}
+	}
+
+	return s
+}
+
+/**
 * prepare
 * @return error
 **/
@@ -197,15 +244,6 @@ func (s *Command) prepare() error {
 	}
 
 	return nil
-}
-
-/**
-* getField
-* @param name string
-* @return *Field
-**/
-func (s *Command) getField(name string) *Field {
-	return s.From.getField(name)
 }
 
 /**

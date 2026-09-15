@@ -538,7 +538,7 @@ func (s *Model) getColumn(name string) *Column {
 }
 
 /**
-* getField
+* GetField
 * @param name string, isCreate bool
 * @return *Field
 **/
@@ -579,6 +579,15 @@ func (s *Model) getField(name string, isCreate bool) *Field {
 	}
 
 	return nil
+}
+
+/**
+* GetField
+* @param name string
+* @return *Field
+**/
+func (s *Model) GetField(name string) *Field {
+	return s.getField(name, false)
 }
 
 /**

@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"slices"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/strs"
@@ -136,45 +136,73 @@ func (s *Postgres) defaultValue(tp jdb.TypeData) interface{} {
 	case jdb.TypeDataPrecision:
 		return 0.0
 	case jdb.TypeDataDateTime:
-		return jdb.Quote("NOW()")
+		return quote("NOW()")
 	case jdb.TypeDataCheckbox:
-		return jdb.Quote(false)
+		return quote(false)
 	case jdb.TypeDataBytes:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataObject:
-		return jdb.Quote(et.Json{})
+		return quote(et.Json{})
 	case jdb.TypeDataSelect:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataMultiSelect:
-		return jdb.Quote([]et.Json{})
+		return quote([]et.Json{})
 	case jdb.TypeDataGeometry:
-		return jdb.Quote(et.Json{
+		return quote(et.Json{
 			"type":        "Point",
 			"coordinates": []float64{0, 0},
 		})
 	case jdb.TypeDataFullText:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataState:
-		return jdb.Quote(utility.ACTIVE)
+		return quote(utility.ACTIVE)
 	case jdb.TypeDataUser:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataFilesMedia:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataUrl:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataEmail:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataPhone:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataAddress:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataRelation:
-		return jdb.Quote("")
+		return quote("")
 	case jdb.TypeDataRollup:
-		return jdb.Quote("")
+		return quote("")
 	default:
-		return jdb.Quote("")
+		return quote("")
 	}
+}
+
+func tableName(model *jdb.Model) string {
+	return fmt.Sprintf(`%s.%s`, model.Schema, model.Table)
+}
+
+/**
+* existTable
+* @param schema, name string
+* @return bool, error
+**/
+func (s *Postgres) existTable(schema, name string) (bool, error) {
+	sql := `
+	SELECT EXISTS(
+		SELECT 1
+		FROM information_schema.tables
+		WHERE UPPER(table_schema) = UPPER($1)
+		AND UPPER(table_name) = UPPER($2));`
+	items, err := jdb.Query(s.jdb, sql, schema, name)
+	if err != nil {
+		return false, err
+	}
+
+	if items.Count == 0 {
+		return false, nil
+	}
+
+	return items.Bool(0, "exists"), nil
 }
 
 /**
@@ -185,22 +213,12 @@ func (s *Postgres) defaultValue(tp jdb.TypeData) interface{} {
 func (s *Postgres) ddlTable(model *jdb.Model) string {
 	var columnsDef string
 	for _, column := range model.Columns {
-		if slices.Contains([]*jdb.Column{model.SystemKeyField}, column) {
-			def := strs.Format("\n\t%s %s DEFAULT %v", column.Name, s.typeData(column.TypeData), s.defaultValue(column.TypeData))
-			columnsDef = strs.Append(columnsDef, def, ",")
-		} else if slices.Contains([]*jdb.Column{model.FullTextField}, column) && column.FullText != nil {
-			columns := ""
-			for _, col := range column.FullText.Columns {
-				columns = strs.Append(columns, strs.Format("COALESCE(%s, '')", col), " || ' ' || ")
-			}
-			def := strs.Format("\n\t%s TSVECTOR GENERATED ALWAYS AS (to_tsvector('%s', %s)) STORED", column.Name, column.FullText.Language, columns)
-			columnsDef = strs.Append(columnsDef, def, ",")
-		} else if column.TypeColumn == jdb.TpColumn {
+		if column.TypeColumn == jdb.TpColumn {
 			def := strs.Format("\n\t%s %s DEFAULT %v", column.Name, s.typeData(column.TypeData), s.defaultValue(column.TypeData))
 			columnsDef = strs.Append(columnsDef, def, ",")
 		}
 	}
-	result := strs.Format("\nCREATE TABLE IF NOT EXISTS %s (%s\n);", tableName(model), columnsDef)
+	result := strs.Format("\nCREATE TABLE IF NOT EXISTS %s (%s\n);", model.Table, columnsDef)
 
 	return result
 }
@@ -230,7 +248,7 @@ func (s *Postgres) ddlTableInsertTo(model *jdb.Model, tableOrigin string) string
 			fields = strs.Append(fields, strs.Format("%s", column.Name), ", ")
 		}
 	}
-	result := strs.Format("INSERT INTO %s (%s)\nSELECT %s FROM %s;", tableName(model), fields, fields, tableOrigin)
+	result := strs.Format("INSERT INTO %s (%s)\nSELECT %s FROM %s;", model.Table, fields, fields, tableOrigin)
 
 	return result
 }

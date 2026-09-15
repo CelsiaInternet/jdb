@@ -176,6 +176,7 @@ import (
 	"github.com/celsiainternet/elvis/event"
 	"github.com/celsiainternet/elvis/jrpc"
 	"github.com/celsiainternet/elvis/utility"
+	_ "github.com/celsiainternet/jdb/drivers/postgres"
 	"github.com/celsiainternet/jdb/jdb"
 	"github.com/dimiro1/banner"
 	"github.com/go-chi/chi/v5"

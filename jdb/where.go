@@ -210,7 +210,7 @@ func (s *Agregation) asName() string {
 	if s.As != "" {
 		return fmt.Sprintf("%s(%v):%s", s.Agregation.Str(), s.Value, s.As)
 	}
-	return fmt.Sprintf("%s(%v):", s.Agregation.Str(), s.Value, s.Agregation.Str())
+	return fmt.Sprintf("%s(%v):%s", s.Agregation.Str(), s.Value, s.Agregation.Str())
 }
 
 func SUM(value interface{}, as ...string) *Agregation {
@@ -422,8 +422,10 @@ func (s *QlCondition) fieldToString() string {
 		return v.asName()
 	case *Agregation:
 		return v.asName()
+	case string:
+		return fmt.Sprintf(`%v`, v)
 	default:
-		return fmt.Sprintf(`%v`, Quote(v))
+		return fmt.Sprintf(`%v`, v)
 	}
 }
 

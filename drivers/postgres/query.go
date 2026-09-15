@@ -10,6 +10,63 @@ import (
 )
 
 /**
+* Exists
+* @param ql *jdb.Ql
+* @return bool, error
+**/
+func (s *Postgres) Exists(ql *jdb.Ql) (bool, error) {
+	ql.Sql = ""
+	ql.Sql = strs.Append(ql.Sql, "SELECT 1", "\n")
+	ql.Sql = strs.Append(ql.Sql, s.sqlFrom(ql.Froms), "\n")
+	ql.Sql = strs.Append(ql.Sql, s.sqlWhere(ql.QlWhere), "\n")
+
+	if len(ql.Sql) > 0 {
+		ql.Sql = strs.Format("SELECT EXISTS (%s);", ql.Sql)
+	}
+
+	if ql.IsDebug {
+		console.Debug(ql.Sql)
+	}
+
+	item, err := jdb.Query(s.jdb, ql.Sql)
+	if err != nil {
+		return false, err
+	}
+
+	result := item.Bool(0, "exists")
+
+	return result, nil
+}
+
+/**
+* Count
+* @param ql *jdb.Ql
+* @return int, error
+**/
+func (s *Postgres) Count(ql *jdb.Ql) (int, error) {
+	ql.Sql = ""
+	ql.Sql = strs.Append(ql.Sql, "SELECT COUNT(*) AS Count", "\n")
+	ql.Sql = strs.Append(ql.Sql, s.sqlFrom(ql.Froms), "\n")
+	ql.Sql = strs.Append(ql.Sql, s.sqlJoin(ql.Joins), "\n")
+	ql.Sql = strs.Append(ql.Sql, s.sqlWhere(ql.QlWhere), "\n")
+
+	if ql.IsDebug {
+		console.Debug(ql.Sql)
+	}
+
+	result, err := jdb.Query(s.jdb, ql.Sql)
+	if err != nil {
+		return 0, err
+	}
+
+	if result.Count == 0 {
+		return 0, nil
+	}
+
+	return result.Int(0, "count"), nil
+}
+
+/**
 * sqlSelect
 * @param ql *jdb.Ql
 * @return string

@@ -104,6 +104,8 @@ func (s *Ql) Select(fields ...interface{}) *Ql {
 			s.setSelectField(field)
 		case *Field:
 			s.setSelectField(v)
+		case Field:
+			s.setSelectField(&v)
 		case *Agregation:
 			s.Selects = append(s.Selects, v)
 		case Agregation:

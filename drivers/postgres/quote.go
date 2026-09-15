@@ -1,11 +1,10 @@
-package jdb
+package postgres
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -13,46 +12,20 @@ import (
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/logs"
 	"github.com/celsiainternet/elvis/strs"
+	jdb "github.com/celsiainternet/jdb/jdb"
 )
-
-var quotedChar = `'`
-
-/**
-* SetQuotedChar
-* @param char string
-**/
-func SetQuotedChar(char string) {
-	quotedChar = strs.Format(`%s`, char)
-}
-
-/**
-* quote
-* @param str string
-* @return string
-**/
-func quote(str string) string {
-	result := strconv.Quote(str)
-	if quotedChar == `"` {
-		return result
-	}
-
-	return strings.ReplaceAll(result, `"`, `'`)
-}
 
 /**
 * Quote
 * @param val interface{}
 * @return any
 **/
-func Quote(val interface{}) any {
+func quote(val interface{}) any {
 	format := `'%s'`
-	if quotedChar == `"` {
-		format = `"%s"`
-	}
 	switch v := val.(type) {
 	case string:
 		v = EscapeJSON(v)
-		return quote(v)
+		return fmt.Sprintf(format, v)
 	case int:
 		return v
 	case float64:
@@ -67,22 +40,15 @@ func Quote(val interface{}) any {
 		return v
 	case bool:
 		return v
-	case *Value:
-		switch v.Type {
-		case "calc":
-			return fmt.Sprintf(`%v`, v.Value)
-		default:
-			return v.Value
-		}
-	case Value:
-		switch v.Type {
-		case "calc":
-			return fmt.Sprintf(`%v`, v.Value)
-		default:
-			return v.Value
-		}
 	case time.Time:
-		return strs.Format(format, v.Format("2006-01-02 15:04:05"))
+		return fmt.Sprintf(format, v.Format("2006-01-02 15:04:05"))
+	case *jdb.Value:
+		switch v.Type {
+		case "calc":
+			return fmt.Sprintf(`%v`, v.Value)
+		default:
+			return v.Value
+		}
 	case []string:
 		bt, err := json.Marshal(v)
 		if err != nil {

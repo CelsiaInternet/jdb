@@ -10,20 +10,19 @@ import (
 
 /**
 * ddlIndex
-* @param name string
-* @param col *jdb.Column
+* @param model *jdb.Model, name string, col *jdb.Column
 * @return string
 **/
-func ddlIndex(name string, col *jdb.Column) string {
+func ddlIndex(model *jdb.Model, name string, col *jdb.Column) string {
 	result := ""
 	if slices.Contains([]jdb.TypeData{jdb.TypeDataObject}, col.TypeData) {
-		result = jdb.SQLDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2 USING GIN($3 jsonb_path_ops);`, name, tableName(col.Model), col.Name)
+		result = sqlDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2 USING GIN($3 jsonb_path_ops);`, name, model.Table, col.Name)
 	} else if slices.Contains([]jdb.TypeData{jdb.TypeDataFullText}, col.TypeData) {
-		result = jdb.SQLDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2 USING GIN($3);`, name, tableName(col.Model), col.Name)
-	} else if col.TypeColumn == jdb.TpAtribute && col.Model.SourceField != nil {
-		result = jdb.SQLDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2 (($3->>'$4'));`, name, tableName(col.Model), col.Model.SourceField.Name, col.Name)
+		result = sqlDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2 USING GIN($3);`, name, model.Table, col.Name)
+	} else if col.TypeColumn == jdb.TpAtribute && model.SourceField != nil {
+		result = sqlDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2 (($3->>'$4'));`, name, model.Table, model.SourceField.Name, col.Name)
 	} else {
-		result = jdb.SQLDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2($3);`, name, tableName(col.Model), col.Name)
+		result = sqlDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2($3);`, name, model.Table, col.Name)
 	}
 
 	return result
@@ -31,14 +30,13 @@ func ddlIndex(name string, col *jdb.Column) string {
 
 /**
 * ddlUniqueIndex
-* @param name string
-* @param col *jdb.Column
+* @param model *jdb.Model, name string
 * @return string
 **/
-func ddlUniqueIndex(name string, col *jdb.Column) string {
+func ddlUniqueIndex(model *jdb.Model, name string, col *jdb.Column) string {
 	result := ""
 	if col.TypeColumn == jdb.TpColumn {
-		result = jdb.SQLDDL(`CREATE UNIQUE INDEX IF NOT EXISTS $1 ON $2($3);`, name, tableName(col.Model), col.Name)
+		result = sqlDDL(`CREATE UNIQUE INDEX IF NOT EXISTS $1 ON $2($3);`, name, model.Table, col.Name)
 	}
 
 	return result
@@ -61,7 +59,7 @@ func (s *Postgres) ddlPrimaryKey(model *jdb.Model) string {
 	}
 
 	if len(primaryKeys()) > 0 {
-		result = strs.Format("ALTER TABLE %s ADD CONSTRAINT %s_pk PRIMARY KEY (%s);", tableName(model), model.Table, strings.Join(primaryKeys(), ", "))
+		result = strs.Format("ALTER TABLE %s ADD CONSTRAINT %s_pk PRIMARY KEY (%s);", model.Table, model.Table, strings.Join(primaryKeys(), ", "))
 	}
 
 	return result
@@ -86,7 +84,7 @@ func (s *Postgres) ddlForeignKeys(model *jdb.Model) string {
 			key = strs.Append(key, fkn, ", ")
 			referenceKey = strs.Append(referenceKey, pkn, ", ")
 		}
-		def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s)`, tableName(model), name, key, tableName(reference), referenceKey)
+		def := strs.Format(`ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s)`, model.Table, name, key, tableName(reference), referenceKey)
 		if relation.OnDeleteCascade {
 			def = def + " ON DELETE CASCADE"
 		}
@@ -110,9 +108,9 @@ func (s *Postgres) ddlIndex(model *jdb.Model) string {
 	for name, index := range model.Indices {
 		def := ""
 		if index.Column.TypeColumn == jdb.TpAtribute && s.version >= 13 {
-			def = ddlIndex(name, index.Column)
+			def = ddlIndex(model, name, index.Column)
 		} else if index.Column.TypeColumn == jdb.TpColumn {
-			def = ddlIndex(name, index.Column)
+			def = ddlIndex(model, name, index.Column)
 		}
 
 		result = strs.Append(result, def, "\n")
@@ -128,10 +126,10 @@ func (s *Postgres) ddlIndex(model *jdb.Model) string {
 **/
 func (s *Postgres) ddlUniqueIndex(model *jdb.Model) string {
 	var result string
-	for name, index := range model.Uniques {
+	for name, column := range model.Uniques {
 		def := ""
-		if index.Column.TypeColumn == jdb.TpColumn {
-			def = ddlUniqueIndex(name, index.Column)
+		if column.TypeColumn == jdb.TpColumn {
+			def = ddlUniqueIndex(model, name, column)
 		}
 
 		result = strs.Append(result, def, "\n")

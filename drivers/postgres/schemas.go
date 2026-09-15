@@ -26,7 +26,7 @@ func (s *Postgres) loadSchema(name string) error {
 		return nil
 	}
 
-	sql := jdb.SQLDDL(`CREATE SCHEMA IF NOT EXISTS $1`, name)
+	sql := sqlDDL(`CREATE SCHEMA IF NOT EXISTS $1`, name)
 	_, err = jdb.Query(s.jdb, sql)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (s *Postgres) DropSchema(name string) error {
 		return fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
 
-	sql := jdb.SQLDDL(`DROP SCHEMA IF EXISTS $1 CASCADE`, name)
+	sql := sqlDDL(`DROP SCHEMA IF EXISTS $1 CASCADE`, name)
 	_, err := jdb.Query(s.jdb, sql)
 	if err != nil {
 		return err

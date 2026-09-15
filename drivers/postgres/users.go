@@ -66,7 +66,7 @@ func (s *Postgres) CreateUser(username, password, confirmation string) error {
 		return err
 	}
 
-	grantPrivilegesQuery := fmt.Sprintf(`GRANT ALL PRIVILEGES ON DATABASE %s;`, username)
+	grantPrivilegesQuery := fmt.Sprintf(`GRANT ALL PRIVILEGES ON DATABASE %s TO %s;`, s.connection.Database, username)
 	_, err = jdb.Query(s.jdb, grantPrivilegesQuery)
 	if err != nil {
 		return err

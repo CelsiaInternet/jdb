@@ -191,6 +191,7 @@ func From(name interface{}) *Ql {
 		Details:      make(map[string]*Relation, 0),
 		CalcFunction: make(map[string]DataFunctionTx, 0),
 		Groups:       make([]*Field, 0),
+		Orders:       &QlOrder{Asc: []*Field{}, Desc: []*Field{}},
 		Offset:       0,
 		Sheet:        0,
 		wg:           &sync.WaitGroup{},

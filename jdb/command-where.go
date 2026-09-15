@@ -8,7 +8,7 @@ import "github.com/celsiainternet/elvis/et"
 * @return *Command
 **/
 func (s *Command) Where(val string) *Command {
-	s.QlWhere.Where(val)
+	s.QlWhere.Where(resolveWhereField(val, s.getField))
 
 	return s
 }
@@ -19,7 +19,7 @@ func (s *Command) Where(val string) *Command {
 * @return *Command
 **/
 func (s *Command) And(val string) *Command {
-	s.QlWhere.And(val)
+	s.QlWhere.And(resolveWhereField(val, s.getField))
 
 	return s
 }
@@ -30,7 +30,7 @@ func (s *Command) And(val string) *Command {
 * @return *Command
 **/
 func (s *Command) Or(val string) *Command {
-	s.QlWhere.Or(val)
+	s.QlWhere.Or(resolveWhereField(val, s.getField))
 
 	return s
 }

@@ -59,7 +59,7 @@ func (s *Ql) Where(fld interface{}) *Ql {
 	if s.QlWhere == nil {
 		s.QlWhere = newQlWhere()
 	}
-	s.QlWhere.Where(fld)
+	s.QlWhere.Where(resolveWhereField(fld, s.getField))
 	return s
 }
 
@@ -82,7 +82,7 @@ func (s *Ql) Or(fld interface{}) *Ql {
 	if s.QlWhere == nil {
 		s.QlWhere = newQlWhere()
 	}
-	s.QlWhere.Or(fld)
+	s.QlWhere.Or(resolveWhereField(fld, s.getField))
 	return s
 }
 

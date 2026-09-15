@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/celsiainternet/elvis/console"
@@ -11,9 +12,54 @@ import (
 )
 
 /**
+* jsonColumnTypes are the TypeData variants that ddl-table.go maps to a JSONB
+* postgres column (see (*Postgres).typeData) and therefore need an explicit
+* ::jsonb cast when their value is inlined as a text literal.
+**/
+var jsonColumnTypes = []jdb.TypeData{jdb.TypeDataObject, jdb.TypeDataMultiSelect, jdb.TypeDataGeometry}
+
+/**
+* returningColumns builds the "'name', name" pairs used inside
+* jsonb_build_object(...) for a command's RETURNING clause: the caller's
+* explicit Returns(...) projection when given (requested), otherwise every
+* real column of the model - excluding the source/jsonb blob column, which
+* every caller merges in separately via "||".
+* @param from *jdb.QlFrom, requested []*jdb.Field
+* @return []string
+**/
+func returningColumns(from *jdb.QlFrom, requested []*jdb.Field) []string {
+	isReturnable := func(name string, typeColumn jdb.TypeColumn) bool {
+		if from.SourceField != nil && name == from.SourceField.Name {
+			return false
+		}
+		return typeColumn == jdb.TpColumn
+	}
+
+	result := []string{}
+	if len(requested) > 0 {
+		for _, field := range requested {
+			if !isReturnable(field.Name, field.TypeColumn) {
+				continue
+			}
+			result = append(result, strs.Format("'%s', %s", field.Name, field.Name))
+		}
+		return result
+	}
+
+	for _, column := range from.Model.Columns {
+		if !isReturnable(column.Name, column.TypeColumn) {
+			continue
+		}
+		result = append(result, strs.Format("'%s', %s", column.Name, column.Name))
+	}
+
+	return result
+}
+
+/**
 * sqlInsert
 * @param command *jdb.Command
-* @return string
+* @return string, []any
 **/
 func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 	from := command.GetFrom()
@@ -21,14 +67,17 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 		return "", []any{}
 	}
 
-	table := from.Table
+	table := tableName(from.Model)
 	columns := []string{}
 	values := []string{}
-	returns := []string{}
 	args := []any{}
 	data := et.Json{}
 	for key, val := range command.New {
 		field := from.GetField(key)
+		if field == nil {
+			continue
+		}
+
 		switch field.TypeColumn {
 		case jdb.TpColumn:
 			if from.SourceField != nil && field.Name == from.SourceField.Name {
@@ -37,18 +86,18 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 
 			columns = append(columns, field.Name)
 			val := quote(val)
-			if field.TypeData == jdb.TypeDataObject {
+			if slices.Contains(jsonColumnTypes, field.TypeData) {
 				val = fmt.Sprintf(`%v::jsonb`, val)
 			}
 			values = append(values, strs.Format(`%v`, val))
-			returns = append(returns, strs.Format("'%s', %s", key, key))
 		case jdb.TpAtribute:
-			val := quote(val)
 			data.Set(key, val)
 		}
 	}
 
+	returns := returningColumns(from, command.Returning)
 	returnsStr := strings.Join(returns, ",")
+
 	result := "INSERT INTO %s(\n%s)\nVALUES (%s)\nRETURNING\n%s AS result;"
 	if from.SourceField != nil {
 		columns = append(columns, from.SourceField.Name)
@@ -72,7 +121,7 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 /**
 * sqlUpdate
 * @param command *jdb.Command
-* @return string
+* @return string, []any
 **/
 func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 	args := []any{}
@@ -83,55 +132,48 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 
 	set := []string{}
 	_data := ""
-	for _, value := range command.Values {
-		for key, field := range value {
-			switch field.Column.TypeColumn {
-			case jdb.TpColumn:
-				if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
-					continue
-				}
-				val := field.ValueQuoted()
-				set = append(set, strs.Format(`%s = %v`, key, val))
-			case jdb.TpAtribute:
-				val, tp := field.ValueToJSON()
-				if len(fmt.Sprintf(`%v`, val)) == 0 {
-					continue
-				} else if fmt.Sprintf(`%v`, val) == "''" {
-					continue
-				} else if len(_data) == 0 {
-					_data = fmt.Sprintf("COALESCE(%s, '{}')", from.SourceField.Name)
-					_data = strs.Format("jsonb_set(%s,\n'{%s}', to_jsonb(%v::%s), true)", _data, key, val, tp)
-				} else {
-					_data = strs.Format("jsonb_set(\n%s,\n'{%s}', to_jsonb(%v::%s), true)", _data, key, val, tp)
-				}
+	for key, val := range command.New {
+		field := from.GetField(key)
+		if field == nil {
+			continue
+		}
+
+		switch field.TypeColumn {
+		case jdb.TpColumn:
+			if from.SourceField != nil && field.Name == from.SourceField.Name {
+				continue
+			}
+
+			val := quote(val)
+			if slices.Contains(jsonColumnTypes, field.TypeData) {
+				val = fmt.Sprintf(`%v::jsonb`, val)
+			}
+			set = append(set, strs.Format(`%s = %v`, field.Name, val))
+		case jdb.TpAtribute:
+			val := quote(val)
+			strVal := fmt.Sprintf(`%v`, val)
+			if len(strVal) == 0 || strVal == "''" {
+				continue
+			}
+
+			tp := s.typeData(field.TypeData)
+			if len(_data) == 0 {
+				_data = fmt.Sprintf("COALESCE(%s, '{}')", from.SourceField.Name)
+				_data = strs.Format("jsonb_set(%s,\n'{%s}', to_jsonb(%v::%v), true)", _data, key, val, tp)
+			} else {
+				_data = strs.Format("jsonb_set(\n%s,\n'{%s}', to_jsonb(%v::%v), true)", _data, key, val, tp)
 			}
 		}
 	}
 
-	returns := []string{}
-	if len(command.Returns) > 0 {
-		for _, field := range command.Returns {
-			if from.SourceField != nil && field.Column.Name == from.SourceField.Name {
-				continue
-			}
-			if field.Column.TypeColumn != jdb.TpColumn {
-				continue
-			}
-			name := field.Name
-			returns = append(returns, strs.Format("'%s', %s", name, name))
-		}
-	} else {
-		for _, field := range from.Model.Columns {
-			if from.SourceField != nil && field.Name == from.SourceField.Name {
-				continue
-			}
-			if field.TypeColumn != jdb.TpColumn {
-				continue
-			}
-			name := field.Name
-			returns = append(returns, strs.Format("'%s', %s", name, name))
-		}
+	if len(set) == 0 && len(_data) == 0 {
+		// Nothing to assign - "UPDATE table SET WHERE ..." is not valid SQL,
+		// so signal "can't build this" the same way from == nil does above
+		// rather than emit a broken statement.
+		return "", args
 	}
+
+	returns := returningColumns(from, command.Returning)
 
 	where := whereConditions(command.QlWhere)
 	table := tableName(from.Model)
@@ -151,9 +193,9 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 }
 
 /**
-* SqlDelete
+* sqlDelete
 * @param command *jdb.Command
-* @return string
+* @return string, []any
 **/
 func (s *Postgres) sqlDelete(command *jdb.Command) (string, []any) {
 	args := []any{}
@@ -162,30 +204,7 @@ func (s *Postgres) sqlDelete(command *jdb.Command) (string, []any) {
 		return "", args
 	}
 
-	returns := []string{}
-	if len(command.Returning) > 0 {
-		for _, field := range command.Returning {
-			if from.SourceField != nil && field.Name == from.SourceField.Name {
-				continue
-			}
-			if field.TypeColumn != jdb.TpColumn {
-				continue
-			}
-			name := field.Name
-			returns = append(returns, strs.Format("'%s', %s", name, name))
-		}
-	} else {
-		for _, field := range from.Model.Columns {
-			if from.SourceField != nil && field.Name == from.SourceField.Name {
-				continue
-			}
-			if field.TypeColumn != jdb.TpColumn {
-				continue
-			}
-			name := field.Name
-			returns = append(returns, strs.Format("'%s', %s", name, name))
-		}
-	}
+	returns := returningColumns(from, command.Returning)
 
 	where := whereConditions(command.QlWhere)
 	table := tableName(from.Model)

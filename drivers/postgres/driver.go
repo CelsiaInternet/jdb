@@ -180,7 +180,6 @@ func (s *Postgres) Name() string {
 * @return (bool, error)
 **/
 func (s *Postgres) LoadModel(model *jdb.Model) (bool, error) {
-	model.Table = tableName(model)
 	err := s.loadSchema(model.Schema)
 	if err != nil {
 		return false, err
@@ -207,7 +206,7 @@ func (s *Postgres) LoadModel(model *jdb.Model) (bool, error) {
 		return false, err
 	}
 
-	console.LogKF("Model", "Create %s", model.Table)
+	console.LogKF("Model", "Create %s", tableName(model))
 
 	return false, nil
 }

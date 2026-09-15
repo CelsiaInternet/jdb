@@ -136,7 +136,7 @@ func (s *Postgres) defaultValue(tp jdb.TypeData) interface{} {
 	case jdb.TypeDataPrecision:
 		return 0.0
 	case jdb.TypeDataDateTime:
-		return quote("NOW()")
+		return "NOW()"
 	case jdb.TypeDataCheckbox:
 		return quote(false)
 	case jdb.TypeDataBytes:
@@ -218,7 +218,7 @@ func (s *Postgres) ddlTable(model *jdb.Model) string {
 			columnsDef = strs.Append(columnsDef, def, ",")
 		}
 	}
-	result := strs.Format("\nCREATE TABLE IF NOT EXISTS %s (%s\n);", model.Table, columnsDef)
+	result := strs.Format("\nCREATE TABLE IF NOT EXISTS %s (%s\n);", tableName(model), columnsDef)
 
 	return result
 }
@@ -248,7 +248,7 @@ func (s *Postgres) ddlTableInsertTo(model *jdb.Model, tableOrigin string) string
 			fields = strs.Append(fields, strs.Format("%s", column.Name), ", ")
 		}
 	}
-	result := strs.Format("INSERT INTO %s (%s)\nSELECT %s FROM %s;", model.Table, fields, fields, tableOrigin)
+	result := strs.Format("INSERT INTO %s (%s)\nSELECT %s FROM %s;", tableName(model), fields, fields, tableOrigin)
 
 	return result
 }

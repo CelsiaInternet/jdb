@@ -16,7 +16,11 @@ import (
 )
 
 /**
-* Quote
+* Quote renders a Go value as a PostgreSQL SQL literal (or, for jdb.Value's
+* Field/Agregation/Calc variants, a raw SQL expression). It is the single
+* place responsible for translating both plain Go values and jdb's tagged
+* jdb.Value wrapper (as carried by QlCondition.Value and Agregation.Value)
+* into valid Postgres SQL text.
 * @param val interface{}
 * @return any
 **/
@@ -26,41 +30,21 @@ func quote(val interface{}) any {
 	case string:
 		v = EscapeJSON(v)
 		return fmt.Sprintf(format, v)
-	case int:
-		return v
-	case float64:
-		return v
-	case float32:
-		return v
-	case int16:
-		return v
-	case int32:
-		return v
-	case int64:
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		return v
 	case bool:
 		return v
 	case time.Time:
 		return fmt.Sprintf(format, v.Format("2006-01-02 15:04:05"))
+	case jdb.Value:
+		return quoteValue(v)
 	case *jdb.Value:
-		switch v.Type {
-		case "calc":
-			return fmt.Sprintf(`%v`, v.Value)
-		default:
-			return v.Value
-		}
-	case []string:
-		bt, err := json.Marshal(v)
-		if err != nil {
-			logs.Errorf("Quote", "type:%v, value:%v, error marshalling array: %v", reflect.TypeOf(v), v, err)
-			return strs.Format(format, `[]`)
-		}
-		return strs.Format(format, string(bt))
+		return quoteValue(*v)
 	case et.Json:
 		return strs.Format(format, v.ToString())
 	case map[string]interface{}:
 		return strs.Format(format, et.Json(v).ToString())
-	case []et.Json, []interface{}, []map[string]interface{}:
+	case []string, []int, []int8, []int16, []int32, []int64, []uint, []uint16, []uint32, []uint64, []float32, []float64, []et.Json, []interface{}, []map[string]interface{}:
 		bt, err := json.Marshal(v)
 		if err != nil {
 			logs.Errorf("Quote", "type:%v, value:%v, error marshalling array: %v", reflect.TypeOf(v), v, err)
@@ -75,6 +59,58 @@ func quote(val interface{}) any {
 	default:
 		logs.Errorf("Quote", "type:%v, value:%v", reflect.TypeOf(v), v)
 		return val
+	}
+}
+
+/**
+* quoteValue renders a jdb.Value - the {Type, Value} wrapper QlCondition.Value
+* and Agregation.Value carry - covering every jdb.ValueType variant:
+*  - ValueTypeString/Number/DateTime/Boolean/Json/JsonArray/Array/Binary/Null
+*    all wrap a plain Go value that quote() already knows how to render, so
+*    they delegate back to quote() on the unwrapped value;
+*  - ValueTypeField is not a literal at all - it names another column, so it
+*    renders as a raw SQL column reference via asField;
+*  - ValueTypeAgregation renders its aggregate expression via asAgregation;
+*  - ValueTypeCalc carries a raw SQL expression string and is embedded as-is,
+*    unquoted.
+* @param v jdb.Value
+* @return any
+**/
+func quoteValue(v jdb.Value) any {
+	switch v.Type {
+	case jdb.ValueTypeField:
+		switch f := v.Value.(type) {
+		case *jdb.Field:
+			return asField(*f)
+		case jdb.Field:
+			return asField(f)
+		default:
+			return quote(v.Value)
+		}
+	case jdb.ValueTypeAgregation:
+		switch a := v.Value.(type) {
+		case *jdb.Agregation:
+			return asAgregation(a)
+		case jdb.Agregation:
+			return asAgregation(&a)
+		default:
+			return quote(v.Value)
+		}
+	case jdb.ValueTypeCalc:
+		return fmt.Sprintf(`%v`, v.Value)
+	case jdb.ValueTypeString,
+		jdb.ValueTypeNumber,
+		jdb.ValueTypeDateTime,
+		jdb.ValueTypeBoolean,
+		jdb.ValueTypeJson,
+		jdb.ValueTypeJsonArray,
+		jdb.ValueTypeArray,
+		jdb.ValueTypeBinary,
+		jdb.ValueTypeNull:
+		return quote(v.Value)
+	default:
+		logs.Errorf("Quote", "unhandled jdb.ValueType:%v value:%v", v.Type, v.Value)
+		return quote(v.Value)
 	}
 }
 

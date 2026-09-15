@@ -517,6 +517,30 @@ func (s *QlCondition) setValue(value interface{}) {
 	}
 }
 
+/**
+* resolveWhereField turns a plain column-name string into the *Field that
+* getField resolves it to, so Where/And/Or store a real field reference
+* instead of a bare name - a driver has no way to tell a raw string field
+* reference apart from a string literal value, and would render it as one.
+* Non-string values, and names that don't resolve to a declared field, are
+* passed through unchanged.
+* @param fld interface{}, getField func(string) *Field
+* @return interface{}
+**/
+func resolveWhereField(fld interface{}, getField func(string) *Field) interface{} {
+	name, ok := fld.(string)
+	if !ok {
+		return fld
+	}
+
+	field := getField(name)
+	if field == nil {
+		return fld
+	}
+
+	return field
+}
+
 type QlWhere struct {
 	Wheres  []*QlCondition `json:"wheres"`
 	IsDebug bool           `json:"-"`

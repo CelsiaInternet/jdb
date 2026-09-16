@@ -381,40 +381,6 @@ func (s *Relation) GetWhere(from et.Json) et.Json {
 	return result
 }
 
-/**
-* serialize
-* @return []byte, error
-**/
-func (s *Relation) serialize() ([]byte, error) {
-	result, err := json.Marshal(s)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return result, nil
-}
-
-/**
-* describe
-* @return et.Json
-**/
-func (s *Relation) describe() et.Json {
-	definition, err := s.serialize()
-	if err != nil {
-		return et.Json{}
-	}
-
-	result := et.Json{}
-	err = json.Unmarshal(definition, &result)
-	if err != nil {
-		return et.Json{}
-	}
-
-	result["with"] = s.With.Name
-
-	return result
-}
-
 type ShowRollup int
 
 const (
@@ -472,27 +438,6 @@ func (s *Rollup) Serialize() ([]byte, error) {
 	return result, nil
 }
 
-/**
-* describe
-* @return et.Json
-**/
-func (s *Rollup) describe() et.Json {
-	definition, err := s.Serialize()
-	if err != nil {
-		return et.Json{}
-	}
-
-	result := et.Json{}
-	err = json.Unmarshal(definition, &result)
-	if err != nil {
-		return et.Json{}
-	}
-
-	result["with"] = s.With.Name
-	result["show"] = s.Show.Str()
-	return result
-}
-
 type Join struct {
 	On   et.Json  `json:"on"`
 	Type TypeJoin `json:"type"`
@@ -501,19 +446,6 @@ type Join struct {
 type FullText struct {
 	Language string   `json:"language"`
 	Columns  []string `json:"columns"`
-}
-
-/**
-* Describe
-* @return et.Json
-**/
-func (s *FullText) describe() et.Json {
-	result := et.Json{
-		"language": s.Language,
-		"columns":  s.Columns,
-	}
-
-	return result
 }
 
 type Column struct {

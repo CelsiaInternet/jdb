@@ -17,22 +17,6 @@ type Field struct {
 	Hidden     bool        `json:"hidden"`
 }
 
-func (s *Field) describe() et.Json {
-	return et.Json{
-		"model": et.Json{
-			"schema": s.Model.Model.Schema,
-			"model":  s.Model.Model.Name,
-			"as":     s.Model.As,
-		},
-		"name":        s.Name,
-		"as":          s.As,
-		"type_column": s.TypeColumn.Str(),
-		"type_data":   s.TypeData.Str(),
-		"default":     s.Default,
-		"hidden":      s.Hidden,
-	}
-}
-
 /**
 * Serialize
 * @return []byte, error

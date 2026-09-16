@@ -70,59 +70,6 @@ func (s *Postgres) typeData(tp jdb.TypeData) interface{} {
 }
 
 /**
-* strToTypeData
-* @param tp string
-* @param lenght int
-* @return jdb.TypeData
-**/
-func (s *Postgres) strToTypeData(tp string, lenght int) jdb.TypeData {
-	tp = strs.Uppcase(tp)
-	switch tp {
-	case "BOOLEAN":
-		return jdb.TypeDataCheckbox
-	case "INTEGER":
-		return jdb.TypeDataInt
-	case "INT4":
-		return jdb.TypeDataInt
-	case "VARCHAR":
-		switch lenght {
-		case 80:
-			return jdb.TypeDataShortText
-		case 20:
-			return jdb.TypeDataShortText
-		default:
-			return jdb.TypeDataText
-		}
-	case "VARCHAR(80)":
-		return jdb.TypeDataKey
-	case "VARCHAR(20)":
-		return jdb.TypeDataState
-	case "TEXT":
-		return jdb.TypeDataMemo
-	case "DECIMAL(18,2)":
-		return jdb.TypeDataNumber
-	case "DOUBLE PRECISION":
-		return jdb.TypeDataPrecision
-	case "NUMERIC":
-		return jdb.TypeDataNumber
-	case "JSONB":
-		return jdb.TypeDataObject
-	case "BIGINT":
-		return jdb.TypeDataInt
-	case "VARCHAR(250)":
-		return jdb.TypeDataText
-	case "TIMESTAMP":
-		return jdb.TypeDataDateTime
-	case "BYTEA":
-		return jdb.TypeDataBytes
-	case "TSVECTOR":
-		return jdb.TypeDataFullText
-	default:
-		return jdb.TypeDataText
-	}
-}
-
-/**
 * defaultValue
 * @param tp jdb.TypeData
 * @return interface{}
@@ -177,6 +124,11 @@ func (s *Postgres) defaultValue(tp jdb.TypeData) interface{} {
 	}
 }
 
+/**
+* tableName
+* @param model *jdb.Model
+* @return string
+**/
 func tableName(model *jdb.Model) string {
 	return fmt.Sprintf(`%s.%s`, model.Schema, model.Table)
 }

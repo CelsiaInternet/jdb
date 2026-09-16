@@ -46,37 +46,6 @@ const (
 	Search
 )
 
-func (s Operator) command() string {
-	switch s {
-	case Equal:
-		return "="
-	case Neg:
-		return "!="
-	case In:
-		return "in"
-	case Like:
-		return "like"
-	case More:
-		return ">"
-	case Less:
-		return "<"
-	case MoreEq:
-		return ">="
-	case LessEq:
-		return "<="
-	case Between:
-		return "between"
-	case IsNull:
-		return "is null"
-	case NotNull:
-		return "is not null"
-	case Search:
-		return "search"
-	default:
-		return "Any"
-	}
-}
-
 /**
 * Command
 * @return string

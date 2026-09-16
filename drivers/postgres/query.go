@@ -3,7 +3,6 @@ package postgres
 import (
 	"fmt"
 	"reflect"
-	"slices"
 	"strings"
 
 	"github.com/celsiainternet/elvis/console"
@@ -207,29 +206,6 @@ func aliasAsAgregation(agg *jdb.Agregation) string {
 	}
 
 	return strs.Append(result, agg.As, " AS ")
-}
-
-/**
-* sqlObject
-* @param from *jdb.QlFrom
-* @return string
-**/
-func (s *Postgres) sqlObject(from *jdb.QlFrom) string {
-	var selects = []*jdb.Field{}
-	for _, col := range from.Columns {
-		if !slices.Contains([]jdb.TypeColumn{jdb.TpColumn}, col.TypeColumn) && col.Name == jdb.SOURCE {
-			continue
-		}
-
-		field := jdb.GetField(col)
-		if field == nil {
-			continue
-		}
-		field.Model.As = from.As
-		selects = append(selects, field)
-	}
-
-	return s.sqlBuildObject(selects)
 }
 
 /**

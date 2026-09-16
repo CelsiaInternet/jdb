@@ -1,7 +1,7 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v1.0.90-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v1.0.91-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
@@ -52,7 +52,7 @@ Cuatro paquetes que siguen el mismo patrón: un singleton de paquete (no exporta
 ## Instalación
 
 ```bash
-go get github.com/celsiainternet/jdb@v1.0.90
+go get github.com/celsiainternet/jdb@v1.0.91
 ```
 
 `jdb` depende de `elvis`, así que normalmente también necesitarás:

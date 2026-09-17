@@ -102,8 +102,6 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 
 	result.Host = connection.HostName
 	result.IsDebug = connection.IsDebug
-	result.UseCore = connection.UserCore
-	result.NodeId = connection.NodeId
 	result.connectParams = connection
 	err = result.Conected(connection)
 	if err != nil {
@@ -130,7 +128,8 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 * @return *DB, error
 **/
 func Load() (*DB, error) {
-	params, err := load()
+	driverName := envar.GetStr(PostgresDriver, "DB_DRIVER")
+	params, err := load(driverName)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +143,8 @@ func Load() (*DB, error) {
 * @return *DB, error
 **/
 func LoadTo(database string, hostname ...string) (*DB, error) {
-	params, err := load()
+	driverName := envar.GetStr(PostgresDriver, "DB_DRIVER")
+	params, err := load(driverName)
 	if err != nil {
 		return nil, err
 	}

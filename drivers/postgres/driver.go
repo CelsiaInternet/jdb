@@ -23,6 +23,25 @@ type Connection struct {
 	IsDebug  bool   `json:"is_debug"`
 }
 
+func init() {
+	jdb.Register(jdb.PostgresDriver, newDriver, jdb.ConnectParams{
+		Id:      envar.GetStr("jdb", "DB_ID"),
+		Driver:  jdb.PostgresDriver,
+		Name:    envar.GetStr("jdb", "DB_NAME"),
+		IsDebug: envar.GetBool(false, "DEBUG"),
+		Params: &Connection{
+			Database: envar.GetStr("jdb", "DB_NAME"),
+			Host:     envar.GetStr("localhost", "DB_HOST"),
+			Port:     envar.GetInt(5432, "DB_PORT"),
+			Username: envar.GetStr("admin", "DB_USER"),
+			Password: envar.GetStr("admin", "DB_PASSWORD"),
+			App:      envar.GetStr("jdb", "APP_NAME"),
+			Version:  envar.GetInt(13, "DB_VERSION"),
+			IsDebug:  envar.GetBool(false, "DEBUG"),
+		},
+	})
+}
+
 /**
 * Chain
 * @return string, error
@@ -145,7 +164,7 @@ func (s *Connection) Validate() error {
 	return nil
 }
 
-type Postgres struct {
+type Params struct {
 	jdb        *jdb.DB
 	name       string
 	version    int
@@ -154,7 +173,7 @@ type Postgres struct {
 }
 
 func newDriver(db *jdb.DB) jdb.Driver {
-	return &Postgres{
+	return &Params{
 		jdb:  db,
 		name: jdb.PostgresDriver,
 		connection: Connection{
@@ -170,7 +189,7 @@ func newDriver(db *jdb.DB) jdb.Driver {
 	}
 }
 
-func (s *Postgres) Name() string {
+func (s *Params) Name() string {
 	return s.name
 }
 
@@ -179,7 +198,7 @@ func (s *Postgres) Name() string {
 * @param model *jdb.Model
 * @return (bool, error)
 **/
-func (s *Postgres) LoadModel(model *jdb.Model) (bool, error) {
+func (s *Params) LoadModel(model *jdb.Model) (bool, error) {
 	err := s.loadSchema(model.Schema)
 	if err != nil {
 		return false, err
@@ -216,7 +235,7 @@ func (s *Postgres) LoadModel(model *jdb.Model) (bool, error) {
 * @param model *jdb.Model
 * @return error
 **/
-func (s *Postgres) DropModel(model *jdb.Model) error {
+func (s *Params) DropModel(model *jdb.Model) error {
 	sql := s.ddlTableDrop(tableName(model))
 	if model.IsDebug {
 		console.Debug(sql)
@@ -235,7 +254,7 @@ func (s *Postgres) DropModel(model *jdb.Model) error {
 * @param model *jdb.Model
 * @return error
 **/
-func (s *Postgres) EmptyModel(model *jdb.Model) error {
+func (s *Params) EmptyModel(model *jdb.Model) error {
 	sql := s.ddlTableEmpty(tableName(model))
 	if model.IsDebug {
 		console.Debug(sql)
@@ -254,7 +273,7 @@ func (s *Postgres) EmptyModel(model *jdb.Model) error {
 * @param model *jdb.Model
 * @return error
 **/
-func (s *Postgres) MutateModel(model *jdb.Model) error {
+func (s *Params) MutateModel(model *jdb.Model) error {
 	backupTable := strs.Format(`%s_backup`, tableName(model))
 	sql := "\n"
 	sql = strs.Append(sql, s.ddlTableRename(tableName(model), backupTable), "\n")
@@ -272,25 +291,4 @@ func (s *Postgres) MutateModel(model *jdb.Model) error {
 	}
 
 	return nil
-}
-
-func init() {
-	jdb.Register(jdb.PostgresDriver, newDriver, jdb.ConnectParams{
-		Id:       envar.GetStr("jdb", "DB_ID"),
-		Driver:   jdb.PostgresDriver,
-		Name:     envar.GetStr("jdb", "DB_NAME"),
-		UserCore: true,
-		NodeId:   envar.GetInt(0, "NODE_ID"),
-		IsDebug:  envar.GetBool(false, "DEBUG"),
-		Params: &Connection{
-			Database: envar.GetStr("jdb", "DB_NAME"),
-			Host:     envar.GetStr("localhost", "DB_HOST"),
-			Port:     envar.GetInt(5432, "DB_PORT"),
-			Username: envar.GetStr("admin", "DB_USER"),
-			Password: envar.GetStr("admin", "DB_PASSWORD"),
-			App:      envar.GetStr("jdb", "APP_NAME"),
-			Version:  envar.GetInt(13, "DB_VERSION"),
-			IsDebug:  envar.GetBool(false, "DEBUG"),
-		},
-	})
 }

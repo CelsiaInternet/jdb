@@ -16,7 +16,7 @@ import (
 * @param ql *jdb.Ql
 * @return bool, error
 **/
-func (s *Postgres) Exists(ql *jdb.Ql) (bool, error) {
+func (s *Params) Exists(ql *jdb.Ql) (bool, error) {
 	ql.Sql = ""
 	ql.Sql = strs.Append(ql.Sql, "SELECT 1", "\n")
 	ql.Sql = strs.Append(ql.Sql, s.sqlFrom(ql.Froms), "\n")
@@ -46,7 +46,7 @@ func (s *Postgres) Exists(ql *jdb.Ql) (bool, error) {
 * @param ql *jdb.Ql
 * @return int, error
 **/
-func (s *Postgres) Count(ql *jdb.Ql) (int, error) {
+func (s *Params) Count(ql *jdb.Ql) (int, error) {
 	ql.Sql = ""
 	ql.Sql = strs.Append(ql.Sql, "SELECT COUNT(*) AS Count", "\n")
 	ql.Sql = strs.Append(ql.Sql, s.sqlFrom(ql.Froms), "\n")
@@ -74,7 +74,7 @@ func (s *Postgres) Count(ql *jdb.Ql) (int, error) {
 * @param ql *jdb.Ql
 * @return string
 **/
-func (s *Postgres) sqlSelect(ql *jdb.Ql) string {
+func (s *Params) sqlSelect(ql *jdb.Ql) string {
 	if len(ql.Froms.Froms) == 0 {
 		return ""
 	}
@@ -213,7 +213,7 @@ func aliasAsAgregation(agg *jdb.Agregation) string {
 * @param selects []*jdb.Field
 * @return string
 **/
-func (s *Postgres) sqlBuildObject(selects []*jdb.Field) string {
+func (s *Params) sqlBuildObject(selects []*jdb.Field) string {
 	result := ""
 	l := 20
 	if s.version >= 13 {
@@ -280,7 +280,7 @@ func jsonBuildObject(result, obj string) string {
 * @param selects []interface{}
 * @return string
 **/
-func (s *Postgres) sqlAtributes(selects []interface{}) string {
+func (s *Params) sqlAtributes(selects []interface{}) string {
 	fields := []*jdb.Field{}
 	extra := []string{}
 	for _, sel := range selects {
@@ -317,7 +317,7 @@ func (s *Postgres) sqlAtributes(selects []interface{}) string {
 * @param selects []interface{}
 * @return string
 **/
-func (s *Postgres) sqlColumns(selects []interface{}) string {
+func (s *Params) sqlColumns(selects []interface{}) string {
 	result := ""
 	for _, sel := range selects {
 		switch v := sel.(type) {
@@ -360,7 +360,7 @@ func fieldsToSelects(fields []*jdb.Field) []interface{} {
 * @param froms *jdb.QlFroms
 * @return string
 **/
-func (s *Postgres) sqlFrom(froms *jdb.QlFroms) string {
+func (s *Params) sqlFrom(froms *jdb.QlFroms) string {
 	if len(froms.Froms) == 0 {
 		return ""
 	}
@@ -377,7 +377,7 @@ func (s *Postgres) sqlFrom(froms *jdb.QlFroms) string {
 * @param from *jdb.QlFrom
 * @return string
 **/
-func (s *Postgres) tableAs(from *jdb.QlFrom) string {
+func (s *Params) tableAs(from *jdb.QlFrom) string {
 	if from == nil {
 		return ""
 	}
@@ -393,7 +393,7 @@ func (s *Postgres) tableAs(from *jdb.QlFrom) string {
 * @param joins []*jdb.QlJoin
 * @return string
 **/
-func (s *Postgres) sqlJoin(joins []*jdb.QlJoin) string {
+func (s *Params) sqlJoin(joins []*jdb.QlJoin) string {
 	result := ""
 	for _, join := range joins {
 		if len(join.Condition) == 0 {
@@ -426,7 +426,7 @@ func (s *Postgres) sqlJoin(joins []*jdb.QlJoin) string {
 * @param where *jdb.QlWhere
 * @return string
 **/
-func (s *Postgres) sqlWhere(where *jdb.QlWhere) string {
+func (s *Params) sqlWhere(where *jdb.QlWhere) string {
 	if where == nil {
 		return ""
 	}
@@ -692,7 +692,7 @@ func whereConnector(con jdb.Connector) string {
 * @param ql *jdb.Ql
 * @return string
 **/
-func (s *Postgres) sqlGroupBy(ql *jdb.Ql) string {
+func (s *Params) sqlGroupBy(ql *jdb.Ql) string {
 	result := ""
 	columns := s.sqlColumns(fieldsToSelects(ql.Groups))
 	if len(columns) == 0 {
@@ -709,7 +709,7 @@ func (s *Postgres) sqlGroupBy(ql *jdb.Ql) string {
 * @param ql *jdb.Ql
 * @return string
 **/
-func (s *Postgres) sqlHaving(ql *jdb.Ql) string {
+func (s *Params) sqlHaving(ql *jdb.Ql) string {
 	result := ""
 	havings := ql.Havings
 	where := whereConditions(havings)
@@ -727,7 +727,7 @@ func (s *Postgres) sqlHaving(ql *jdb.Ql) string {
 * @param ql *jdb.Ql
 * @return string
 **/
-func (s *Postgres) sqlOrderBy(ql *jdb.Ql) string {
+func (s *Params) sqlOrderBy(ql *jdb.Ql) string {
 	result := ""
 	for _, fld := range ql.Orders.Asc {
 		def := asField(*fld)
@@ -752,7 +752,7 @@ func (s *Postgres) sqlOrderBy(ql *jdb.Ql) string {
 * @param ql *jdb.Ql
 * @return string
 **/
-func (s *Postgres) sqlLimit(ql *jdb.Ql) string {
+func (s *Params) sqlLimit(ql *jdb.Ql) string {
 	result := ""
 	if ql.Sheet > 0 {
 		result = strs.Format(`LIMIT %d OFFSET %d`, ql.Limit, ql.Offset)
@@ -768,7 +768,7 @@ func (s *Postgres) sqlLimit(ql *jdb.Ql) string {
 * @param ql *jdb.Ql
 * @return et.Items, error
 **/
-func (s *Postgres) Select(ql *jdb.Ql) (et.Items, error) {
+func (s *Params) Select(ql *jdb.Ql) (et.Items, error) {
 	ql.Sql = ""
 	ql.Sql = strs.Append(ql.Sql, s.sqlSelect(ql), "\n")
 	ql.Sql = strs.Append(ql.Sql, s.sqlFrom(ql.Froms), "\n")

@@ -13,7 +13,7 @@ import (
 
 /**
 * jsonColumnTypes are the TypeData variants that ddl-table.go maps to a JSONB
-* postgres column (see (*Postgres).typeData) and therefore need an explicit
+* postgres column (see (*Params).typeData) and therefore need an explicit
 * ::jsonb cast when their value is inlined as a text literal.
 **/
 var jsonColumnTypes = []jdb.TypeData{jdb.TypeDataObject, jdb.TypeDataMultiSelect, jdb.TypeDataGeometry}
@@ -61,7 +61,7 @@ func returningColumns(from *jdb.QlFrom, requested []*jdb.Field) []string {
 * @param command *jdb.Command
 * @return string, []any
 **/
-func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
+func (s *Params) sqlInsert(command *jdb.Command) (string, []any) {
 	from := command.GetFrom()
 	if from == nil {
 		return "", []any{}
@@ -123,7 +123,7 @@ func (s *Postgres) sqlInsert(command *jdb.Command) (string, []any) {
 * @param command *jdb.Command
 * @return string, []any
 **/
-func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
+func (s *Params) sqlUpdate(command *jdb.Command) (string, []any) {
 	args := []any{}
 	from := command.GetFrom()
 	if from == nil {
@@ -197,7 +197,7 @@ func (s *Postgres) sqlUpdate(command *jdb.Command) (string, []any) {
 * @param command *jdb.Command
 * @return string, []any
 **/
-func (s *Postgres) sqlDelete(command *jdb.Command) (string, []any) {
+func (s *Params) sqlDelete(command *jdb.Command) (string, []any) {
 	args := []any{}
 	from := command.GetFrom()
 	if from == nil {
@@ -223,7 +223,7 @@ func (s *Postgres) sqlDelete(command *jdb.Command) (string, []any) {
 * @param command *jdb.Command
 * @return et.Items, error
 **/
-func (s *Postgres) Command(command *jdb.Command) (et.Items, error) {
+func (s *Params) Command(command *jdb.Command) (et.Items, error) {
 	command.Sql = ""
 	command.Args = []any{}
 	switch command.Command {

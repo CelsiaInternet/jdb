@@ -15,7 +15,7 @@ import (
 * @param chain string
 * @return *sql.DB, error
 **/
-func (s *Postgres) connectTo(chain string) (*sql.DB, error) {
+func (s *Params) connectTo(chain string) (*sql.DB, error) {
 	db, err := sql.Open(s.name, chain)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func (s *Postgres) connectTo(chain string) (*sql.DB, error) {
 * @param db *DB, name string
 * @return bool, error
 **/
-func (s *Postgres) ExistDatabase(db *sql.DB, name string) (bool, error) {
+func (s *Params) ExistDatabase(db *sql.DB, name string) (bool, error) {
 	sql := `
 	SELECT EXISTS(
 	SELECT 1
@@ -59,7 +59,7 @@ func (s *Postgres) ExistDatabase(db *sql.DB, name string) (bool, error) {
 * @param db *sql.DB, name string
 * @return error
 **/
-func (s *Postgres) CreateDatabase(db *sql.DB, name string) error {
+func (s *Params) CreateDatabase(db *sql.DB, name string) error {
 	exist, err := s.ExistDatabase(db, name)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (s *Postgres) CreateDatabase(db *sql.DB, name string) error {
 * @param db *sql.DB, name string
 * @return error
 **/
-func (s *Postgres) DropDatabase(db *sql.DB, name string) error {
+func (s *Params) DropDatabase(db *sql.DB, name string) error {
 	exist, err := s.ExistDatabase(db, name)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (s *Postgres) DropDatabase(db *sql.DB, name string) error {
 * @param connection jdb.ConnectParams
 * @return *sql.DB, error
 **/
-func (s *Postgres) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
+func (s *Params) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 	if s.jdb == nil {
 		return nil, fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}

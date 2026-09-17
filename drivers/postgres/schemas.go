@@ -12,7 +12,7 @@ import (
 * @param name string
 * @return error
 **/
-func (s *Postgres) loadSchema(name string) error {
+func (s *Params) loadSchema(name string) error {
 	if s.jdb == nil {
 		return fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
@@ -42,7 +42,7 @@ func (s *Postgres) loadSchema(name string) error {
 * @param name string
 * @return error
 **/
-func (s *Postgres) DropSchema(name string) error {
+func (s *Params) DropSchema(name string) error {
 	if s.jdb == nil {
 		return fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
@@ -63,7 +63,7 @@ func (s *Postgres) DropSchema(name string) error {
 * @param name string
 * @return bool, error
 **/
-func (s *Postgres) existSchema(name string) (bool, error) {
+func (s *Params) existSchema(name string) (bool, error) {
 	if s.jdb == nil {
 		return false, fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}

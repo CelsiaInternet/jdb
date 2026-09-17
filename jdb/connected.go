@@ -3,7 +3,6 @@ package jdb
 import (
 	"fmt"
 
-	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 )
 
@@ -19,8 +18,6 @@ type ConnectParams struct {
 	Driver   string    `json:"driver"`
 	HostName string    `json:"host_name"`
 	Name     string    `json:"name"`
-	UserCore bool      `json:"user_core"`
-	NodeId   int       `json:"node_id"`
 	IsDebug  bool      `json:"is_debug"`
 	Params   Connected `json:"params"`
 }
@@ -31,13 +28,11 @@ type ConnectParams struct {
 **/
 func (s *ConnectParams) ToJson() et.Json {
 	return et.Json{
-		"id":        s.Id,
-		"driver":    s.Driver,
-		"name":      s.Name,
-		"user_core": s.UserCore,
-		"node_id":   s.NodeId,
-		"is_debug":  s.IsDebug,
-		"params":    s.Params.ToJson(),
+		"id":       s.Id,
+		"driver":   s.Driver,
+		"name":     s.Name,
+		"is_debug": s.IsDebug,
+		"params":   s.Params.ToJson(),
 	}
 }
 
@@ -49,12 +44,10 @@ func (s *ConnectParams) ToJson() et.Json {
 func LoadConnectParams(params et.Json) (*ConnectParams, error) {
 	connection := params.Json("params")
 	result := &ConnectParams{
-		Id:       params.Str("id"),
-		Driver:   params.Str("driver"),
-		Name:     params.Str("name"),
-		UserCore: params.Bool("user_core"),
-		NodeId:   params.Int("node_id"),
-		IsDebug:  params.Bool("is_debug"),
+		Id:      params.Str("id"),
+		Driver:  params.Str("driver"),
+		Name:    params.Str("name"),
+		IsDebug: params.Bool("is_debug"),
 	}
 
 	err := result.Params.Load(connection)
@@ -69,8 +62,7 @@ func LoadConnectParams(params et.Json) (*ConnectParams, error) {
 * Load
 * @return *ConnectParams, error
 **/
-func load() (*ConnectParams, error) {
-	driverName := envar.GetStr(PostgresDriver, "DB_DRIVER")
+func load(driverName string) (*ConnectParams, error) {
 	if driverName == "" {
 		return nil, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
@@ -85,8 +77,6 @@ func load() (*ConnectParams, error) {
 		Driver:   params.Driver,
 		HostName: params.HostName,
 		Name:     params.Name,
-		UserCore: params.UserCore,
-		NodeId:   params.NodeId,
 		IsDebug:  params.IsDebug,
 		Params:   params.Params,
 	}

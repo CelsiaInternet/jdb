@@ -14,7 +14,7 @@ import (
 * @param tp jdb.TypeData
 * @return interface{}
 **/
-func (s *Postgres) typeData(tp jdb.TypeData) interface{} {
+func (s *Params) typeData(tp jdb.TypeData) interface{} {
 	switch tp {
 	case jdb.TypeDataText:
 		return "VARCHAR(250)"
@@ -74,7 +74,7 @@ func (s *Postgres) typeData(tp jdb.TypeData) interface{} {
 * @param tp jdb.TypeData
 * @return interface{}
 **/
-func (s *Postgres) defaultValue(tp jdb.TypeData) interface{} {
+func (s *Params) defaultValue(tp jdb.TypeData) interface{} {
 	switch tp {
 	case jdb.TypeDataNumber:
 		return 0.0
@@ -138,7 +138,7 @@ func tableName(model *jdb.Model) string {
 * @param schema, name string
 * @return bool, error
 **/
-func (s *Postgres) existTable(schema, name string) (bool, error) {
+func (s *Params) existTable(schema, name string) (bool, error) {
 	sql := `
 	SELECT EXISTS(
 		SELECT 1
@@ -162,7 +162,7 @@ func (s *Postgres) existTable(schema, name string) (bool, error) {
 * @param model *jdb.Model
 * @return string
 **/
-func (s *Postgres) ddlTable(model *jdb.Model) string {
+func (s *Params) ddlTable(model *jdb.Model) string {
 	var columnsDef string
 	for _, column := range model.Columns {
 		if column.TypeColumn == jdb.TpColumn {
@@ -181,7 +181,7 @@ func (s *Postgres) ddlTable(model *jdb.Model) string {
 * @param newName string
 * @return string
 **/
-func (s *Postgres) ddlTableRename(oldName, newName string) string {
+func (s *Params) ddlTableRename(oldName, newName string) string {
 	result := strs.Format(`ALTER TABLE %s RENAME TO %s;`, oldName, newName)
 
 	return result
@@ -193,7 +193,7 @@ func (s *Postgres) ddlTableRename(oldName, newName string) string {
 * @param tableOrigin string
 * @return string
 **/
-func (s *Postgres) ddlTableInsertTo(model *jdb.Model, tableOrigin string) string {
+func (s *Params) ddlTableInsertTo(model *jdb.Model, tableOrigin string) string {
 	fields := ""
 	for _, column := range model.Columns {
 		if column.TypeColumn == jdb.TpColumn {
@@ -210,7 +210,7 @@ func (s *Postgres) ddlTableInsertTo(model *jdb.Model, tableOrigin string) string
 * @param table string
 * @return string
 **/
-func (s *Postgres) ddlTableDrop(table string) string {
+func (s *Params) ddlTableDrop(table string) string {
 	result := strs.Format("DROP TABLE IF EXISTS %s CASCADE;", table)
 
 	return result
@@ -221,7 +221,7 @@ func (s *Postgres) ddlTableDrop(table string) string {
 * @param table string
 * @return string
 **/
-func (s *Postgres) ddlTableEmpty(table string) string {
+func (s *Params) ddlTableEmpty(table string) string {
 	result := strs.Format("TRUNCATE TABLE %s CASCADE;", table)
 
 	return result

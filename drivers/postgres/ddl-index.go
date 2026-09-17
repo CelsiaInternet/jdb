@@ -52,7 +52,7 @@ func ddlUniqueIndex(model *jdb.Model, name string, col *jdb.Column) string {
 * @param model *jdb.Model
 * @return string
 **/
-func (s *Postgres) ddlPrimaryKey(model *jdb.Model) string {
+func (s *Params) ddlPrimaryKey(model *jdb.Model) string {
 	var result string
 	primaryKeys := func() []string {
 		var result []string
@@ -75,7 +75,7 @@ func (s *Postgres) ddlPrimaryKey(model *jdb.Model) string {
 * @param model *jdb.Model
 * @return string
 **/
-func (s *Postgres) ddlForeignKeys(model *jdb.Model) string {
+func (s *Params) ddlForeignKeys(model *jdb.Model) string {
 	var result string
 	table := tableName(model)
 	for name, relation := range model.ForeignKeys {
@@ -109,7 +109,7 @@ func (s *Postgres) ddlForeignKeys(model *jdb.Model) string {
 * @param model *jdb.Model
 * @return string
 **/
-func (s *Postgres) ddlIndex(model *jdb.Model) string {
+func (s *Params) ddlIndex(model *jdb.Model) string {
 	var result string
 	for name, index := range model.Indices {
 		def := ""
@@ -130,7 +130,7 @@ func (s *Postgres) ddlIndex(model *jdb.Model) string {
 * @param model *jdb.Model
 * @return string
 **/
-func (s *Postgres) ddlUniqueIndex(model *jdb.Model) string {
+func (s *Params) ddlUniqueIndex(model *jdb.Model) string {
 	var result string
 	for name, column := range model.Uniques {
 		def := ""
@@ -149,7 +149,7 @@ func (s *Postgres) ddlUniqueIndex(model *jdb.Model) string {
 * @param model *jdb.Model
 * @return string
 **/
-func (s *Postgres) ddlTableIndex(model *jdb.Model) string {
+func (s *Params) ddlTableIndex(model *jdb.Model) string {
 	result := ""
 	result = strs.Append(result, s.ddlIndex(model), "\n")
 	result = strs.Append(result, s.ddlPrimaryKey(model), "\n")

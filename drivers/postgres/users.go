@@ -11,7 +11,7 @@ import (
 * @param username, database string
 * @return error
 **/
-func (s *Postgres) GrantPrivileges(username, database string) error {
+func (s *Params) GrantPrivileges(username, database string) error {
 	/* Grant privileges */
 	grantDatabase := fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO %s;", database, username)
 	_, err := jdb.Query(s.jdb, grantDatabase)
@@ -55,7 +55,7 @@ func (s *Postgres) GrantPrivileges(username, database string) error {
 * @param username, password, confirmation string
 * @return error
 **/
-func (s *Postgres) CreateUser(username, password, confirmation string) error {
+func (s *Params) CreateUser(username, password, confirmation string) error {
 	if password != confirmation {
 		return fmt.Errorf("password do not match!")
 	}
@@ -80,7 +80,7 @@ func (s *Postgres) CreateUser(username, password, confirmation string) error {
 * @param username, password, confirmation string
 * @return error
 **/
-func (s *Postgres) ChangePassword(username, password, confirmation string) error {
+func (s *Params) ChangePassword(username, password, confirmation string) error {
 	if password != confirmation {
 		return fmt.Errorf("password do not match!")
 	}
@@ -99,7 +99,7 @@ func (s *Postgres) ChangePassword(username, password, confirmation string) error
 * @param username string
 * @return error
 **/
-func (s *Postgres) DeleteUser(username string) error {
+func (s *Params) DeleteUser(username string) error {
 	query := fmt.Sprintf("DROP ROLE IF EXISTS %s;", username)
 	_, err := jdb.Query(s.jdb, query)
 	if err != nil {

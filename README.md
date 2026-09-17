@@ -58,7 +58,7 @@ go get github.com/celsiainternet/jdb@v1.0.92
 `jdb` depende de `elvis`, así que normalmente también necesitarás:
 
 ```bash
-go get github.com/celsiainternet/elvis@v1.1.300
+go get github.com/celsiainternet/elvis@v1.1.309
 ```
 
 ### Workspace local (`elvis` + `jdb` en desarrollo conjunto)
@@ -75,18 +75,18 @@ go work use ./jdb
 
 ### Variables de entorno
 
-| Variable | Default | Propósito |
-|---|---|---|
-| `DB_NAME` | `jdb` | Nombre de la base de datos |
-| `DB_DRIVER` | — | `postgres`, `mysql` o `sqlite` |
-| `DB_HOST` | `localhost` | Host de la base de datos |
-| `DB_PORT` | `5432` | Puerto de la base de datos |
-| `DB_USER` | `admin` | Usuario de la base de datos |
-| `DB_PASSWORD` | `admin` | Contraseña de la base de datos |
-| `APP_NAME` | `jdb` | Nombre de la aplicación (usado en el connection string de PG) |
-| `NODE_ID` | `0` | ID de nodo para generación de IDs distribuidos |
-| `DEBUG` | `false` | Habilita logging de debug |
-| `DB_VERSION` | `13` | Versión del servidor PostgreSQL |
+| Variable      | Default     | Propósito                                                     |
+| ------------- | ----------- | ------------------------------------------------------------- |
+| `DB_NAME`     | `jdb`       | Nombre de la base de datos                                    |
+| `DB_DRIVER`   | —           | `postgres`, `mysql` o `sqlite`                                |
+| `DB_HOST`     | `localhost` | Host de la base de datos                                      |
+| `DB_PORT`     | `5432`      | Puerto de la base de datos                                    |
+| `DB_USER`     | `admin`     | Usuario de la base de datos                                   |
+| `DB_PASSWORD` | `admin`     | Contraseña de la base de datos                                |
+| `APP_NAME`    | `jdb`       | Nombre de la aplicación (usado en el connection string de PG) |
+| `NODE_ID`     | `0`         | ID de nodo para generación de IDs distribuidos                |
+| `DEBUG`       | `false`     | Habilita logging de debug                                     |
+| `DB_VERSION`  | `13`        | Versión del servidor PostgreSQL                               |
 
 ## Uso básico
 

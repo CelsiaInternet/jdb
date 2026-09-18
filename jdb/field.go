@@ -65,6 +65,16 @@ func (s *Field) asName() string {
 }
 
 /**
+* SetFromAs
+* @param as string
+* @return *Field
+**/
+func (s *Field) SetFromAs(as string) *Field {
+	s.Model.As = as
+	return s
+}
+
+/**
 * GetField
 * @param column *Column
 * @return *Field

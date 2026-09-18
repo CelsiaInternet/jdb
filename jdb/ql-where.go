@@ -211,6 +211,10 @@ func (s *Ql) NotNull() *Ql {
 * @return *QlWhere
 **/
 func (s *Ql) Having(val interface{}) *QlWhere {
+	if s.Havings == nil {
+		s.Havings = newQlWhere()
+	}
+
 	s.Havings.Where(val)
 	return s.Havings
 }

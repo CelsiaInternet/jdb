@@ -51,11 +51,11 @@ func (s *Ql) FirstTx(tx *Tx, n int) (et.Item, error) {
 	}
 
 	if !result.Ok {
-		return et.Item{}, fmt.Errorf(MSG_RESULT_IS_NOT_OK)
+		return et.Item{}, nil
 	}
 
 	if n > result.Count {
-		return et.Item{}, fmt.Errorf(MSG_LIMIT_IS_GREATER_THAN_COUNT)
+		return et.Item{}, nil
 	}
 
 	if n < 0 {

@@ -79,11 +79,20 @@ func (s *Params) sqlSelect(ql *jdb.Ql) string {
 		return ""
 	}
 
+	selects := []interface{}{}
+	if len(ql.Selects) == 0 {
+		from := ql.Froms.Froms[0]
+		fields := from.GetColumnsFields()
+		for _, field := range fields {
+			selects = append(selects, field)
+		}
+	}
+
 	var result string
 	if ql.TypeSelect == jdb.Select {
-		result = s.sqlColumns(ql.Selects)
+		result = s.sqlColumns(selects)
 	} else {
-		result = s.sqlAtributes(ql.Selects)
+		result = s.sqlAtributes(selects)
 	}
 
 	result = strs.Append("\nSELECT", result, "\n")
@@ -92,12 +101,7 @@ func (s *Params) sqlSelect(ql *jdb.Ql) string {
 }
 
 /**
-* asField renders the raw SQL reference used to read a field's value:
-* "alias.column" for a real column, or the jsonb attribute-extraction
-* expression (with COALESCE to the column's default) for a TpAtribute field
-* backed by the model's SourceField. Aggregation wrapping (SUM/COUNT/EXTRACT/
-* ...) is handled separately by asAgregation, since jdb.Field carries no
-* aggregation information of its own.
+* asField
 * @param field jdb.Field
 * @return string
 **/
@@ -107,14 +111,17 @@ func asField(field jdb.Field) string {
 		tableAlias = field.Model.As
 	}
 
-	if field.TypeColumn == jdb.TpAtribute && field.Model != nil && field.Model.SourceField != nil {
+	if field.TypeColumn == jdb.TpColumn {
+		result := strs.Append(tableAlias, field.Name, ".")
+		return result
+	} else if field.TypeColumn == jdb.TpAtribute && field.Model != nil && field.Model.SourceField != nil {
 		source := strs.Append(tableAlias, field.Model.SourceField.Name, ".")
 		result := strs.Format(`%s#>>'{%s}'`, source, field.Name)
 		result = strs.Format(`COALESCE(%s, %v)`, result, quote(field.Default))
 		return result
 	}
 
-	return strs.Append(tableAlias, field.Name, ".")
+	return ""
 }
 
 /**
@@ -158,9 +165,41 @@ func agregationValue(val interface{}) string {
 }
 
 /**
-* asAgregation renders a *jdb.Agregation (SUM, COUNT, AVG, MIN, MAX, the
-* CommandExtractYear/Month/Day/Hour/Minute/Second family, VALUE and CALC)
-* as a raw SQL expression.
+* agregationValueAs
+* @param val interface{}
+* @return string
+**/
+func agregationName(agg *jdb.Agregation) string {
+	switch agg.Agregation {
+	case jdb.AgregationSum:
+		return "SUM"
+	case jdb.AgregationCount:
+		return "COUNT"
+	case jdb.AgregationAvg:
+		return "AVG"
+	case jdb.AgregationMin:
+		return "MIN"
+	case jdb.AgregationMax:
+		return "MAX"
+	case jdb.CommandExtractYear:
+		return "YEAR"
+	case jdb.CommandExtractMonth:
+		return "MONTH"
+	case jdb.CommandExtractDay:
+		return "DAY"
+	case jdb.CommandExtractHour:
+		return "HOUR"
+	case jdb.CommandExtractMinute:
+		return "MINUTE"
+	case jdb.CommandExtractSecond:
+		return "SECOND"
+	default:
+		return ""
+	}
+}
+
+/**
+* asAgregation
 * @param agg *jdb.Agregation
 * @return string
 **/
@@ -209,115 +248,15 @@ func aliasAsAgregation(agg *jdb.Agregation) string {
 }
 
 /**
-* sqlBuildObject
-* @param selects []*jdb.Field
-* @return string
-**/
-func (s *Params) sqlBuildObject(selects []*jdb.Field) string {
-	result := ""
-	l := 20
-	if s.version >= 13 {
-		l = 100
-	}
-	n := 0
-	obj := ""
-	sourceField := make([]*jdb.Field, 0)
-	for _, fld := range selects {
-		n++
-		if fld.Model != nil && fld.Model.SourceField != nil && fld.Name == fld.Model.SourceField.Name {
-			sourceField = append(sourceField, fld)
-			continue
-		}
-		def := asField(*fld)
-		alias := fld.As
-		if def == "" || alias == "" {
-			continue
-		}
-		def = strs.Format(`'%s', %s`, alias, def)
-		obj = strs.Append(obj, def, ",\n")
-
-		if n == l {
-			result = jsonBuildObject(result, obj)
-			obj = ""
-			n = 0
-		}
-	}
-	if n > 0 {
-		result = jsonBuildObject(result, obj)
-	}
-	sources := ""
-	for i := 0; i < len(sourceField); i++ {
-		fld := sourceField[i]
-		def := aliasAsField(*fld)
-		sources = strs.Append(sources, def, "||\n")
-		if i == len(sourceField)-1 {
-			result = strs.Format(`%s||%s`, def, result)
-		}
-	}
-
-	return result
-}
-
-/**
-* jsonBuildObject
-* @param result, obj string
-* @return string
-**/
-func jsonBuildObject(result, obj string) string {
-	if len(obj) == 0 {
-		return result
-	}
-
-	return strs.Append(result, strs.Format("jsonb_build_object(\n%s)", obj), "||\n")
-}
-
-/**
-* sqlAtributes renders a Ql.Selects-style list (a mix of *jdb.Field and
-* *jdb.Agregation entries, as produced by Ql.Select/Ql.Data) as the "source"
-* (jsonb) projection: the plain fields are merged into the source jsonb blob
-* via sqlBuildObject, and any explicitly selected aggregation is appended as
-* an extra key in the resulting object.
-* @param selects []interface{}
-* @return string
-**/
-func (s *Params) sqlAtributes(selects []interface{}) string {
-	fields := []*jdb.Field{}
-	extra := []string{}
-	for _, sel := range selects {
-		switch v := sel.(type) {
-		case *jdb.Field:
-			fields = append(fields, v)
-		case jdb.Field:
-			fields = append(fields, &v)
-		case *jdb.Agregation:
-			extra = append(extra, strs.Format(`'%s', %s`, v.As, asAgregation(v)))
-		case jdb.Agregation:
-			extra = append(extra, strs.Format(`'%s', %s`, v.As, asAgregation(&v)))
-		}
-	}
-
-	result := s.sqlBuildObject(fields)
-	if len(extra) > 0 {
-		extraObj := strs.Format("jsonb_build_object(\n%s)", strings.Join(extra, ",\n"))
-		if result == "" {
-			result = extraObj
-		} else {
-			result = strs.Format("%s||%s", result, extraObj)
-		}
-	}
-	result = strs.Append(result, "result", " AS ")
-
-	return result
-}
-
-/**
-* sqlColumns renders a Ql.Selects-style list (a mix of *jdb.Field and
-* *jdb.Agregation entries) as a comma-separated column list. Also used for
-* plain *jdb.Field lists such as Ql.Groups.
-* @param selects []interface{}
+* sqlColumns
+* @param ql *jdb.Ql, selects []interface{}
 * @return string
 **/
 func (s *Params) sqlColumns(selects []interface{}) string {
+	if len(selects) == 0 {
+		return "*"
+	}
+
 	result := ""
 	for _, sel := range selects {
 		switch v := sel.(type) {
@@ -335,6 +274,73 @@ func (s *Params) sqlColumns(selects []interface{}) string {
 			result = strs.Append(result, def, ",\n")
 		}
 	}
+
+	return result
+}
+
+/**
+* sqlAtributes renders a Ql.Selects-style list (a mix of *jdb.Field) as the "source"
+* (jsonb) projection: the plain fields are merged into the source jsonb blob.
+* @param selects []interface{}
+* @return string
+**/
+func (s *Params) sqlAtributes(selects []interface{}) string {
+	result := ""
+	var sourceField *jdb.Field
+	for _, sel := range selects {
+		switch v := sel.(type) {
+		case *jdb.Field:
+			if v.Name == jdb.SOURCE {
+				sourceField = v
+				continue
+			}
+			def := asField(*v)
+			if v.As != "" {
+				def = fmt.Sprintf(`'%s', %s`, v.As, def)
+			} else {
+				def = fmt.Sprintf(`'%s', %s`, v.Name, def)
+			}
+			result = strs.Append(result, def, ",\n")
+		case jdb.Field:
+			if v.Name == jdb.SOURCE {
+				sourceField = &v
+				continue
+			}
+			def := asField(v)
+			if v.As != "" {
+				def = fmt.Sprintf(`'%s', %s`, v.As, def)
+			} else {
+				def = fmt.Sprintf(`'%s', %s`, v.Name, def)
+			}
+			result = strs.Append(result, def, ",\n")
+		case *jdb.Agregation:
+			def := asAgregation(v)
+			if v.As != "" {
+				def = fmt.Sprintf(`'%s', %s`, v.As, def)
+			} else {
+				def = fmt.Sprintf(`'%s', %s`, agregationName(v), def)
+			}
+			result = strs.Append(result, def, ",\n")
+		case jdb.Agregation:
+			def := asAgregation(&v)
+			if v.As != "" {
+				def = fmt.Sprintf(`'%s', %s`, v.As, def)
+			} else {
+				def = fmt.Sprintf(`'%s', %s`, agregationName(&v), def)
+			}
+			result = strs.Append(result, def, ",\n")
+		}
+	}
+
+	if len(result) > 0 {
+		if sourceField != nil {
+			def := asField(*sourceField)
+			result = strs.Format("%s || jsonb_build_object(\n%s)", def, result)
+		} else {
+			result = strs.Format("jsonb_build_object(\n%s)", result)
+		}
+	}
+	result = strs.Append(result, "result", " AS ")
 
 	return result
 }
@@ -693,6 +699,10 @@ func whereConnector(con jdb.Connector) string {
 * @return string
 **/
 func (s *Params) sqlGroupBy(ql *jdb.Ql) string {
+	if len(ql.Groups) == 0 {
+		return ""
+	}
+
 	result := ""
 	columns := s.sqlColumns(fieldsToSelects(ql.Groups))
 	if len(columns) == 0 {
@@ -710,6 +720,10 @@ func (s *Params) sqlGroupBy(ql *jdb.Ql) string {
 * @return string
 **/
 func (s *Params) sqlHaving(ql *jdb.Ql) string {
+	if ql.Havings == nil {
+		return ""
+	}
+
 	result := ""
 	havings := ql.Havings
 	where := whereConditions(havings)
@@ -728,6 +742,10 @@ func (s *Params) sqlHaving(ql *jdb.Ql) string {
 * @return string
 **/
 func (s *Params) sqlOrderBy(ql *jdb.Ql) string {
+	if ql.Orders == nil {
+		return ""
+	}
+
 	result := ""
 	for _, fld := range ql.Orders.Asc {
 		def := asField(*fld)

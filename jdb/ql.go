@@ -25,6 +25,24 @@ func (s *QlFrom) ToJson() et.Json {
 	}
 }
 
+/**
+* GetFields
+* @return []*Field
+**/
+func (s *QlFrom) GetColumnsFields() []*Field {
+	result := []*Field{}
+	for _, column := range s.Model.Columns {
+		if column.TypeColumn != TpColumn {
+			continue
+		}
+
+		field := GetField(column)
+		field.SetFromAs(s.As)
+		result = append(result, field)
+	}
+	return result
+}
+
 type QlFroms struct {
 	Froms []*QlFrom
 	index int
@@ -62,7 +80,7 @@ func (s *QlFroms) getField(name string) *Field {
 	for _, from := range s.Froms {
 		result := from.getField(name, false)
 		if result != nil {
-			result.As = from.As
+			result.SetFromAs(from.As)
 			return result
 		}
 	}

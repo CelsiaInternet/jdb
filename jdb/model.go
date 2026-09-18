@@ -231,7 +231,7 @@ func (s *Model) GetModel(name string) *Model {
 		return s.Db.models[idx]
 	}
 
-	return NewModel(s.schema, name, 1)
+	return nil
 }
 
 /**

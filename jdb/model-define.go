@@ -105,17 +105,6 @@ func (s *Model) definePrimaryKey(primaryKeys []string) *Model {
 }
 
 /**
-* definePrimaryKeyField
-* @return *Column
-**/
-func (s *Model) definePrimaryKeyField() *Column {
-	result := s.defineColumn(cf.Key, TypeDataKey)
-	s.definePrimaryKey([]string{cf.Key})
-
-	return result
-}
-
-/**
 * defineForeignKey
 * @param fks map[string]string, withName string, onDeleteCascade, onUpdateCascade bool
 * @return *Relation
@@ -141,6 +130,26 @@ func (s *Model) defineForeignKey(fks map[string]string, withName string, onDelet
 }
 
 /**
+* defineIndexField
+* @return *Column
+**/
+func (s *Model) defineIndexField() *Column {
+	if s.IndexField != nil {
+		return s.IndexField
+	}
+
+	result := s.defineColumnIdx(cf.Index, TypeDataText, -1)
+	result.Hidden = true
+	s.BeforeDelete(func(tx *Tx, data et.Json) error {
+		data.Set(cf.Index, reg.ULID())
+		return nil
+	})
+	s.IndexField = result
+
+	return result
+}
+
+/**
 * defineSource
 * @param name string
 * @return *Column
@@ -150,7 +159,7 @@ func (s *Model) defineSource(name string) *Column {
 		return s.SourceField
 	}
 
-	result := s.defineColumn(name, TypeDataObject)
+	result := s.defineColumnIdx(name, TypeDataObject, -1)
 	s.defineIndex(true, []string{name})
 	s.SourceField = result
 
@@ -167,26 +176,6 @@ func (s *Model) defineSourceField() *Column {
 	}
 
 	return s.defineSource(cf.Source)
-}
-
-/**
-* defineIndexField
-* @return *Column
-**/
-func (s *Model) defineIndexField() *Column {
-	if s.IndexField != nil {
-		return s.IndexField
-	}
-
-	result := s.defineColumn(cf.Index, TypeDataText)
-	result.Hidden = true
-	s.BeforeDelete(func(tx *Tx, data et.Json) error {
-		data.Set(cf.Index, reg.ULID())
-		return nil
-	})
-	s.IndexField = result
-
-	return result
 }
 
 /**
@@ -207,7 +196,7 @@ func (s *Model) defineAtribute(name string, typeData TypeData) *Column {
 * @return *Column
 **/
 func (s *Model) defineCreatedAtField() *Column {
-	result := s.defineColumn(cf.CreatedAt, TypeDataDateTime)
+	result := s.defineColumnIdx(cf.CreatedAt, TypeDataDateTime, -1)
 	s.defineIndex(true, []string{cf.CreatedAt})
 	s.CreatedAtField = result
 
@@ -219,34 +208,9 @@ func (s *Model) defineCreatedAtField() *Column {
 * @return *Column
 **/
 func (s *Model) defineUpdatedAtField() *Column {
-	result := s.defineColumn(cf.UpdatedAt, TypeDataDateTime)
+	result := s.defineColumnIdx(cf.UpdatedAt, TypeDataDateTime, -1)
 	s.defineIndex(true, []string{cf.UpdatedAt})
 	s.UpdatedAtField = result
-
-	return result
-}
-
-/**
-* defineStatusField
-* @return *Column
-**/
-func (s *Model) defineStatusField() *Column {
-	result := s.defineColumn(cf.StatusId, TypeDataState)
-	s.defineIndex(true, []string{cf.StatusId})
-	s.StatusField = result
-
-	return result
-}
-
-/**
-* defineSystemKeyField
-* @return *Column
-**/
-func (s *Model) defineSystemKeyField() *Column {
-	result := s.defineColumn(cf.SystemId, TypeDataKey)
-	result.Hidden = true
-	s.defineIndex(true, []string{cf.SystemId})
-	s.SystemKeyField = result
 
 	return result
 }
@@ -256,9 +220,45 @@ func (s *Model) defineSystemKeyField() *Column {
 * @return *Column
 **/
 func (s *Model) defineProjectField() *Column {
-	result := s.defineColumn(cf.ProjectId, TypeDataKey)
+	result := s.defineColumnIdx(cf.ProjectId, TypeDataKey, -1)
 	s.defineIndex(true, []string{cf.ProjectId})
 	s.ProjectField = result
+
+	return result
+}
+
+/**
+* defineStatusField
+* @return *Column
+**/
+func (s *Model) defineStatusField() *Column {
+	result := s.defineColumnIdx(cf.StatusId, TypeDataState, -1)
+	s.defineIndex(true, []string{cf.StatusId})
+	s.StatusField = result
+
+	return result
+}
+
+/**
+* definePrimaryKeyField
+* @return *Column
+**/
+func (s *Model) definePrimaryKeyField() *Column {
+	result := s.defineColumnIdx(cf.Key, TypeDataKey, -1)
+	s.definePrimaryKey([]string{cf.Key})
+
+	return result
+}
+
+/**
+* defineSystemKeyField
+* @return *Column
+**/
+func (s *Model) defineSystemKeyField() *Column {
+	result := s.defineColumnIdx(cf.SystemId, TypeDataKey, -1)
+	result.Hidden = true
+	s.defineIndex(true, []string{cf.SystemId})
+	s.SystemKeyField = result
 
 	return result
 }

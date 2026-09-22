@@ -29,6 +29,7 @@ func init() {
 		Id:      envar.GetStr("jdb", "DB_ID"),
 		Driver:  jdb.PostgresDriver,
 		Name:    envar.GetStr("jdb", "DB_NAME"),
+		UseCore: envar.GetBool(true, "USE_CORE"),
 		IsDebug: envar.GetBool(false, "DEBUG"),
 		Params: &Connection{
 			Database: envar.GetStr("jdb", "DB_NAME"),
@@ -80,6 +81,7 @@ func (s *Connection) ToJson() et.Json {
 		"password": s.Password,
 		"app":      s.App,
 		"version":  s.Version,
+		"use_core": s.UseCore,
 		"is_debug": s.IsDebug,
 	}
 }
@@ -120,6 +122,11 @@ func (s *Connection) Load(params et.Json) error {
 		return fmt.Errorf("app is required")
 	}
 
+	useCore := params.Bool("use_core")
+	if useCore == false {
+		return fmt.Errorf("use_core is required")
+	}
+
 	version := params.Int("version")
 	if version == 0 {
 		return fmt.Errorf("version is required")
@@ -131,6 +138,7 @@ func (s *Connection) Load(params et.Json) error {
 	s.Username = username
 	s.Password = password
 	s.App = app
+	s.UseCore = useCore
 	s.Version = version
 	s.IsDebug = params.Bool("is_debug")
 

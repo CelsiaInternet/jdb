@@ -251,18 +251,17 @@ func (s *Command) prepare() error {
 * @param data et.Json
 * @return et.Items, error
 **/
-func (s *Command) getCurrent(data et.Json) (et.Items, error) {
+func (s *Command) getCurrent(data et.Json) (et.Items, *QlWhere, error) {
 	model := s.getModel()
 	if model == nil {
-		return et.Items{}, fmt.Errorf(MSG_MODEL_REQUIRED)
+		return et.Items{}, nil, fmt.Errorf(MSG_MODEL_REQUIRED)
 	}
 
 	ql := From(model)
-	if s.Command == Upsert {
-		err := ql.getWhereByPrimaryKeys(data)
-		if err != nil {
-			return et.Items{}, err
-		}
+	ql.Froms.Froms[0].As = ""
+	err := ql.getWhereByPrimaryKeys(data)
+	if err != nil {
+		return et.Items{}, nil, err
 	}
 	for _, w := range s.Wheres {
 		ql.addCondition(w)
@@ -271,10 +270,10 @@ func (s *Command) getCurrent(data et.Json) (et.Items, error) {
 	current, err := ql.
 		AllTx(s.tx)
 	if err != nil {
-		return et.Items{}, err
+		return et.Items{}, nil, err
 	}
 
-	return current, nil
+	return current, ql.QlWhere, nil
 }
 
 /**
@@ -315,19 +314,21 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 			return et.Items{}, err
 		}
 	case Update:
-		current, err := s.getCurrent(et.Json{})
+		current, qlWhere, err := s.getCurrent(et.Json{})
 		if err != nil {
 			return et.Items{}, err
 		}
+		s.QlWhere = qlWhere
 		err = s.updated(current)
 		if err != nil {
 			return et.Items{}, err
 		}
 	case Delete:
-		current, err := s.getCurrent(et.Json{})
+		current, qlWhere, err := s.getCurrent(et.Json{})
 		if err != nil {
 			return et.Items{}, err
 		}
+		s.QlWhere = qlWhere
 		err = s.deleted(current)
 		if err != nil {
 			return et.Items{}, err

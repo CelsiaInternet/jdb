@@ -12,6 +12,20 @@ func (s *Command) inserted() error {
 	model := s.getModel()
 	for _, data := range s.Data {
 		s.New = data
+		for _, fn := range model.beforeInsert {
+			err := fn(s.tx, s.New)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, fn := range model.beforeInsertTrigger {
+			err := fn(s.tx, et.Json{}, s.New)
+			if err != nil {
+				return err
+			}
+		}
+
 		for _, fn := range s.beforeInsert {
 			err := fn(s.tx, s.New)
 			if err != nil {
@@ -20,20 +34,6 @@ func (s *Command) inserted() error {
 		}
 
 		for _, fn := range s.beforeInsertTrigger {
-			err := fn(s.tx, et.Json{}, s.New)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, fn := range s.afterInsert {
-			err := fn(s.tx, s.New)
-			if err != nil {
-				return err
-			}
-		}
-
-		for _, fn := range s.afterInsertTrigger {
 			err := fn(s.tx, et.Json{}, s.New)
 			if err != nil {
 				return err

@@ -154,11 +154,8 @@ func NewTable(db *DB, table string) *Model {
 		Version:             1,
 		IsDebug:             db.IsDebug,
 	}
-	result.AfterInsert(result.afterInsertDefault)
-	result.AfterUpdate(result.afterUpdateDefault)
-	result.AfterDelete(result.afterDeleteDefault)
-	db.tables = append(db.tables, result)
 
+	db.tables = append(db.tables, result)
 	return result
 }
 
@@ -212,9 +209,6 @@ func NewModel(schema *Schema, name string, version int) *Model {
 		Version:             version,
 		IsDebug:             schema.Db.IsDebug,
 	}
-	result.AfterInsert(result.afterInsertDefault)
-	result.AfterUpdate(result.afterUpdateDefault)
-	result.AfterDelete(result.afterDeleteDefault)
 
 	schema.addModel(result)
 	return result

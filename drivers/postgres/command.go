@@ -167,9 +167,6 @@ func (s *Params) sqlUpdate(command *jdb.Command) (string, []any) {
 	}
 
 	if len(set) == 0 && len(_data) == 0 {
-		// Nothing to assign - "UPDATE table SET WHERE ..." is not valid SQL,
-		// so signal "can't build this" the same way from == nil does above
-		// rather than emit a broken statement.
 		return "", args
 	}
 

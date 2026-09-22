@@ -66,6 +66,10 @@ func GetSeries(kind, tag string) (string, error) {
 		return "", err
 	}
 
+	if !item.Ok {
+		return "", fmt.Errorf(MSG_RECORD_NOT_FOUND)
+	}
+
 	value := item.Int("value")
 	format := item.Str("format")
 	result := fmt.Sprintf(format, value)

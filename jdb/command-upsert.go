@@ -10,14 +10,17 @@ func (s *Command) upsert() error {
 	}
 
 	data := s.Data[0]
-	current, err := s.getCurrent(data)
+	current, qlWhere, err := s.getCurrent(data)
 	if err != nil {
 		return err
 	}
 
 	if !current.Ok {
+		s.Command = Insert
 		return s.inserted()
 	}
 
+	s.Command = Update
+	s.QlWhere = qlWhere
 	return s.updated(current)
 }

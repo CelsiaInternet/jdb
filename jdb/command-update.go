@@ -32,7 +32,7 @@ func (s *Command) updated(current et.Items) error {
 			}
 		}
 
-		for _, fn := range s.afterUpdate {
+		for _, fn := range s.beforeUpdate {
 			err := fn(s.tx, s.New)
 			if err != nil {
 				return err

@@ -42,6 +42,10 @@ func quote(val interface{}) any {
 		return quoteValue(*v)
 	case et.Json:
 		return strs.Format(format, v.ToString())
+	case jdb.Agregation:
+		return quoteAgregation(v)
+	case *jdb.Agregation:
+		return quoteAgregation(*v)
 	case map[string]interface{}:
 		return strs.Format(format, et.Json(v).ToString())
 	case []string, []int, []int8, []int16, []int32, []int64, []uint, []uint16, []uint32, []uint64, []float32, []float64, []et.Json, []interface{}, []map[string]interface{}:
@@ -62,20 +66,6 @@ func quote(val interface{}) any {
 	}
 }
 
-/**
-* quoteValue renders a jdb.Value - the {Type, Value} wrapper QlCondition.Value
-* and Agregation.Value carry - covering every jdb.ValueType variant:
-*  - ValueTypeString/Number/DateTime/Boolean/Json/JsonArray/Array/Binary/Null
-*    all wrap a plain Go value that quote() already knows how to render, so
-*    they delegate back to quote() on the unwrapped value;
-*  - ValueTypeField is not a literal at all - it names another column, so it
-*    renders as a raw SQL column reference via asField;
-*  - ValueTypeAgregation renders its aggregate expression via asAgregation;
-*  - ValueTypeCalc carries a raw SQL expression string and is embedded as-is,
-*    unquoted.
-* @param v jdb.Value
-* @return any
-**/
 func quoteValue(v jdb.Value) any {
 	switch v.Type {
 	case jdb.ValueTypeField:
@@ -111,6 +101,55 @@ func quoteValue(v jdb.Value) any {
 	default:
 		logs.Errorf("Quote", "unhandled jdb.ValueType:%v value:%v", v.Type, v.Value)
 		return quote(v.Value)
+	}
+}
+
+func quoteAgregation(a jdb.Agregation) any {
+	switch a.Agregation {
+	case jdb.AgregationSum:
+		if a.As != "" {
+			return fmt.Sprintf(`SUM(%v) AS %s`, a.Value, a.As)
+		}
+		return fmt.Sprintf(`SUM(%v)`, a.Value)
+	case jdb.AgregationCount:
+		if a.As != "" {
+			return fmt.Sprintf(`COUNT(%v) AS %s`, a.Value, a.As)
+		}
+		return fmt.Sprintf(`COUNT(%v)`, a.Value)
+	case jdb.AgregationAvg:
+		if a.As != "" {
+			return fmt.Sprintf(`AVG(%v) AS %s`, a.Value, a.As)
+		}
+		return fmt.Sprintf(`AVG(%v)`, a.Value)
+	case jdb.AgregationMin:
+		if a.As != "" {
+			return fmt.Sprintf(`MIN(%v) AS %s`, a.Value, a.As)
+		}
+		return fmt.Sprintf(`MIN(%v)`, a.Value)
+	case jdb.AgregationMax:
+		if a.As != "" {
+			return fmt.Sprintf(`MAX(%v) AS %s`, a.Value, a.As)
+		}
+		return fmt.Sprintf(`MAX(%v)`, a.Value)
+	case jdb.CommandValue:
+		return fmt.Sprintf(`%v`, a.Value)
+	case jdb.CommandCalc:
+		return fmt.Sprintf(`%v`, a.Value)
+	case jdb.CommandExtractYear:
+		return fmt.Sprintf(`EXTRACT(YEAR FROM %v)`, a.Value)
+	case jdb.CommandExtractMonth:
+		return fmt.Sprintf(`EXTRACT(MONTH FROM %v)`, a.Value)
+	case jdb.CommandExtractDay:
+		return fmt.Sprintf(`EXTRACT(DAY FROM %v)`, a.Value)
+	case jdb.CommandExtractHour:
+		return fmt.Sprintf(`EXTRACT(HOUR FROM %v)`, a.Value)
+	case jdb.CommandExtractMinute:
+		return fmt.Sprintf(`EXTRACT(MINUTE FROM %v)`, a.Value)
+	case jdb.CommandExtractSecond:
+		return fmt.Sprintf(`EXTRACT(SECOND FROM %v)`, a.Value)
+	default:
+		logs.Errorf("Quote", "unhandled jdb.Agregation:%v value:%v", a.Agregation, a.Value)
+		return fmt.Sprintf(`%v`, a.Value)
 	}
 }
 

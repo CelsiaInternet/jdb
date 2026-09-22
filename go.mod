@@ -3,7 +3,7 @@ module github.com/celsiainternet/jdb
 go 1.23.0
 
 require (
-	github.com/celsiainternet/elvis v1.1.310
+	github.com/celsiainternet/elvis v1.1.311
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.12.3
 	github.com/manifoldco/promptui v0.9.0

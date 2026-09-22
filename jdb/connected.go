@@ -18,6 +18,7 @@ type ConnectParams struct {
 	Driver   string    `json:"driver"`
 	HostName string    `json:"host_name"`
 	Name     string    `json:"name"`
+	UseCore  bool      `json:"use_core"`
 	IsDebug  bool      `json:"is_debug"`
 	Params   Connected `json:"params"`
 }
@@ -77,6 +78,7 @@ func load(driverName string) (*ConnectParams, error) {
 		Driver:   params.Driver,
 		HostName: params.HostName,
 		Name:     params.Name,
+		UseCore:  params.UseCore,
 		IsDebug:  params.IsDebug,
 		Params:   params.Params,
 	}

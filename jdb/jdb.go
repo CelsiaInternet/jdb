@@ -108,7 +108,7 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 		return nil, err
 	}
 
-	if !result.UseCore {
+	if !connection.UseCore {
 		result.isInit = true
 		return result, nil
 	}
@@ -119,7 +119,6 @@ func ConnectTo(connection ConnectParams) (*DB, error) {
 	}
 
 	result.isInit = true
-
 	return result, nil
 }
 

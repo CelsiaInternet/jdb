@@ -19,6 +19,7 @@ type Connection struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	App      string `json:"app"`
+	UseCore  bool   `json:"use_core"`
 	Version  int    `json:"version"`
 	IsDebug  bool   `json:"is_debug"`
 }
@@ -36,6 +37,7 @@ func init() {
 			Username: envar.GetStr("admin", "DB_USER"),
 			Password: envar.GetStr("admin", "DB_PASSWORD"),
 			App:      envar.GetStr("jdb", "APP_NAME"),
+			UseCore:  envar.GetBool(true, "USE_CORE"),
 			Version:  envar.GetInt(13, "DB_VERSION"),
 			IsDebug:  envar.GetBool(false, "DEBUG"),
 		},

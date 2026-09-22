@@ -112,6 +112,18 @@ func StrToOperator(str string) Operator {
 		return NotNull
 	case "search":
 		return Search
+	case "=":
+		return Equal
+	case "!=":
+		return Neg
+	case ">":
+		return More
+	case "<":
+		return Less
+	case ">=":
+		return MoreEq
+	case "<=":
+		return LessEq
 	default:
 		return NoP
 	}

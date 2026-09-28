@@ -86,6 +86,8 @@ func (s *Params) sqlSelect(ql *jdb.Ql) string {
 		for _, field := range fields {
 			selects = append(selects, field)
 		}
+	} else {
+		selects = ql.Selects
 	}
 
 	var result string

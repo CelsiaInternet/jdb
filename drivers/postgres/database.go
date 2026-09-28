@@ -116,7 +116,13 @@ func (s *Params) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 		return nil, fmt.Errorf(MSG_JDB_NOT_DEFINED)
 	}
 
-	defaultChain, err := s.connection.defaultChain()
+	params := connection.Params.(*Connection)
+	if connection.HostName != "" {
+		params.Host = connection.HostName
+	}
+	params.Database = connection.Name
+
+	defaultChain, err := params.defaultChain()
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +132,6 @@ func (s *Params) Connect(connection jdb.ConnectParams) (*sql.DB, error) {
 		return nil, err
 	}
 
-	params := connection.Params.(*Connection)
-	params.Database = connection.Name
 	err = s.CreateDatabase(db, params.Database)
 	if err != nil {
 		return nil, err

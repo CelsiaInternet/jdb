@@ -80,6 +80,12 @@ func (s *Command) beforeDeleteDefault(tx *Tx, old, new et.Json) error {
 * @param fn DataFunction
 **/
 func (s *Command) BeforeInsert(fn DataFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.beforeInsert == nil {
+		s.beforeInsert = make([]DataFunctionTx, 0)
+	}
 	s.beforeInsert = append(s.beforeInsert, fn)
 
 	return s
@@ -90,6 +96,12 @@ func (s *Command) BeforeInsert(fn DataFunctionTx) *Command {
 * @param fn DataFunction
 **/
 func (s *Command) BeforeUpdate(fn DataFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.beforeUpdate == nil {
+		s.beforeUpdate = make([]DataFunctionTx, 0)
+	}
 	s.beforeUpdate = append(s.beforeUpdate, fn)
 
 	return s
@@ -100,6 +112,12 @@ func (s *Command) BeforeUpdate(fn DataFunctionTx) *Command {
 * @param fn DataFunction
 **/
 func (s *Command) BeforeDelete(fn DataFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.beforeDelete == nil {
+		s.beforeDelete = make([]DataFunctionTx, 0)
+	}
 	s.beforeDelete = append(s.beforeDelete, fn)
 
 	return s
@@ -110,6 +128,15 @@ func (s *Command) BeforeDelete(fn DataFunctionTx) *Command {
 * @param fn DataFunction
 **/
 func (s *Command) BeforeInsertOrUpdate(fn DataFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.beforeInsert == nil {
+		s.beforeInsert = make([]DataFunctionTx, 0)
+	}
+	if s.beforeUpdate == nil {
+		s.beforeUpdate = make([]DataFunctionTx, 0)
+	}
 	s.beforeInsert = append(s.beforeInsert, fn)
 	s.beforeUpdate = append(s.beforeUpdate, fn)
 
@@ -121,6 +148,12 @@ func (s *Command) BeforeInsertOrUpdate(fn DataFunctionTx) *Command {
 * @param fn TriggerFunction
 **/
 func (s *Command) BeforeInsertTrigger(fn TriggerFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.beforeInsertTrigger == nil {
+		s.beforeInsertTrigger = make([]TriggerFunctionTx, 0)
+	}
 	s.beforeInsertTrigger = append(s.beforeInsertTrigger, fn)
 
 	return s
@@ -131,6 +164,12 @@ func (s *Command) BeforeInsertTrigger(fn TriggerFunctionTx) *Command {
 * @param fn TriggerFunction
 **/
 func (s *Command) BeforeUpdateTrigger(fn TriggerFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.beforeUpdateTrigger == nil {
+		s.beforeUpdateTrigger = make([]TriggerFunctionTx, 0)
+	}
 	s.beforeUpdateTrigger = append(s.beforeUpdateTrigger, fn)
 
 	return s
@@ -141,6 +180,12 @@ func (s *Command) BeforeUpdateTrigger(fn TriggerFunctionTx) *Command {
 * @param fn TriggerFunction
 **/
 func (s *Command) BeforeDeleteTrigger(fn TriggerFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.beforeDeleteTrigger == nil {
+		s.beforeDeleteTrigger = make([]TriggerFunctionTx, 0)
+	}
 	s.beforeDeleteTrigger = append(s.beforeDeleteTrigger, fn)
 
 	return s
@@ -151,6 +196,15 @@ func (s *Command) BeforeDeleteTrigger(fn TriggerFunctionTx) *Command {
 * @param fn TriggerFunction
 **/
 func (s *Command) BeforeInsertOrUpdateTrigger(fn TriggerFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.beforeInsertTrigger == nil {
+		s.beforeInsertTrigger = make([]TriggerFunctionTx, 0)
+	}
+	if s.beforeUpdateTrigger == nil {
+		s.beforeUpdateTrigger = make([]TriggerFunctionTx, 0)
+	}
 	s.beforeInsertTrigger = append(s.beforeInsertTrigger, fn)
 	s.beforeUpdateTrigger = append(s.beforeUpdateTrigger, fn)
 
@@ -163,6 +217,12 @@ func (s *Command) BeforeInsertOrUpdateTrigger(fn TriggerFunctionTx) *Command {
 * @return *Command
 **/
 func (s *Command) AfterInsert(fn DataFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.afterInsert == nil {
+		s.afterInsert = make([]DataFunctionTx, 0)
+	}
 	s.afterInsert = append(s.afterInsert, fn)
 
 	return s
@@ -174,6 +234,12 @@ func (s *Command) AfterInsert(fn DataFunctionTx) *Command {
 * @return *Command
 **/
 func (s *Command) AfterUpdate(fn DataFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.afterUpdate == nil {
+		s.afterUpdate = make([]DataFunctionTx, 0)
+	}
 	s.afterUpdate = append(s.afterUpdate, fn)
 
 	return s
@@ -185,6 +251,12 @@ func (s *Command) AfterUpdate(fn DataFunctionTx) *Command {
 * @return *Command
 **/
 func (s *Command) AfterDelete(fn DataFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.afterDelete == nil {
+		s.afterDelete = make([]DataFunctionTx, 0)
+	}
 	s.afterDelete = append(s.afterDelete, fn)
 
 	return s
@@ -196,6 +268,15 @@ func (s *Command) AfterDelete(fn DataFunctionTx) *Command {
 * @return *Command
 **/
 func (s *Command) AfterInsertOrUpdate(fn DataFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.afterInsert == nil {
+		s.afterInsert = make([]DataFunctionTx, 0)
+	}
+	if s.afterUpdate == nil {
+		s.afterUpdate = make([]DataFunctionTx, 0)
+	}
 	s.afterInsert = append(s.afterInsert, fn)
 	s.afterUpdate = append(s.afterUpdate, fn)
 
@@ -207,6 +288,12 @@ func (s *Command) AfterInsertOrUpdate(fn DataFunctionTx) *Command {
 * @param fn TriggerFunction
 **/
 func (s *Command) AfterInsertTrigger(fn TriggerFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.afterInsertTrigger == nil {
+		s.afterInsertTrigger = make([]TriggerFunctionTx, 0)
+	}
 	s.afterInsertTrigger = append(s.afterInsertTrigger, fn)
 
 	return s
@@ -217,6 +304,12 @@ func (s *Command) AfterInsertTrigger(fn TriggerFunctionTx) *Command {
 * @param fn TriggerFunction
 **/
 func (s *Command) AfterUpdateTrigger(fn TriggerFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.afterUpdateTrigger == nil {
+		s.afterUpdateTrigger = make([]TriggerFunctionTx, 0)
+	}
 	s.afterUpdateTrigger = append(s.afterUpdateTrigger, fn)
 
 	return s
@@ -227,6 +320,12 @@ func (s *Command) AfterUpdateTrigger(fn TriggerFunctionTx) *Command {
 * @param fn TriggerFunction
 **/
 func (s *Command) AfterDeleteTrigger(fn TriggerFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.afterDeleteTrigger == nil {
+		s.afterDeleteTrigger = make([]TriggerFunctionTx, 0)
+	}
 	s.afterDeleteTrigger = append(s.afterDeleteTrigger, fn)
 
 	return s
@@ -237,6 +336,15 @@ func (s *Command) AfterDeleteTrigger(fn TriggerFunctionTx) *Command {
 * @param fn TriggerFunction
 **/
 func (s *Command) AfterInsertOrUpdateTrigger(fn TriggerFunctionTx) *Command {
+	if fn == nil {
+		return s
+	}
+	if s.afterInsertTrigger == nil {
+		s.afterInsertTrigger = make([]TriggerFunctionTx, 0)
+	}
+	if s.afterUpdateTrigger == nil {
+		s.afterUpdateTrigger = make([]TriggerFunctionTx, 0)
+	}
 	s.afterInsertTrigger = append(s.afterInsertTrigger, fn)
 	s.afterUpdateTrigger = append(s.afterUpdateTrigger, fn)
 

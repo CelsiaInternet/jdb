@@ -34,6 +34,7 @@ func (s TypeCommand) Str() string {
 }
 
 type Function func() error
+type DataFunction func(new et.Json)
 type DataFunctionTx func(tx *Tx, new et.Json) error
 type TriggerFunctionTx func(tx *Tx, old, new et.Json) error
 
@@ -259,12 +260,26 @@ func (s *Command) getCurrent(data et.Json) (et.Items, *QlWhere, error) {
 
 	ql := From(model)
 	ql.Froms.Froms[0].As = ""
-	err := ql.getWhereByPrimaryKeys(data)
-	if err != nil {
-		return et.Items{}, nil, err
+	// UPDATE y DELETE no declaran alias de tabla: cada campo de s.Wheres guarda su propia copia del
+	// QlFrom con el alias del comando, así que se limpia para que el SQL no referencie un alias inexistente
+	for _, w := range s.Wheres {
+		for _, value := range []interface{}{w.Field, w.Value} {
+			if field, ok := value.(*Field); ok && field.Model != nil {
+				field.Model.As = ""
+			}
+		}
+	}
+	// Update y Delete llaman con data vacío y filtran solo por s.Wheres; Upsert filtra por la PK de data
+	if len(data) > 0 {
+		err := ql.getWhereByPrimaryKeys(data)
+		if err != nil {
+			return et.Items{}, nil, err
+		}
+	} else if len(s.Wheres) == 0 {
+		return et.Items{}, nil, fmt.Errorf("where is required in model:%s", model.Name)
 	}
 	for _, w := range s.Wheres {
-		ql.addCondition(w)
+		ql.AddCondition(w)
 	}
 	ql.IsDebug = s.IsDebug
 	current, err := ql.

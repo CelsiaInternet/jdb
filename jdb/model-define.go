@@ -610,7 +610,7 @@ func (s *Model) DefineProjectModel() *Model {
 * @param name string, fn DataFunctionTx
 * @return Model
 **/
-func (s *Model) DefineCalc(name string, fn DataFunctionTx) *Model {
+func (s *Model) DefineCalc(name string, fn DataFunction) *Model {
 	result := s.getColumn(name)
 	if result != nil {
 		return s
@@ -619,5 +619,17 @@ func (s *Model) DefineCalc(name string, fn DataFunctionTx) *Model {
 	result = newColumn(s, name, "", TpCalc, TypeDataNone, TypeDataNone.DefaultValue())
 	s.addColumn(result)
 	s.CalcFunction[name] = fn
+	return s
+}
+
+func (s *Model) DefineCalcTx(name string, fn DataFunctionTx) *Model {
+	result := s.getColumn(name)
+	if result != nil {
+		return s
+	}
+
+	result = newColumn(s, name, "", TpCalc, TypeDataNone, TypeDataNone.DefaultValue())
+	s.addColumn(result)
+	s.CalcFunctionTx[name] = fn
 	return s
 }

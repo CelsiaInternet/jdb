@@ -395,6 +395,54 @@ func newQlCondition(field interface{}) *QlCondition {
 	return result
 }
 
+func ConditionByJson(conditions et.Json) []*QlCondition {
+	result := make([]*QlCondition, 0)
+
+	addCondition := func(condition *QlCondition) {
+		if len(result) > 0 && condition.Connector == NoC {
+			condition.Connector = And
+		}
+		result = append(result, condition)
+	}
+
+	for key := range conditions {
+		if strings.ToLower(key) == "AND" {
+			value := conditions.ArrayJson(key)
+			for _, condition := range value {
+				cond := conditionByJson(condition)
+				cond.Connector = And
+				addCondition(cond)
+			}
+		} else if strings.ToLower(key) == "OR" {
+			value := conditions.ArrayJson(key)
+			for _, condition := range value {
+				cond := conditionByJson(condition)
+				cond.Connector = Or
+				addCondition(cond)
+			}
+		} else {
+			value := conditions.Json(key)
+			cond := conditionByJson(value)
+			addCondition(cond)
+		}
+	}
+
+	return result
+}
+
+func conditionByJson(condition et.Json) *QlCondition {
+	result := &QlCondition{}
+	for key := range condition {
+		result.Field = key
+		cond := condition.Json(key)
+		for k, v := range cond {
+			result.Operator = StrToOperator(k)
+			result.setValue(v)
+		}
+	}
+	return result
+}
+
 func (s *QlCondition) fieldToString() string {
 	switch v := s.Field.(type) {
 	case *Field:
@@ -553,7 +601,15 @@ func (s *QlWhere) Debug() *QlWhere {
 * @param condition *QlCondition
 * @return *QlWhere
 **/
-func (s *QlWhere) addCondition(condition *QlCondition) *QlWhere {
+func (s *QlWhere) AddCondition(condition *QlCondition) *QlWhere {
+	if s.Wheres == nil {
+		s.Wheres = []*QlCondition{}
+	}
+
+	if len(s.Wheres) > 0 && condition.Connector == NoC {
+		condition.Connector = And
+	}
+
 	s.Wheres = append(s.Wheres, condition)
 	return s
 }
@@ -569,7 +625,7 @@ func (s *QlWhere) setWhere(field interface{}) *QlWhere {
 		where.Connector = And
 	}
 
-	return s.addCondition(where)
+	return s.AddCondition(where)
 }
 
 /**
@@ -580,7 +636,7 @@ func (s *QlWhere) setWhere(field interface{}) *QlWhere {
 func (s *QlWhere) setOr(field interface{}) *QlWhere {
 	where := newQlCondition(field)
 	where.Connector = Or
-	return s.addCondition(where)
+	return s.AddCondition(where)
 }
 
 /**

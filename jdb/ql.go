@@ -156,25 +156,26 @@ const (
 
 type Ql struct {
 	*QlWhere
-	Id           string                    `json:"id"`
-	Db           *DB                       `json:"-"`
-	TypeSelect   TypeSelect                `json:"type_select"`
-	Froms        *QlFroms                  `json:"froms"`
-	Selects      []interface{}             `json:"selects"`
-	Rollups      []*Rollup                 `json:"rollups"`
-	Joins        []*QlJoin                 `json:"joins"`
-	Hiddens      []string                  `json:"hiddens"`
-	Details      map[string]*Relation      `json:"details"`
-	CalcFunction map[string]DataFunctionTx `json:"-"`
-	Groups       []*Field                  `json:"group_bys"`
-	Havings      *QlWhere                  `json:"havings"`
-	Orders       *QlOrder                  `json:"orders"`
-	Sheet        int                       `json:"sheet"`
-	Offset       int                       `json:"offset"`
-	Limit        int                       `json:"limit"`
-	Sql          string                    `json:"sql"`
-	tx           *Tx                       `json:"-"`
-	wg           *sync.WaitGroup           `json:"-"`
+	Id             string                    `json:"id"`
+	Db             *DB                       `json:"-"`
+	TypeSelect     TypeSelect                `json:"type_select"`
+	Froms          *QlFroms                  `json:"froms"`
+	Selects        []interface{}             `json:"selects"`
+	Rollups        []*Rollup                 `json:"rollups"`
+	Joins          []*QlJoin                 `json:"joins"`
+	Hiddens        []string                  `json:"hiddens"`
+	Details        map[string]*Relation      `json:"details"`
+	CalcFunction   map[string]DataFunction   `json:"-"`
+	CalcFunctionTx map[string]DataFunctionTx `json:"-"`
+	Groups         []*Field                  `json:"group_bys"`
+	Havings        *QlWhere                  `json:"havings"`
+	Orders         *QlOrder                  `json:"orders"`
+	Sheet          int                       `json:"sheet"`
+	Offset         int                       `json:"offset"`
+	Limit          int                       `json:"limit"`
+	Sql            string                    `json:"sql"`
+	tx             *Tx                       `json:"-"`
+	wg             *sync.WaitGroup           `json:"-"`
 }
 
 /**
@@ -198,21 +199,22 @@ func From(name interface{}) *Ql {
 	}
 
 	result := &Ql{
-		Id:           utility.UUID(),
-		Db:           model.Db,
-		TypeSelect:   tpSelect,
-		Froms:        newForms(),
-		Selects:      make([]interface{}, 0),
-		Rollups:      make([]*Rollup, 0),
-		Joins:        make([]*QlJoin, 0),
-		Hiddens:      make([]string, 0),
-		Details:      make(map[string]*Relation, 0),
-		CalcFunction: make(map[string]DataFunctionTx, 0),
-		Groups:       make([]*Field, 0),
-		Orders:       &QlOrder{Asc: []*Field{}, Desc: []*Field{}},
-		Offset:       0,
-		Sheet:        0,
-		wg:           &sync.WaitGroup{},
+		Id:             utility.UUID(),
+		Db:             model.Db,
+		TypeSelect:     tpSelect,
+		Froms:          newForms(),
+		Selects:        make([]interface{}, 0),
+		Rollups:        make([]*Rollup, 0),
+		Joins:          make([]*QlJoin, 0),
+		Hiddens:        make([]string, 0),
+		Details:        make(map[string]*Relation, 0),
+		CalcFunction:   make(map[string]DataFunction, 0),
+		CalcFunctionTx: make(map[string]DataFunctionTx, 0),
+		Groups:         make([]*Field, 0),
+		Orders:         &QlOrder{Asc: []*Field{}, Desc: []*Field{}},
+		Offset:         0,
+		Sheet:          0,
+		wg:             &sync.WaitGroup{},
 	}
 	result.QlWhere = newQlWhere()
 	result.IsDebug = model.IsDebug

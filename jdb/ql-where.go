@@ -15,7 +15,13 @@ func (s *Ql) setWheres(wheres et.Json) *Ql {
 	if s.QlWhere == nil {
 		s.QlWhere = newQlWhere()
 	}
+	n := len(s.QlWhere.Wheres)
 	s.QlWhere.setWheres(wheres)
+	// Las claves del where llegan como texto: se resuelven a columnas del modelo, igual que en Ql.Where;
+	// si no, el driver las renderiza como literales ('kind' = ...) y la condición nunca se cumple.
+	for _, w := range s.QlWhere.Wheres[n:] {
+		w.Field = resolveWhereField(w.Field, s.getField)
+	}
 	return s
 }
 
@@ -25,6 +31,10 @@ func (s *Ql) setWheres(wheres et.Json) *Ql {
 * @return *Ql
 **/
 func (s *Ql) setHavings(havings et.Json) *Ql {
+	if len(havings) == 0 {
+		return s
+	}
+
 	if s.Havings == nil {
 		s.Havings = newQlWhere()
 	}

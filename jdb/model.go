@@ -65,7 +65,8 @@ type Model struct {
 	Detail              map[string]*Relation      `json:"detail"`
 	Rollup              map[string]*Rollup        `json:"rollup"`
 	FullText            map[string]*FullText      `json:"fulltext"`
-	CalcFunction        map[string]DataFunctionTx `json:"-"`
+	CalcFunction        map[string]DataFunction   `json:"-"`
+	CalcFunctionTx      map[string]DataFunctionTx `json:"-"`
 	RelationsTo         map[string]*Relation      `json:"-"`
 	CreatedAtField      *Column                   `json:"-"`
 	UpdatedAtField      *Column                   `json:"-"`
@@ -135,7 +136,8 @@ func NewTable(db *DB, table string) *Model {
 		Detail:              make(map[string]*Relation),
 		Rollup:              make(map[string]*Rollup),
 		FullText:            make(map[string]*FullText),
-		CalcFunction:        make(map[string]DataFunctionTx),
+		CalcFunction:        make(map[string]DataFunction),
+		CalcFunctionTx:      make(map[string]DataFunctionTx),
 		RelationsTo:         make(map[string]*Relation),
 		beforeInsert:        []DataFunctionTx{},
 		beforeUpdate:        []DataFunctionTx{},
@@ -190,7 +192,8 @@ func NewModel(schema *Schema, name string, version int) *Model {
 		Detail:              make(map[string]*Relation),
 		Rollup:              make(map[string]*Rollup),
 		FullText:            make(map[string]*FullText),
-		CalcFunction:        make(map[string]DataFunctionTx),
+		CalcFunction:        make(map[string]DataFunction),
+		CalcFunctionTx:      make(map[string]DataFunctionTx),
 		RelationsTo:         make(map[string]*Relation),
 		beforeInsert:        []DataFunctionTx{},
 		beforeUpdate:        []DataFunctionTx{},

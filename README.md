@@ -1,58 +1,14 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v1.0.100-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v1.0.101-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
-
-JDB (`github.com/celsiainternet/jdb`) es una librería de Go que proporciona una interfaz unificada sobre PostgreSQL, MySQL y SQLite: definición declarativa de modelos, un lenguaje de consulta (`Ql`) y de comandos (`Command`) fluido, transacciones, y un pequeño conjunto de paquetes de features (autorización, configuración, inbox) construidos sobre el mismo patrón.
-
-No es una aplicación: `cmd/` no tiene un `main.go` de nivel superior, sino tres binarios independientes (ver [Herramientas de `cmd/`](#herramientas-de-cmd)). Depende de [`github.com/celsiainternet/elvis`](https://github.com/celsiainternet/elvis) para utilidades, logging, tipos JSON (`et.Json`) y eventos.
-
-## Características
-
-### Multi-driver
-
-- **PostgreSQL** (`drivers/postgres`) — driver nativo sobre `github.com/lib/pq`.
-- **MySQL** (`drivers/mysql`) — sobre `github.com/go-sql-driver/mysql`.
-- **SQLite** (`drivers/sqlite`) — sobre `modernc.org/sqlite`, para uso embebido.
-
-Cada driver se registra a sí mismo en su propio `init()` vía `jdb.Register(...)` y activa sus valores por defecto desde variables de entorno; se habilita con un import en blanco (`import _ "github.com/celsiainternet/jdb/drivers/postgres"`).
-
-### API declarativa y fluida
-
-- **Modelos declarativos**: columnas, llaves, índices, relaciones, rollups y campos especiales definidos con métodos `Define*` sobre `*Model`.
-- **`Ql`** (`jdb/ql.go`): consultas de lectura inmutables construidas encadenando métodos (`Where`, `And`, `Or`, `Eq`, `Like`, `In`, `Between`, joins, orden, límites) y ejecutadas con `All()`, `One()`, `First(n)`, `Counted()`, `ItExists()` (o sus variantes `*Tx` dentro de una transacción).
-- **`Command`** (`jdb/command.go`): operaciones de escritura inmutables (`Insert`, `Update`, `Delete`, `Upsert`, `Bulk`) construidas igual que `Ql` y ejecutadas con `Exec()` / `One()` (o `ExecTx(tx)` dentro de una transacción).
-- **Hooks de ciclo de vida**: `BeforeInsert`, `BeforeUpdate`, `BeforeDelete`, `BeforeInsertOrUpdate`, `AfterInsert`, `AfterUpdate`, `AfterDelete`, `AfterInsertOrUpdate` — cada uno recibe `func(tx *jdb.Tx, data et.Json) error`.
-- **Eventos por modelo**: `model.On(channel, handler)` / `model.Emit(channel, data)`, integrados con `elvis/event`.
-
-### Transacciones
-
-Soporte para transacciones vía `jdb.NewTx()` + `tx.Begin(db.Db)`, con `Commit()` / `Rollback()`, y las variantes `*Tx` de `Ql`/`Command` para ejecutar consultas y comandos dentro de la misma transacción.
-
-### HTTP handlers
-
-`jdb.go` expone cuatro `http.HandlerFunc` listos para montar en cualquier router (Chi u otro):
-
-- `jdb.ModelDefine` — describe un modelo/schema/DB.
-- `jdb.ModelQuery` — ejecuta un `Ql` a partir de un body JSON.
-- `jdb.ModelCommand` — ejecuta uno o más `Command` a partir de un body JSON.
-- `jdb.ModelDescribe` — describe un objeto por tipo + nombre.
-
-### Paquetes de features (`instances`, `authorization`, `config`, `inbox`)
-
-Cuatro paquetes que siguen el mismo patrón: un singleton de paquete (no exportado), poblado una única vez por una función `Load(db, schema, ...)` que no hace nada si ya fue cargado, y construido por una función `Define(...)` que define el schema/modelo contra `jdb` de forma idempotente. Cada uno posee exactamente una tabla/modelo y agrega comportamiento propio (CRUD, handlers HTTP, eventos) encima — por ejemplo, `authorization.Load` también se conecta a `elvis/middleware.SetAuthorizationStore`. Ver [`authorization/authorization.go`](authorization/authorization.go) como referencia de implementación.
-
-### Generación de datos y utilidades
-
-- `model.New(fields ...string)` — genera un `et.Json` con los valores por defecto de las columnas del modelo (útil para plantillas/formularios).
-- `jdb.GetSeries(model, field)` — obtiene el siguiente valor de una secuencia interna del `core`.
 
 ## Instalación
 
 ```bash
-go get github.com/celsiainternet/jdb@v1.0.100
+go get github.com/celsiainternet/jdb@v1.0.101
 ```
 
 `jdb` depende de `elvis`, así que normalmente también necesitarás:
@@ -61,355 +17,408 @@ go get github.com/celsiainternet/jdb@v1.0.100
 go get github.com/celsiainternet/elvis@v1.1.312
 ```
 
-### Workspace local (`elvis` + `jdb` en desarrollo conjunto)
+## Qué es
 
-Si estás desarrollando `jdb` junto con `elvis` en este mismo workspace (ver `../CLAUDE.md`), enlázalos con un `go.work` en la raíz del workspace en lugar de depender de la versión publicada:
+`jdb` es una librería de Go para trabajar con bases de datos: defines modelos de forma declarativa y construyes consultas (`Ql`) y comandos (`Command`) con una API fluida; un driver traduce esa intención a SQL.
 
-```bash
-go work init ./elvis
-go work use ./elvis
-go work use ./jdb
-```
+- **Driver disponible:** solo **PostgreSQL** (`drivers/postgres`). `drivers/oracle` conecta pero sus operaciones devuelven `"not implemented"`. No hay drivers MySQL ni SQLite.
+- **Dependencia:** [`elvis`](https://github.com/celsiainternet/elvis) (tipos `et.Json`/`et.Item`/`et.Items`, logging, eventos).
+- **No es una aplicación:** `cmd/` contiene tres herramientas independientes (ver [Herramientas](#herramientas-de-cmd)).
 
-## Configuración
+## Paquetes
 
-### Variables de entorno
+| Paquete | Import | Propósito |
+|---|---|---|
+| `jdb` | `github.com/celsiainternet/jdb/jdb` | Núcleo: conexión, modelos, consultas, comandos, hooks, handlers HTTP |
+| `postgres` | `github.com/celsiainternet/jdb/drivers/postgres` | Driver PostgreSQL (se registra con import en blanco) |
+| `instances` | `github.com/celsiainternet/jdb/instances` | Almacén genérico clave → objeto |
+| `authorization` | `github.com/celsiainternet/jdb/authorization` | Permisos por proyecto/perfil/método/ruta |
+| `config` | `github.com/celsiainternet/jdb/config` | Configuración por `tag` + `stage` |
+| `inbox` | `github.com/celsiainternet/jdb/inbox` | Bandeja de mensajes/solicitudes |
 
-| Variable      | Default     | Propósito                                                     |
-| ------------- | ----------- | ------------------------------------------------------------- |
-| `DB_NAME`     | `jdb`       | Nombre de la base de datos                                    |
-| `DB_DRIVER`   | —           | `postgres`, `mysql` o `sqlite`                                |
-| `DB_HOST`     | `localhost` | Host de la base de datos                                      |
-| `DB_PORT`     | `5432`      | Puerto de la base de datos                                    |
-| `DB_USER`     | `admin`     | Usuario de la base de datos                                   |
-| `DB_PASSWORD` | `admin`     | Contraseña de la base de datos                                |
-| `APP_NAME`    | `jdb`       | Nombre de la aplicación (usado en el connection string de PG) |
-| `NODE_ID`     | `0`         | ID de nodo para generación de IDs distribuidos                |
-| `DEBUG`       | `false`     | Habilita logging de debug                                     |
-| `DB_VERSION`  | `13`        | Versión del servidor PostgreSQL                               |
+---
 
-## Uso básico
+## Paquete `jdb`
 
-### Conexión a la base de datos
+### Conexión y registro
+
+| Función / método | Descripción |
+|---|---|
+| `Load() (*DB, error)` | Conecta usando el driver de `DB_DRIVER` (default `postgres`) y variables de entorno |
+| `LoadTo(database, hostname...)` | Igual que `Load` pero con otro nombre de base de datos |
+| `ConnectTo(ConnectParams) (*DB, error)` | Conecta con parámetros explícitos |
+| `LoadConnectParams(et.Json)` | Construye `ConnectParams` desde JSON |
+| `Register(name, factory, params)` | Registra un driver (lo usan los drivers en su `init()`) |
+| `NewDatabase(name, driver)` | Crea un `*DB` sin conectar |
+| `Jdb()`, `GetDB(name)`, `GetSchema("schema.x")`, `GetModel(name)` | Acceso al registro global |
+
+`ConnectParams`: `Id`, `Driver`, `HostName`, `Name`, `UseCore`, `IsDebug`, `Params`.
 
 ```go
-package main
-
 import (
-    "fmt"
-
-    jdb "github.com/celsiainternet/jdb/jdb"
-    "github.com/celsiainternet/jdb/drivers/postgres" // importarlo ya registra el driver en su init()
+    "github.com/celsiainternet/jdb/drivers/postgres"
+    "github.com/celsiainternet/jdb/jdb"
 )
 
-func main() {
-    params := jdb.ConnectParams{
-        Driver:   "postgres",
-        Name:     "myapp",
-        UserCore: true, // crea el schema "core" con metadatos internos
-        NodeId:   1,
-        IsDebug:  true,
-        Params: &postgres.Connection{
-            Host:     "localhost",
-            Port:     5432,
-            Username: "postgres",
-            Password: "password",
-            Database: "myapp",
-            App:      "myapp",
-        },
-    }
-
-    db, err := jdb.ConnectTo(params)
-    if err != nil {
-        panic(err)
-    }
-    defer db.Disconected()
-
-    fmt.Println("Conectado a:", db.Name)
+db, err := jdb.ConnectTo(jdb.ConnectParams{
+    Driver:  "postgres",
+    Name:    "myapp",
+    IsDebug: true,
+    Params: &postgres.Connection{
+        Host: "localhost", Port: 5432,
+        Username: "postgres", Password: "password",
+        Database: "myapp", App: "myapp",
+    },
+})
+if err != nil {
+    panic(err)
 }
+defer db.Disconected()
+
+// o, desde variables de entorno:
+// import _ "github.com/celsiainternet/jdb/drivers/postgres"
+// db, err := jdb.Load()
 ```
 
-También puedes conectar directamente desde las variables de entorno (usa los defaults que registra el driver en su `init()`):
+### `*DB`
+
+| Método | Descripción |
+|---|---|
+| `Ping()`, `HealthCheck()` | Verifica la conexión |
+| `Conected(params)`, `Disconected()` | Abre / cierra la conexión |
+| `GetSchema(name)`, `GetModel(name)`, `DropSchema(name)` | Schemas y modelos registrados |
+| `LoadModel`, `MutateModel`, `DropModel`, `EmptyModel` | DDL sobre un modelo |
+| `From(table) *Ql` | Inicia una consulta |
+| `Select(ql)`, `Count(ql)`, `Exists(ql)`, `Command(cmd)` | Ejecuta un `Ql`/`Command` ya construido |
+| `Query(sql, args...)`, `One(sql, args...)` | SQL crudo, devuelve `et.Items` / `et.Item` |
+| `JQuery(et.Json)`, `QueryModel(et.Json)` | Consulta definida en JSON |
+| `SetDebug(bool)`, `Debug()`, `Describe()` | Depuración y descripción |
 
 ```go
-db, err := jdb.Load()
+items, err := db.Query("SELECT * FROM public.users WHERE age > $1", 18)
 ```
 
-### Definición de modelos
+### Schemas y modelos
+
+| Función / método | Descripción |
+|---|---|
+| `NewSchema(db, name)` | Crea/obtiene un schema |
+| `NewModel(schema, name, version)` | Crea/obtiene un modelo (tabla) |
+| `NewTable(db, "schema.table")` | Modelo a partir de un nombre completo |
+| `Model.Init()` | Crea/actualiza la tabla en la base de datos |
+| `Model.Drop()`, `Model.Empty()` | Elimina / vacía la tabla |
+| `Model.GetField(name)`, `Model.GetModel(name)` | Resuelve campos y modelos relacionados |
+| `Model.GenId()`, `Model.GetId(id)` | Genera / normaliza identificadores |
+| `Model.CheckRequired(data)` | Valida campos requeridos |
+| `Model.Counted()`, `Model.Query(et.Json)` | Conteo y consulta JSON |
+| `Model.On(channel, handler)`, `Model.Emit(channel, data)` | Eventos por modelo |
+| `Model.Describe()`, `Model.Debug()` | Descripción y depuración |
+
+### Definición de columnas (`Define*`)
+
+| Método | Descripción |
+|---|---|
+| `DefineColumn(name, TypeData) *Column` | Columna real |
+| `DefineAtribute(name, TypeData) *Column` | Atributo dentro de la columna jsonb fuente |
+| `DefineSourceField()`, `DefineSource(name)` | Columna jsonb fuente (`_data`) |
+| `DefinePrimaryKey(cols...)`, `DefinePrimaryKeyField()` | Llave primaria |
+| `DefineForeignKey(fks, with, onDelete, onUpdate)` | Llave foránea |
+| `DefineIndex(sort, cols...)`, `DefineUnique(cols...)` | Índices |
+| `DefineRequired(cols...)`, `DefineHidden(cols...)` | Requeridos / ocultos en resultados |
+| `DefineCreatedAtField()`, `DefineUpdatedAtField()`, `DefineStatusField()`, `DefineSystemKeyField()`, `DefineIndexField()`, `DefineProjectField()` | Campos de sistema (se rellenan automáticamente) |
+| `DefineRelation(name, with, fks, limit)` | Relación uno-a-muchos |
+| `DefineRollup(name, with, fks, fields)` | Agregación desde otra tabla |
+| `DefineObject(name, with, fks, fields)` | Objeto embebido uno-a-uno |
+| `DefineDetail(name, fks, limit)` | Detalle |
+| `DefineCalc(name, fn)`, `DefineCalcTx(name, fn)` | Campo calculado en Go |
+| `DefineModel()`, `DefineProjectModel()` | Conjunto estándar de campos de sistema |
+| `DefineIntegrity()` | Activa integridad referencial |
+
+Tipos de dato (`TypeData*`): `Text`, `Memo`, `ShortText`, `Key`, `Number`, `Int`, `Precision`, `DateTime`, `Checkbox`, `Bytes`, `Object`, `Select`, `MultiSelect`, `Geometry`, `FullText`, `State`, `User`, `FilesMedia`, `Url`, `Email`, `Phone`, `Address`, `Relation`, `Rollup`.
+
+Modificadores de `*Column`: `SetDefaultValue`, `SetHidden`, `SetMax`, `SetMin`.
 
 ```go
 schema := jdb.NewSchema(db, "public")
 
-user := jdb.NewModel(schema, "users", 1)
-user.DefineColumn("name", jdb.TypeDataText)
-user.DefineColumn("email", jdb.TypeDataText)
-user.DefineColumn("age", jdb.TypeDataInt)
-user.DefineRequired("name", "email")
-user.DefineUnique("email")
+users := jdb.NewModel(schema, "users", 1)
+users.DefineColumn("id", jdb.TypeDataKey)
+users.DefineColumn("name", jdb.TypeDataText)
+users.DefineColumn("email", jdb.TypeDataEmail)
+users.DefineColumn("age", jdb.TypeDataInt).SetDefaultValue(0)
+users.DefineCreatedAtField()
+users.DefineUpdatedAtField()
+users.DefinePrimaryKey("id")
+users.DefineUnique("email")
+users.DefineRequired("name", "email")
 
-// Campos especiales del sistema
-user.DefineCreatedAtField() // fecha de creación
-user.DefineUpdatedAtField() // fecha de actualización
-user.DefineStatusField()    // estado (activo/archivado/etc.)
-user.DefineSystemKeyField() // clave del sistema
-user.DefineIndexField()     // índice
-user.DefineSourceField()    // origen
-
-// Crea/registra el modelo en la base de datos
-if err := user.Init(); err != nil {
+if err := users.Init(); err != nil {
     panic(err)
 }
 ```
 
-### Operaciones CRUD
+### Consultas (`*Ql`)
+
+Se inicia con `jdb.From(model | "schema.table")`, `db.From(...)`, `Model.Where(...)`, `Model.Select(...)`, `Model.Data(...)` o `Model.Join(...)`. Los métodos mutan el `Ql` y lo devuelven; no reutilices un `Ql` después de ejecutarlo.
+
+| Grupo | Métodos | Descripción |
+|---|---|---|
+| Condiciones | `Where`, `And`, `Or` | Abren una condición sobre un campo |
+| Operadores | `Eq`, `Neg`, `In`, `NotIn`, `Like`, `More`, `Less`, `MoreEq`, `LessEq`, `Between`, `IsNull`, `NotNull` | Completan la última condición |
+| Proyección | `Select`, `Data`, `Detail`, `Hidden` | Campos a devolver |
+| Joins | `Join`, `LeftJoin`, `RightJoin`, `FullJoin` | Unión con otro modelo |
+| Agrupación | `GroupBy`, `Having` | Agrupa y filtra grupos |
+| Orden | `OrderBy`, `OrderByAsc`, `OrderByDesc` | Orden de resultados |
+| Paginación | `Page(p)` + `Rows(n)`, `List(page, rows)` | `List` devuelve `et.List` con total |
+| Ejecución | `All()`, `One()`, `Rows(n)`, `First(n)`, `Last(n)`, `Counted()`, `ItExists()` | `First(n)`/`Last(n)` devuelven **el ítem en la posición `n`** |
+| Transacción | `AllTx`, `OneTx`, `RowsTx`, `FirstTx`, `LastTx`, `CountedTx`, `ItExistsTx` | Igual, dentro de un `*Tx` |
+| JSON | `Query(et.Json)`, `QueryTx` | Ejecuta una consulta descrita en JSON |
+| Otros | `Debug()`, `Describe()`, `Tx()` | Depuración |
+
+Agregaciones: `SUM`, `COUNT`, `AVG`, `MIN`, `MAX`, `VALUE`, `CALC`, `EXTRACT_YEAR`/`MONTH`/`DAY`/`HOUR`/`MINUTE`/`SECOND`. Operadores de join aceptados como texto: `"="`, `"!="`, `"eq"`, `"neg"`, `"in"`, `"like"`, `"more"`, `"less"`, …
 
 ```go
-import "github.com/celsiainternet/elvis/et"
+// Todas las filas que cumplen la condición
+items, err := users.Where("age").MoreEq(18).And("name").Like("%Ana%").All()
 
-// Insertar
-item, err := user.Insert(et.Json{
-    "name":  "Juan Pérez",
-    "email": "juan@example.com",
-    "age":   30,
-}).One()
+// Una sola fila
+item, err := jdb.From(users).Where("email").Eq("ana@example.com").One()
 
-// Consultar
-items, err := user.
-    Where("active").Eq(true).
-    All()
+// Página 2 de 20 filas, con total
+list, err := users.Where("age").More(0).OrderByDesc("created_at").List(2, 20)
 
-// Actualizar
-result, err := user.
-    Update(et.Json{"age": 31}).
-    Where("id").Eq("user123").
-    Exec()
+// Conteo y existencia
+n, err := users.Where("age").Less(18).Counted()
+ok, err := users.Where("email").Eq("x@y.com").ItExists()
 
-// Eliminar
-result, err := user.
-    Delete("id").Eq("user123").
-    Exec()
+// Join (con *Model)
+items, err = jdb.From(users).Join(profiles, "id", "=", "user_id").All()
 ```
 
-### Bulk insert
+### Comandos (`*Command`)
+
+| Inicio (`*Model`) | Descripción |
+|---|---|
+| `Insert(et.Json)` | Inserta una fila |
+| `Bulk([]et.Json)` | Inserta varias filas |
+| `Update(et.Json)` | Actualiza las filas que cumplen el `Where` |
+| `Delete(field)` | Elimina; abre la condición sobre `field` |
+| `Upsert(et.Json)` | Inserta o actualiza |
+
+| Método | Descripción |
+|---|---|
+| `Where`, `And`, `Or` + operadores (`Eq`, `In`, `Like`, …) | Condiciones, igual que en `Ql` |
+| `Returns(fields...)` | Campos a devolver |
+| `Exec()`, `One()` | Ejecuta (abre y confirma su propia transacción) |
+| `ExecTx(tx)`, `OneTx(tx)` | Ejecuta dentro de una transacción existente |
+| `Debug()`, `Describe()` | Depuración |
 
 ```go
-result, err := user.Bulk([]et.Json{
-    {"name": "Ana García", "email": "ana@example.com", "age": 25},
-    {"name": "Carlos López", "email": "carlos@example.com", "age": 35},
-    {"name": "María Rodríguez", "email": "maria@example.com", "age": 28},
+item, err := users.Insert(et.Json{"id": "u1", "name": "Ana", "email": "ana@example.com"}).One()
+
+items, err := users.Update(et.Json{"age": 31}).Where("id").Eq("u1").Exec()
+
+items, err = users.Delete("id").Eq("u1").Exec()
+
+items, err = users.Bulk([]et.Json{
+    {"id": "u2", "name": "Carlos", "email": "carlos@example.com"},
+    {"id": "u3", "name": "María", "email": "maria@example.com"},
 }).Exec()
+```
+
+### Hooks
+
+Disponibles en `*Model` (aplican a todos los comandos) y en `*Command` (solo a ese comando).
+
+| Método | Firma de la función |
+|---|---|
+| `BeforeInsert`, `BeforeUpdate`, `BeforeDelete`, `BeforeInsertOrUpdate` | `func(tx *jdb.Tx, data et.Json) error` |
+| `AfterInsert`, `AfterUpdate`, `AfterDelete`, `AfterInsertOrUpdate` | `func(tx *jdb.Tx, data et.Json) error` |
+| `Before…Trigger`, `After…Trigger` (mismas variantes) | `func(tx *jdb.Tx, old, new et.Json) error` |
+
+```go
+users.AfterInsert(func(tx *jdb.Tx, data et.Json) error {
+    fmt.Println("nuevo usuario:", data.Str("id"))
+    return nil
+})
+
+users.BeforeUpdateTrigger(func(tx *jdb.Tx, old, new et.Json) error {
+    if old.Str("email") != new.Str("email") {
+        return fmt.Errorf("el email no se puede cambiar")
+    }
+    return nil
+})
 ```
 
 ### Transacciones
 
-```go
-tx := jdb.NewTx()
-if err := tx.Begin(db.Db); err != nil {
-    panic(err)
-}
-defer tx.Rollback()
+`jdb.Tx` envuelve un `*sql.Tx`. Sin transacción (`Exec()`), cada comando abre y confirma la suya.
 
-_, err := user.
-    Insert(et.Json{"name": "Usuario Transaccional", "email": "tx@example.com"}).
-    ExecTx(tx)
+```go
+sqlTx, err := db.Db.Begin()
 if err != nil {
     panic(err)
 }
+tx := &jdb.Tx{Tx: sqlTx}
 
-if err := tx.Commit(); err != nil {
+if _, err := users.Insert(et.Json{"id": "u4", "name": "Luis", "email": "luis@example.com"}).ExecTx(tx); err != nil {
+    sqlTx.Rollback()
     panic(err)
 }
+sqlTx.Commit()
 ```
 
-### Consultas con JOIN, orden y paginación
+### Series y utilidades
+
+| Función | Descripción |
+|---|---|
+| `NewSerie(kind, tag, format, last)`, `SetSeries(...)`, `GetSeries(kind, tag)`, `ImportSeries(items)` | Consecutivos en el schema `core` (requiere `ConnectParams{UseCore: true}`) |
+| `Query(db, sql, args...)`, `QueryTx(db, tx, sql, args...)` | SQL crudo |
+| `RowsToItems(*sql.Rows)` | Convierte filas a `et.Items` |
+
+### Handlers HTTP
+
+| Handler | Descripción |
+|---|---|
+| `ModelDefine` | Define un modelo desde JSON |
+| `ModelQuery` | Ejecuta un `Ql` descrito en el body JSON |
+| `ModelCommand` | Ejecuta comandos descritos en el body JSON |
+| `ModelDescribe` | Describe un objeto por tipo y nombre |
 
 ```go
-items, err := user.
-    Join(profile, "id", "=", "user_id").
-    Where("users.active").Eq(true).
-    And("profiles.verified").Eq(true).
-    OrderByDesc("users.created_at").
-    First(10)
-
-// Paginación (página, filas por página)
-list, err := user.Where("active").Eq(true).List(1, 20)
-```
-
-### Hooks (before/after)
-
-```go
-user.BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
-    fmt.Println("Insertando usuario:", data)
-    return nil
-})
-
-user.AfterUpdate(func(tx *jdb.Tx, data et.Json) error {
-    fmt.Println("Usuario actualizado:", data)
-    return nil
-})
-```
-
-### Eventos por modelo
-
-```go
-user.On("custom_event", func(msg event.EvenMessage) {
-    fmt.Println("Evento personalizado:", msg)
-})
-
-user.Emit("custom_event", et.Json{"user_id": "123"})
-```
-
-### Campos especiales
-
-```go
-// Texto completo
-user.DefineFullText("spanish", []string{"name", "description"})
-
-// Relación (uno-a-muchos hacia el modelo actual)
-user.DefineRelation("profile", "profiles", map[string]string{"user_id": "id"}, 1)
-
-// Rollup (agregación desde otra tabla)
-user.DefineRollup("total_orders", "orders", map[string]string{"user_id": "id"}, []string{"amount"})
-
-// Objeto embebido (uno-a-uno)
-user.DefineObject("address", "addresses", map[string]string{"user_id": "id"}, []string{"street", "city", "country"})
-```
-
-### Generación de datos de prueba
-
-```go
-// Valores por defecto para todas las columnas
-data := user.New()
-
-// Solo para las columnas indicadas
-data := user.New("name", "email", "age")
-```
-
-### HTTP handlers
-
-```go
-import (
-    "github.com/go-chi/chi/v5"
-    jdb "github.com/celsiainternet/jdb/jdb"
-)
-
 r := chi.NewRouter()
 r.Post("/model/query", jdb.ModelQuery)
 r.Post("/model/command", jdb.ModelCommand)
-r.Get("/model/define", jdb.ModelDefine)
-r.Get("/model/describe", jdb.ModelDescribe)
+r.Post("/model/define", jdb.ModelDefine)
+r.Post("/model/describe", jdb.ModelDescribe)
 ```
 
-## Estructura del proyecto
+---
 
-```
-jdb/
-├── jdb/                 # Paquete principal
-│   ├── database.go      # *DB: conexión, schemas, modelos
-│   ├── schema.go        # *Schema: namespace dentro de una DB
-│   ├── model.go         # *Model: definición de tabla
-│   ├── model-define.go  # Métodos Define* (columnas, llaves, relaciones...)
-│   ├── column.go        # *Column y tipos de dato (TypeData*)
-│   ├── command*.go      # *Command: Insert/Update/Delete/Upsert/Bulk
-│   ├── ql*.go           # *Ql: consultas (where, joins, orden, límites)
-│   ├── tx.go            # *Tx: transacciones
-│   ├── drivers.go        # interfaz Driver + registro de drivers
-│   └── jdb.go            # singleton global + HTTP handlers
-├── drivers/
-│   ├── postgres/
-│   ├── mysql/
-│   └── sqlite/
-├── instances/           # paquete de feature: singleton CRUD genérico
-├── authorization/       # paquete de feature: modelo de sesión/autorización
-├── config/              # paquete de feature: configuración en runtime
-├── inbox/               # paquete de feature: bandeja de mensajes
-└── cmd/
-    ├── test/            # sandbox manual contra una DB real (no es un ejemplo estable)
-    ├── install/         # instala dependencias de terceros vía `go get`
-    └── create/          # CLI (Cobra) que genera proyectos/modelos desde plantillas
-```
+## Paquete `drivers/postgres`
 
-## Drivers soportados
-
-### PostgreSQL
+| Elemento | Descripción |
+|---|---|
+| `Connection{Database, Host, Port, Username, Password, App, Version, IsDebug}` | Parámetros de conexión (`Chain()`, `Validate()`, `Load(et.Json)`, `ToJson()`) |
+| `Params.CreateUser`, `ChangePassword`, `DeleteUser`, `GrantPrivileges` | Gestión de usuarios de PostgreSQL |
+| `Params.ExistDatabase`, `CreateDatabase`, `DropDatabase`, `DropSchema` | Gestión de bases de datos y schemas |
+| `JsonQuote`, `EscapeJSON`, `Normalize` | Utilidades de escape de valores |
 
 ```go
-import _ "github.com/celsiainternet/jdb/drivers/postgres"
-
-params := jdb.ConnectParams{
-    Driver: "postgres",
-    Params: &postgres.Connection{
-        Host:     "localhost",
-        Port:     5432,
-        Username: "postgres",
-        Password: "password",
-        Database: "myapp",
-        App:      "myapp",
-    },
-}
+import _ "github.com/celsiainternet/jdb/drivers/postgres" // registra el driver
 ```
 
-### MySQL
+---
+
+## Paquetes de features
+
+Los cuatro siguen el mismo patrón: `Load(db, schema, ...)` crea la tabla una sola vez y guarda un singleton; después se usan las funciones de paquete (o los métodos del objeto que devuelve `Define`).
+
+### `instances`
+
+| Función | Descripción |
+|---|---|
+| `Load(db, schema, name) (*Instance, error)` | Inicializa la tabla |
+| `Set(id, tag, obj)` | Guarda un objeto serializable |
+| `Get(id, &dest) (bool, error)` | Lee un objeto; `false` si no existe |
+| `Delete(id)` | Elimina |
+| `Query(et.Json)` | Consulta JSON |
 
 ```go
-import _ "github.com/celsiainternet/jdb/drivers/mysql"
-
-params := jdb.ConnectParams{
-    Driver: "mysql",
-    Params: &mysql.Connection{
-        Host:     "localhost",
-        Port:     3306,
-        Username: "root",
-        Password: "password",
-        Database: "myapp",
-    },
-}
+instances.Load(db, "core", "instances")
+instances.Set("job-1", "jobs", myStruct)
+var out MyStruct
+found, err := instances.Get("job-1", &out)
 ```
 
-### SQLite
+### `authorization`
+
+| Función | Descripción |
+|---|---|
+| `Load(db, schema)` | Inicializa y registra el store en `elvis/middleware` |
+| `SetPath(method, path)`, `RemovePath(method, path)` | Registra / quita una ruta protegida |
+| `SetAuthor(project, profile, method, path)`, `RemoveAuthor(...)` | Concede / revoca permiso |
+| `Author(project, profile, method, path) (bool, error)` | Verifica permiso |
+| `InitEvent(project, profiles)` | Inicializa permisos de un proyecto |
+| `Query(et.Json)` | Consulta JSON |
 
 ```go
-import _ "github.com/celsiainternet/jdb/drivers/sqlite"
-
-params := jdb.ConnectParams{
-    Driver: "sqlite",
-    Params: &sqlite.Connection{
-        Database: "./data.db",
-    },
-}
+authorization.Load(db, "auth")
+authorization.SetAuthor("p1", "admin", "GET", "/users")
+ok, err := authorization.Author("p1", "admin", "GET", "/users")
 ```
+
+### `config`
+
+| Función | Descripción |
+|---|---|
+| `Load(db, schema)` | Inicializa la tabla |
+| `Set(tag, stage, et.Json)` | Guarda una configuración |
+| `Get(tag, stage) (et.Item, error)` | Lee una configuración |
+| `Delete(tag, stage)` | Elimina |
+| `Query(et.Json)` | Consulta JSON |
+
+```go
+config.Load(db, "core")
+config.Set("smtp", "prod", et.Json{"host": "smtp.example.com", "port": 587})
+item, err := config.Get("smtp", "prod")
+```
+
+### `inbox`
+
+| Función | Descripción |
+|---|---|
+| `Load(db, schema)` | Inicializa la tabla |
+| `UpsertInboxes(project, id, client, app, kind, data, user)` | Crea o actualiza un mensaje |
+| `StateInboxes(id, status, user)` | Cambia el estado |
+| `GetInboxesById(id)`, `GetInboxesByCode(kind, code)` | Lectura puntual |
+| `GetInboxesByUserId(user, app, kind, status, page, rows)`, `GetInboxesByClientId(client, app, status, page, rows)` | Listados paginados |
+| `GenInboxesCode(project)` | Genera un código consecutivo |
+| `QueryInboxes(et.Json)` | Consulta JSON |
+
+```go
+inbox.Load(db, "core")
+item, err := inbox.UpsertInboxes("p1", "", "c1", "app", "ticket", et.Json{"msg": "Hola"}, "u1")
+items, err := inbox.GetInboxesByClientId("c1", "app", "pending", 1, 20)
+```
+
+---
+
+## Variables de entorno
+
+| Variable | Default | Propósito |
+|---|---|---|
+| `DB_DRIVER` | `postgres` | Driver que carga `jdb.Load()` |
+| `DB_NAME` | `jdb` | Base de datos |
+| `DB_HOST` | `localhost` | Host |
+| `DB_PORT` | `5432` | Puerto |
+| `DB_USER` | `admin` | Usuario |
+| `DB_PASSWORD` | `admin` | Contraseña |
+| `APP_NAME` | `jdb` | Nombre de la aplicación en la conexión |
+| `DB_VERSION` | `13` | Versión de PostgreSQL |
+| `DEBUG` | `false` | Imprime el SQL generado |
+
+## Limitaciones conocidas
+
+- Los valores se insertan como literales en el SQL (no parametrizados): no pases entrada de usuario en `CALC(...)` ni como nombre de campo.
+- `Select("a", "b")` hoy genera `SELECT *`.
+- `Update`/`Delete` con `Where` y `Upsert` tienen defectos en el SQL generado; verifica con `Debug()` antes de usarlos en producción.
+- No hay tests (`*_test.go`) en el repositorio.
 
 ## Herramientas de `cmd/`
 
-`cmd/` no contiene la librería en sí, sino tres binarios independientes:
-
 ```bash
-# Sandbox de desarrollo: conecta a una DB real vía variables de entorno
-gofmt -w . && go run --race ./cmd/test
-
-# Instala un conjunto fijo de dependencias de terceros (bootstrap de un nuevo consumidor)
-go run github.com/celsiainternet/jdb/cmd/install
-
-# CLI para scaffolding de nuevos proyectos/modelos de microservicio
-go run github.com/celsiainternet/jdb/cmd/create go
+go run ./cmd/test                                       # sandbox contra una base real
+go run github.com/celsiainternet/jdb/cmd/install        # instala dependencias de terceros
+go run github.com/celsiainternet/jdb/cmd/create go      # CLI de scaffolding de proyectos/modelos
 ```
 
-No hay archivos de test (`*_test.go`) en este repositorio.
-
-## Gestión de versiones (`version.sh`)
+## Versionado
 
 ```bash
-# Incrementar versión de parche (X.Y.Z+1), etiquetar y hacer push de tags
-git add . && git commit -m 'Update version' && ./version.sh --r
-
-# Incrementar versión menor (X.Y+1.0)
-./version.sh --n
-
-# Incrementar versión mayor (X+1.0.0)
-./version.sh --m
-
-# Ayuda
-./version.sh --h
+git add . && git commit -m 'Update version' && ./version.sh --r   # parche  X.Y.Z+1
+./version.sh --n                                                  # menor    X.Y+1.0
+./version.sh --m                                                  # mayor    X+1.0.0
 ```
 
-`version.sh` reescribe la versión anterior en este `README.md` (badge de versión) y crea/empuja el tag de Git correspondiente — sigue el estándar semántico (SemVer).
+`version.sh` actualiza la versión en este README y publica el tag.

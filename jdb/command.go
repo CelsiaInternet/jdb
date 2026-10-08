@@ -103,14 +103,14 @@ func NewCommand(model *Model, data []et.Json, command TypeCommand) *Command {
 	return result
 }
 
-/**
-* setTx
-* @param tx *Tx
-* @return *Command
-**/
-func (s *Command) setTx(tx *Tx) *Command {
-	s.tx = tx
-	return s
+func (s *Command) beginTx() (*Tx, error) {
+	if s.tx != nil {
+		return s.tx, nil
+	}
+
+	var err error
+	s.tx, err = newTx(s.Db.Db)
+	return s.tx, err
 }
 
 /**
@@ -307,24 +307,31 @@ func (s *Command) Tx() *Tx {
 func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 	var err error
 	if tx == nil {
-		tx = NewTx()
+		tx, err = s.beginTx()
+		if err != nil {
+			return et.Items{}, err
+		}
 
 		defer func() (et.Items, error) {
-			if err == nil {
-				err = tx.Commit()
-				if err != nil {
-					return et.Items{}, err
-				}
+			if err != nil {
+				tx.rollback()
+				return et.Items{}, err
+			}
+
+			err = tx.commit()
+			if err != nil {
+				return et.Items{}, err
 			}
 
 			return s.Result, err
 		}()
+	} else if s.tx == nil && tx != nil {
+		s.tx = tx
 	}
 
-	s.setTx(tx)
 	switch s.Command {
 	case Insert:
-		err := s.inserted()
+		err = s.inserted()
 		if err != nil {
 			return et.Items{}, err
 		}
@@ -349,7 +356,7 @@ func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
 			return et.Items{}, err
 		}
 	case Upsert:
-		err := s.upsert()
+		err = s.upsert()
 		if err != nil {
 			return et.Items{}, err
 		}

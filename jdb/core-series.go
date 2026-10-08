@@ -38,6 +38,41 @@ func (s *DB) defineSeries() error {
 }
 
 /**
+* NewSerie
+**/
+func NewSerie(kind, tag, format string, lastValue int) error {
+	if coreSeries == nil {
+		return fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
+	}
+
+	exists, err := coreSeries.
+		Where("kind").Eq(kind).
+		And("tag").Eq(tag).
+		ItExists()
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return nil
+	}
+
+	_, err = coreSeries.
+		Insert(et.Json{
+			"kind":   kind,
+			"tag":    tag,
+			"format": format,
+			"value":  lastValue,
+		}).
+		Exec()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/**
 * GetSeries
 * @param kind, tag string
 * @return string, error

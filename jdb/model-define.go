@@ -356,7 +356,7 @@ func (s *Model) defineDetail(name string, fks map[string]string, limit int) *Mod
 
 	col := newColumn(s, name, "", TpDetail, TypeDataNone, TypeDataNone.DefaultValue())
 	s.addColumn(col)
-	result := s.defineForeignKey(fks, withName, true, true)
+	result := with.defineForeignKey(fks, s.Name, true, true)
 	result.Limit = limit
 	s.Detail[name] = result
 	return with

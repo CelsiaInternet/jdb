@@ -58,7 +58,7 @@ go get github.com/celsiainternet/jdb@v1.0.100
 `jdb` depende de `elvis`, así que normalmente también necesitarás:
 
 ```bash
-go get github.com/celsiainternet/elvis@v1.1.309
+go get github.com/celsiainternet/elvis@v1.1.312
 ```
 
 ### Workspace local (`elvis` + `jdb` en desarrollo conjunto)

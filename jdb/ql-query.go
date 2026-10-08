@@ -26,8 +26,29 @@ func (s *Ql) AllTx(tx *Tx) (et.Items, error) {
 		return et.Items{}, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
-	s.setTx(tx)
-	result, err := s.Db.Select(s)
+	var err error
+	var result et.Items
+	if tx == nil {
+		tx, err = s.beginTx()
+		if err != nil {
+			return et.Items{}, err
+		}
+
+		defer func() (et.Items, error) {
+			if err == nil {
+				err = tx.commit()
+				if err != nil {
+					return et.Items{}, err
+				}
+			}
+
+			return result, err
+		}()
+	} else if s.tx == nil && tx != nil {
+		s.tx = tx
+	}
+
+	result, err = s.Db.Select(s)
 	if err != nil {
 		return et.Items{}, err
 	}
@@ -115,8 +136,29 @@ func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 		return false, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
-	s.setTx(tx)
-	result, err := s.Db.Exists(s)
+	var err error
+	var result bool
+	if tx == nil {
+		tx, err = s.beginTx()
+		if err != nil {
+			return false, err
+		}
+
+		defer func() (bool, error) {
+			if err == nil {
+				err = tx.commit()
+				if err != nil {
+					return false, err
+				}
+			}
+
+			return result, err
+		}()
+	} else if s.tx == nil && tx != nil {
+		s.tx = tx
+	}
+
+	result, err = s.Db.Exists(s)
 	if err != nil {
 		return false, err
 	}
@@ -134,8 +176,29 @@ func (s *Ql) CountedTx(tx *Tx) (int, error) {
 		return 0, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
-	s.setTx(tx)
-	result, err := s.Db.Count(s)
+	var err error
+	var result int
+	if tx == nil {
+		tx, err = s.beginTx()
+		if err != nil {
+			return 0, err
+		}
+
+		defer func() (int, error) {
+			if err == nil {
+				err = tx.commit()
+				if err != nil {
+					return 0, err
+				}
+			}
+
+			return result, err
+		}()
+	} else if s.tx == nil && tx != nil {
+		s.tx = tx
+	}
+
+	result, err = s.Db.Count(s)
 	if err != nil {
 		return 0, err
 	}

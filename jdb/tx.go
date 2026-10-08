@@ -2,93 +2,60 @@ package jdb
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/celsiainternet/elvis/utility"
 )
 
 type Tx struct {
-	Id        string
-	Committed bool
-	Tx        *sql.Tx
+	Id string
+	Tx *sql.Tx
 }
 
 /**
 * NewTx
 * @return *Tx
 **/
-func NewTx() *Tx {
-	return &Tx{
-		Id: utility.UUID(),
-	}
-}
-
-/**
-* InitTx
-* @param tx *Tx
-* @return *Tx
-**/
-func InitTx(tx *Tx) *Tx {
-	if tx.Tx == nil {
-		tx = NewTx()
-	}
-
-	return tx
-}
-
-/**
-* Begin
-* @param db *sql.DB
-* @return error
-**/
-func (s *Tx) Begin(db *sql.DB) error {
-	if s.Tx != nil {
-		return nil
-	}
-
+func newTx(db *sql.DB) (*Tx, error) {
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	s.Tx = tx
-
-	return nil
+	return &Tx{
+		Id: utility.UUID(),
+		Tx: tx,
+	}, nil
 }
 
 /**
 * Commit
 * @return error
 **/
-func (s *Tx) Commit() error {
+func (s *Tx) commit() error {
 	if s.Tx == nil {
 		return nil
 	}
 
-	if s.Committed {
-		return nil
-	}
-
-	err := s.Tx.Commit()
-	s.Committed = true
-
-	return err
+	return s.Tx.Commit()
 }
 
 /**
 * Rollback
 * @return error
 **/
-func (s *Tx) Rollback() error {
+func (s *Tx) rollback() error {
 	if s.Tx == nil {
 		return nil
 	}
 
-	if s.Committed {
-		return nil
+	return s.Tx.Rollback()
+}
+
+func (s *Tx) query(query string, args ...interface{}) (*sql.Rows, error) {
+	if s.Tx == nil {
+		return nil, fmt.Errorf("tx is not open")
 	}
 
-	err := s.Tx.Rollback()
-	s.Committed = true
-
-	return err
+	return s.Tx.Query(query, args...)
 }

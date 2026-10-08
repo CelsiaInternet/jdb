@@ -85,14 +85,9 @@ func queryTx(db *DB, tx *Tx, query string, arg ...any) (et.Items, error) {
 	var err error
 	var rows *sql.Rows
 	if tx != nil {
-		err = tx.Begin(db.Db)
+		rows, err = tx.query(query, arg...)
 		if err != nil {
-			return et.Items{}, err
-		}
-
-		rows, err = tx.Tx.Query(query, arg...)
-		if err != nil {
-			errRollback := tx.Rollback()
+			errRollback := tx.rollback()
 			if errRollback != nil {
 				data["error"] = err.Error()
 				event.Publish(EVENT_SQL_ERROR, data)

@@ -176,6 +176,8 @@ type Ql struct {
 	Sql            string                    `json:"sql"`
 	tx             *Tx                       `json:"-"`
 	wg             *sync.WaitGroup           `json:"-"`
+	isExists       bool                      `json:"-"`
+	isCounted      bool                      `json:"-"`
 }
 
 /**
@@ -250,15 +252,14 @@ func (s *Ql) Describe() et.Json {
 	}
 }
 
-/**
-* setTx
-* @param tx *Tx
-* @return *Ql
-**/
-func (s *Ql) setTx(tx *Tx) *Ql {
-	s.tx = tx
+func (s *Ql) beginTx() (*Tx, error) {
+	if s.tx != nil {
+		return s.tx, nil
+	}
 
-	return s
+	var err error
+	s.tx, err = newTx(s.Db.Db)
+	return s.tx, err
 }
 
 /**

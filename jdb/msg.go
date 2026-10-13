@@ -56,4 +56,5 @@ var (
 	MSG_DATA_MAX_ONE                = "Data max one"
 	MSG_LIMIT_IS_GREATER_THAN_COUNT = "Limit is greater than count"
 	MSG_RESULT_IS_NOT_OK            = "Result is not ok"
+	MSG_QUERY_COLUMN_NOT_VALID      = "Columna no válida en el query (%s)"
 )

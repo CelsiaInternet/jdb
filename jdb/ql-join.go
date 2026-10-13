@@ -38,7 +38,7 @@ func (s *Ql) join(tp TypeJoin, from, with *QlFrom, conditions []*QlCondition) *Q
 
 /**
 * Join
-* @param withName string, field interface{}, operator interface{}, value interface{}
+* @param withName interface{}, field interface{}, operator interface{}, value interface{}
 * @return *Ql
 **/
 func (s *Ql) Join(withName interface{}, fieldFrom string, operator interface{}, value interface{}) *Ql {
@@ -88,17 +88,24 @@ func (s *Ql) Join(withName interface{}, fieldFrom string, operator interface{}, 
 
 /**
 * LeftJoin
-* @param withName string, fieldFrom string, operator Operator, value interface{}
+* @param withName interface{}, fieldFrom string, operator interface{}, value interface{}
 * @return *Ql
 **/
-func (s *Ql) LeftJoin(withName string, fieldFrom string, operator Operator, value interface{}) *Ql {
-	with := s.Froms.getFrom(withName)
+func (s *Ql) LeftJoin(withName interface{}, fieldFrom string, operator interface{}, value interface{}) *Ql {
+	var with *QlFrom
+	switch v := withName.(type) {
+	case string:
+		with = s.Froms.getFrom(v)
+	case *QlFrom:
+		with = v
+	case *Model:
+		with = s.Froms.add(v)
+	default:
+		return s
+	}
+
 	if with == nil {
-		withForm := s.GetModel(withName)
-		if withForm == nil {
-			return s
-		}
-		with = s.Froms.add(withForm)
+		return s
 	}
 
 	field := s.getField(fieldFrom)
@@ -111,9 +118,19 @@ func (s *Ql) LeftJoin(withName string, fieldFrom string, operator Operator, valu
 		return s
 	}
 
+	var opt Operator
+	switch v := operator.(type) {
+	case Operator:
+		opt = v
+	case string:
+		opt = StrToOperator(v)
+	default:
+		return s
+	}
+
 	condition := &QlCondition{
 		Field:    field,
-		Operator: operator,
+		Operator: opt,
 	}
 	condition.setValue(value)
 	return s.join(LeftJoin, from, with, []*QlCondition{condition})
@@ -121,17 +138,24 @@ func (s *Ql) LeftJoin(withName string, fieldFrom string, operator Operator, valu
 
 /**
 * RightJoin
-* @param with *Model, field string, operator string, value interface{}
+* @param withName interface{}, field string, operator interface{}, value interface{}
 * @return *Ql
 **/
-func (s *Ql) RightJoin(withName string, fieldFrom string, operator Operator, value interface{}) *Ql {
-	with := s.Froms.getFrom(withName)
+func (s *Ql) RightJoin(withName interface{}, fieldFrom string, operator interface{}, value interface{}) *Ql {
+	var with *QlFrom
+	switch v := withName.(type) {
+	case string:
+		with = s.Froms.getFrom(v)
+	case *QlFrom:
+		with = v
+	case *Model:
+		with = s.Froms.add(v)
+	default:
+		return s
+	}
+
 	if with == nil {
-		withForm := s.GetModel(withName)
-		if withForm == nil {
-			return s
-		}
-		with = s.Froms.add(withForm)
+		return s
 	}
 
 	field := s.getField(fieldFrom)
@@ -144,9 +168,19 @@ func (s *Ql) RightJoin(withName string, fieldFrom string, operator Operator, val
 		return s
 	}
 
+	var opt Operator
+	switch v := operator.(type) {
+	case Operator:
+		opt = v
+	case string:
+		opt = StrToOperator(v)
+	default:
+		return s
+	}
+
 	condition := &QlCondition{
 		Field:    field,
-		Operator: operator,
+		Operator: opt,
 	}
 	condition.setValue(value)
 	return s.join(RightJoin, from, with, []*QlCondition{condition})
@@ -154,17 +188,24 @@ func (s *Ql) RightJoin(withName string, fieldFrom string, operator Operator, val
 
 /**
 * FullJoin
-* @param with *Model, field string, operator string, value interface{}
+* @param withName interface{}, field string, operator interface{}, value interface{}
 * @return *Ql
 **/
-func (s *Ql) FullJoin(withName string, fieldFrom string, operator Operator, value interface{}) *Ql {
-	with := s.Froms.getFrom(withName)
+func (s *Ql) FullJoin(withName interface{}, fieldFrom string, operator interface{}, value interface{}) *Ql {
+	var with *QlFrom
+	switch v := withName.(type) {
+	case string:
+		with = s.Froms.getFrom(v)
+	case *QlFrom:
+		with = v
+	case *Model:
+		with = s.Froms.add(v)
+	default:
+		return s
+	}
+
 	if with == nil {
-		withForm := s.GetModel(withName)
-		if withForm == nil {
-			return s
-		}
-		with = s.Froms.add(withForm)
+		return s
 	}
 
 	field := s.getField(fieldFrom)
@@ -177,9 +218,19 @@ func (s *Ql) FullJoin(withName string, fieldFrom string, operator Operator, valu
 		return s
 	}
 
+	var opt Operator
+	switch v := operator.(type) {
+	case Operator:
+		opt = v
+	case string:
+		opt = StrToOperator(v)
+	default:
+		return s
+	}
+
 	condition := &QlCondition{
 		Field:    field,
-		Operator: operator,
+		Operator: opt,
 	}
 	condition.setValue(value)
 	return s.join(FullJoin, from, with, []*QlCondition{condition})

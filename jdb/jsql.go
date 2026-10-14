@@ -124,7 +124,8 @@ func queryWhere(model *Model, ql *Ql, wheres []et.Json) (*Ql, error) {
 				field := model.GetField(column)
 				if field == nil {
 					continue
-				}
+				} 
+				ql = ql.Where(column)
 			}
 
 			for operator, value := range where.Json(column) {

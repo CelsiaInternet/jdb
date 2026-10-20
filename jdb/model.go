@@ -596,6 +596,15 @@ func (s *Model) GetField(name string) *Field {
 }
 
 /**
+* GetFieldOrAtribute: Devuelve el campo; si no existe y el modelo tiene source y no es Integrity, lo resuelve como atributo dinámico.
+* @param name string
+* @return *Field
+**/
+func (s *Model) GetFieldOrAtribute(name string) *Field {
+	return s.getField(name, true)
+}
+
+/**
 * Counted
 * @return int, error
 **/

@@ -1,9 +1,7 @@
 package oracle
 
 import (
-	"database/sql"
 	"errors"
-	"fmt"
 
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/envar"
@@ -20,6 +18,7 @@ type Connection struct {
 	ServiceName string `json:"service_name"`
 	SSL         bool   `json:"ssl"`
 	SSLVerify   bool   `json:"ssl_verify"`
+	Version     int    `json:"version"`
 }
 
 func (s *Connection) Chain() (string, error) {
@@ -27,11 +26,6 @@ func (s *Connection) Chain() (string, error) {
 		return "", err
 	}
 
-	host := s.Host
-	port := s.Port
-	service_name := s.ServiceName
-	user := s.Username
-	password := s.Password
 	ssl := "false"
 	if s.SSL {
 		ssl = "true"
@@ -45,7 +39,7 @@ func (s *Connection) Chain() (string, error) {
 		"ssl verify": sslVerify,
 	}
 
-	result := goOra.BuildUrl(host, port, service_name, user, password, urlOptions)
+	result := goOra.BuildUrl(s.Host, s.Port, s.ServiceName, s.Username, s.Password, urlOptions)
 	return result, nil
 }
 
@@ -58,6 +52,7 @@ func (s *Connection) ToJson() et.Json {
 		"service_name": s.ServiceName,
 		"ssl":          s.SSL,
 		"ssl_verify":   s.SSLVerify,
+		"version":      s.Version,
 	}
 }
 
@@ -69,6 +64,7 @@ func (s *Connection) Load(params et.Json) error {
 	s.ServiceName = params.Str("service_name")
 	s.SSL = params.Bool("ssl")
 	s.SSLVerify = params.Bool("ssl_verify")
+	s.Version = params.Int("version")
 
 	return s.Validate()
 }
@@ -105,6 +101,7 @@ func init() {
 		Id:      envar.GetStr("jdb", "DB_ID"),
 		Driver:  jdb.OracleDriver,
 		Name:    envar.GetStr("jdb", "DB_NAME"),
+		UseCore: envar.GetBool(true, "USE_CORE"),
 		IsDebug: envar.GetBool(false, "DEBUG"),
 		Params: &Connection{
 			Host:        envar.GetStr("", "ORA_DB_HOST"),
@@ -114,6 +111,7 @@ func init() {
 			ServiceName: envar.GetStr("", "ORA_DB_SERVICE_NAME_ORACLE"),
 			SSL:         envar.GetBool(false, "ORA_DB_SSL_ORACLE"),
 			SSLVerify:   envar.GetBool(false, "ORA_DB_SSL_VERIFY_ORACLE"),
+			Version:     envar.GetInt(19, "ORA_VERSION"),
 		},
 	})
 }
@@ -127,7 +125,7 @@ func newDriver(db *jdb.DB) jdb.Driver {
 	return &Params{
 		jdb:     db,
 		name:    jdb.OracleDriver,
-		version: envar.GetInt(13, "ORA_VERSION"),
+		version: envar.GetInt(19, "ORA_VERSION"),
 		connection: Connection{
 			Host:        envar.GetStr("", "ORA_DB_HOST"),
 			Port:        envar.GetInt(1521, "ORA_DB_PORT"),
@@ -144,55 +142,90 @@ func (s *Params) Name() string {
 	return s.name
 }
 
-func (s *Params) Connect(params jdb.ConnectParams) (*sql.DB, error) {
-	if s.jdb == nil {
-		return nil, fmt.Errorf(MSG_JDB_NOT_DEFINED)
-	}
-
-	connStr, err := params.Params.Chain()
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := sql.Open("oracle", connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	s.connected = db != nil
-	console.LogKF(s.name, `Connected to %s:%s`, params.HostName, params.Name)
-
-	return db, nil
-}
-
+/**
+* LoadModel
+* @param model *jdb.Model
+* @return (bool, error)
+**/
 func (s *Params) LoadModel(model *jdb.Model) (bool, error) {
-	return false, errors.New("not implemented")
+	exist, err := s.existTable(tableBase(model))
+	if err != nil {
+		return false, err
+	}
+
+	if exist {
+		return true, nil
+	}
+
+	err = s.exec(model.IsDebug, s.ddlTable(model, tableName(model)))
+	if err != nil {
+		return false, err
+	}
+
+	err = s.execIndex(model.IsDebug, s.ddlTableIndex(model)...)
+	if err != nil {
+		return false, err
+	}
+
+	console.LogKF("Model", "Create %s", tableName(model))
+
+	return false, nil
 }
 
+/**
+* DropModel
+* @param model *jdb.Model
+* @return error
+**/
 func (s *Params) DropModel(model *jdb.Model) error {
-	return errors.New("not implemented")
+	return s.dropTable(model.IsDebug, tableBase(model))
 }
 
+/**
+* EmptyModel: DELETE en vez de TRUNCATE, que Oracle rechaza si la tabla tiene foráneas apuntándole.
+* @param model *jdb.Model
+* @return error
+**/
 func (s *Params) EmptyModel(model *jdb.Model) error {
-	return errors.New("not implemented")
+	return s.exec(model.IsDebug, s.ddlTableEmpty(tableName(model)))
 }
 
+/**
+* MutateModel: crea la tabla nueva, copia las columnas que ya existían, borra la vieja, renombra y
+* vuelve a crear llaves e índices. El DDL de Oracle hace commit implícito: no es atómico.
+* @param model *jdb.Model
+* @return error
+**/
 func (s *Params) MutateModel(model *jdb.Model) error {
-	return errors.New("not implemented")
-}
+	base := tableBase(model)
+	newBase := base + "_new"
+	current, err := s.tableColumns(base)
+	if err != nil {
+		return err
+	}
 
-func (s *Params) Select(ql *jdb.Ql) (et.Items, error) {
-	return et.Items{}, errors.New("not implemented")
-}
+	err = s.dropTable(model.IsDebug, newBase)
+	if err != nil {
+		return err
+	}
 
-func (s *Params) Count(ql *jdb.Ql) (int, error) {
-	return 0, errors.New("not implemented")
-}
+	err = s.exec(model.IsDebug,
+		s.ddlTable(model, quoteIdent(newBase)),
+		s.ddlTableInsertTo(model, quoteIdent(newBase), tableName(model), current),
+	)
+	if err != nil {
+		return err
+	}
 
-func (s *Params) Exists(ql *jdb.Ql) (bool, error) {
-	return false, errors.New("not implemented")
-}
+	err = s.dropTable(model.IsDebug, base)
+	if err != nil {
+		return err
+	}
 
-func (s *Params) Command(command *jdb.Command) (et.Items, error) {
-	return et.Items{}, errors.New("not implemented")
+	err = s.exec(model.IsDebug, s.ddlTableRename(quoteIdent(newBase), base))
+	if err != nil {
+		return err
+	}
+
+	return s.execIndex(model.IsDebug, s.ddlTableIndex(model)...)
 }

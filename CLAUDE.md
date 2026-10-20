@@ -6,7 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `jdb` (`github.com/celsiainternet/jdb`) is a Go database library: a declarative model layer plus a fluent query/command builder that a driver translates to SQL. It is a library, not an application. `cmd/` has no top-level `main.go`; it holds three independent tool binaries (see below), none of which is "the product."
 
-**Only PostgreSQL is implemented.** `drivers/oracle` registers and connects (via `sijms/go-ora`) but every operation returns `"not implemented"`; `drivers/sqlite/` is an empty directory; there is no `drivers/mysql`. `MysqlDriver`/`SqliteDriver` exist only as name constants in `jdb/drivers.go`. `README.md` still advertises MySQL/SQLite — it is stale (see "Doc drift").
+**Drivers: PostgreSQL, SQLite and Oracle (19c+) are implemented; there is no `drivers/mysql`** (`MysqlDriver` is only a name constant in `jdb/drivers.go`). SQLite (`modernc.org/sqlite`, pure Go, no CGO) and Oracle (`sijms/go-ora`) mirror the postgres driver's behavior, including dynamic attributes (undeclared `New` keys stored in the source JSON unless the model is `Integrity`). Dialect differences that change behavior:
+- **No schemas**: both flatten `schema.table` to a table named `schema_table` (Oracle: inside the connected user); index/constraint names are prefixed with the schema. All identifiers are double-quoted (Oracle rejects unquoted `_id`/`_data`).
+- **Source JSON**: SQLite stores TEXT and updates attributes with `json_set` (top-level replace, same as postgres `||`). Oracle stores `CLOB CHECK (IS JSON)` and updates with `JSON_MERGEPATCH` (19c has no `JSON_TRANSFORM`): a `null` value **deletes** the key and nested objects are **merged**, not replaced.
+- **Results**: both normalize the `result` column (returned as text) into objects and booleans (`0/1`) into `bool`. Oracle has no multi-row `RETURNING`: INSERT uses `RETURNING ROWID INTO`, UPDATE/DELETE first lock the target rows (`SELECT ROWID … FOR UPDATE`), then write and read by ROWID.
+- **Safety**: both refuse UPDATE/DELETE with an empty WHERE (`MSG_WHERE_REQUIRED`) and alias the target table, so they do not have the postgres alias defect below. Values in INSERT/UPDATE are bound args (`?N` / `:N`); WHERE values are still inlined like postgres.
+- **Oracle specifics**: `''` is `NULL` (text columns get no DEFAULT); `LIKE` compares `UPPER()`; `Search` is `LIKE '%v%'` (no Oracle Text), same in SQLite; no `ON UPDATE CASCADE`; CLOB columns get no B-tree index; DDL auto-commits, so `MutateModel` is not atomic and `DROP … CASCADE CONSTRAINTS` drops foreign keys from other tables (as postgres `DROP … CASCADE` does).
+
+`README.md` still advertises MySQL — it is stale (see "Doc drift").
 
 Go version: **1.23.0** (see `.go-version`). Primary dependency: `github.com/celsiainternet/elvis` (utility, logging, JSON types `et.Json`, events, cache, middleware).
 
@@ -38,7 +45,7 @@ git add . && git commit -m 'Update version' && ./version.sh --r
 - `cmd/install` — installs a fixed list of third-party Go dependencies via `go get` (bootstrapping a new consumer project).
 - `cmd/create` — a Cobra CLI (`cmd/create/v2`) that scaffolds microservice projects/models from templates under `cmd/create/v2/template`.
 
-**There are no tests** (`*_test.go`). Commits on `main` are auto-generated "Backup:" snapshots, so `git log` says little; use `git log -L` / `git show` on the file to find when behavior changed.
+Tests: `go test ./drivers/...`. `drivers/postgres/command_test.go` only checks generated SQL; `drivers/sqlite` runs end-to-end against an in-memory database; `drivers/oracle` runs end-to-end only when `ORA_TEST_HOST` (+ `ORA_TEST_PORT`, `ORA_TEST_USER`, `ORA_TEST_PASSWORD`, `ORA_TEST_SERVICE`) points at a server, otherwise it skips — e.g. `docker run -d -p 15210:1521 -e ORACLE_PASSWORD=x -e APP_USER=jdb -e APP_USER_PASSWORD=jdbtest gvenzl/oracle-free:slim`, service `FREEPDB1`. There are no tests for the `jdb` package itself. Commits on `main` are auto-generated "Backup:" snapshots, so `git log` says little; use `git log -L` / `git show` on the file to find when behavior changed.
 
 ### Checking generated SQL without a database
 
@@ -53,7 +60,7 @@ No DB is needed to see what SQL the driver builds: the driver stores it in `Ql.S
 
 ```
 jdb/            Core library package (declarative intent: Model/Ql/Command/Field/Where)
-drivers/        postgres (complete), oracle (stub, all "not implemented"), sqlite (empty dir)
+drivers/        postgres, sqlite (modernc), oracle (go-ora, 19c+)
 instances/      Feature singleton: generic keyed blob store
 authorization/  Feature singleton: auth/session model (wires into elvis/middleware)
 config/         Feature singleton: runtime config model
@@ -133,14 +140,14 @@ Verified 2026-09-22 on `27a3772` + the uncommitted `ql-join.go`/`where.go`/`conn
 
 ## Doc drift
 
-`README.md` (Spanish, user-facing) is out of sync with the code: it lists MySQL/SQLite drivers and env values for them, shows `ConnectParams{UserCore: true, NodeId: 1}` — still wrong even after the `UseCore` restoration: the real field is spelled `UseCore` (no "r"), `NodeId` still doesn't exist on `ConnectParams` — and shows `user.Join(profile, "id", "=", "user_id")` (`Model.Join` takes a `string` and an `Operator`; that line does not compile — only `Ql.Join` gained the flexible `interface{}`/string-operator signature), and presents `First(10)` as pagination (it returns the item at index 10). Do not copy README examples without checking them against the code. `version.sh` rewrites the README version badge and the `elvis` version in its install snippet.
+`README.md` (Spanish, user-facing) is out of sync with the code: it lists a MySQL driver and env values for it, shows `ConnectParams{UserCore: true, NodeId: 1}` — still wrong even after the `UseCore` restoration: the real field is spelled `UseCore` (no "r"), `NodeId` still doesn't exist on `ConnectParams` — and shows `user.Join(profile, "id", "=", "user_id")` (`Model.Join` takes a `string` and an `Operator`; that line does not compile — only `Ql.Join` gained the flexible `interface{}`/string-operator signature), and presents `First(10)` as pagination (it returns the item at index 10). Do not copy README examples without checking them against the code. `version.sh` rewrites the README version badge and the `elvis` version in its install snippet.
 
 ## Environment variables
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `DB_NAME` | `jdb` | Database name |
-| `DB_DRIVER` | `postgres` (in `jdb.Load`/`LoadTo`) | Driver to load (`postgres` is the only working one) |
+| `DB_DRIVER` | `postgres` (in `jdb.Load`/`LoadTo`) | Driver to load: `postgres`, `sqlite` or `oracle` (blank-import the driver package) |
 | `DB_HOST` | `localhost` | DB host |
 | `DB_PORT` | `5432` | DB port |
 | `DB_USER` | `admin` | DB username |
@@ -150,6 +157,7 @@ Verified 2026-09-22 on `27a3772` + the uncommitted `ql-join.go`/`where.go`/`conn
 | `DB_VERSION` | `13` | PostgreSQL server version |
 | `DB_RECORD_LIMIT` | `1000` | Intended max rows for `From()` (currently ineffective, see defects) |
 | `USE_CORE` | `true` | Read into `postgres.Connection.UseCore`, but **dead** — nothing consumes that field; it does not enable the `core` schema (see defects) |
-| `ORA_DB_HOST`, `ORA_DB_PORT`, `ORA_DB_USER`, `ORA_DB_PASSWORD`, `ORA_DB_SERVICE_NAME_ORACLE`, `ORA_DB_SSL_ORACLE`, `ORA_DB_SSL_VERIFY_ORACLE`, `ORA_VERSION` | — | Oracle stub connection only |
+| `SQLITE_PATH` | `<DB_NAME>.db` | SQLite file path (`:memory:` for an in-memory database) |
+| `ORA_DB_HOST`, `ORA_DB_PORT` (`1521`), `ORA_DB_USER`, `ORA_DB_PASSWORD`, `ORA_DB_SERVICE_NAME_ORACLE`, `ORA_DB_SSL_ORACLE`, `ORA_DB_SSL_VERIFY_ORACLE`, `ORA_VERSION` (`19`) | — | Oracle connection |
 
 (`NODE_ID` was listed previously; nothing in the code reads it any more.)

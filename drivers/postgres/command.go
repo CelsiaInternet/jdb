@@ -73,7 +73,7 @@ func (s *Params) sqlInsert(command *jdb.Command) (string, []any) {
 	args := []any{}
 	data := et.Json{}
 	for key, val := range command.New {
-		field := from.GetField(key)
+		field := from.GetFieldOrAtribute(key)
 		if field == nil {
 			continue
 		}
@@ -131,9 +131,9 @@ func (s *Params) sqlUpdate(command *jdb.Command) (string, []any) {
 	}
 
 	set := []string{}
-	_data := ""
+	data := et.Json{}
 	for key, val := range command.New {
-		field := from.GetField(key)
+		field := from.GetFieldOrAtribute(key)
 		if field == nil {
 			continue
 		}
@@ -150,23 +150,11 @@ func (s *Params) sqlUpdate(command *jdb.Command) (string, []any) {
 			}
 			set = append(set, strs.Format(`%s = %v`, field.Name, val))
 		case jdb.TpAtribute:
-			val := quote(val)
-			strVal := fmt.Sprintf(`%v`, val)
-			if len(strVal) == 0 || strVal == "''" {
-				continue
-			}
-
-			tp := s.typeData(field.TypeData)
-			if len(_data) == 0 {
-				_data = fmt.Sprintf("COALESCE(%s, '{}')", from.SourceField.Name)
-				_data = strs.Format("jsonb_set(%s,\n'{%s}', to_jsonb(%v::%v), true)", _data, key, val, tp)
-			} else {
-				_data = strs.Format("jsonb_set(\n%s,\n'{%s}', to_jsonb(%v::%v), true)", _data, key, val, tp)
-			}
+			data.Set(key, val)
 		}
 	}
 
-	if len(set) == 0 && len(_data) == 0 {
+	if len(set) == 0 && len(data) == 0 {
 		return "", args
 	}
 
@@ -176,9 +164,11 @@ func (s *Params) sqlUpdate(command *jdb.Command) (string, []any) {
 	table := tableName(from.Model)
 	result := "UPDATE %s\nSET\n%s\nWHERE %s\nRETURNING\njsonb_build_object(%s) AS result;"
 	if from.SourceField != nil {
-		if len(_data) > 0 {
+		if len(data) > 0 {
+			arg := data.ToString()
+			args = append(args, arg)
 			column := from.SourceField.Name
-			set = append(set, strs.Format(`%s = %s`, column, _data))
+			set = append(set, fmt.Sprintf(`%s = COALESCE(%s, '{}'::jsonb) || $%d::jsonb`, column, column, len(args)))
 		}
 		result = "UPDATE %s\nSET\n%s\nWHERE %s\nRETURNING\n%s || jsonb_build_object(%s) AS result;"
 		result = strs.Format(result, table, strings.Join(set, ",\n"), where, from.SourceField.Name, strings.Join(returns, ","))

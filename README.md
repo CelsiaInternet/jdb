@@ -14,7 +14,7 @@ go get github.com/celsiainternet/jdb@v1.0.108
 `jdb` depende de `elvis`, así que normalmente también necesitarás:
 
 ```bash
-go get github.com/celsiainternet/elvis@v1.1.317
+go get github.com/celsiainternet/elvis@v1.1.318
 ```
 
 ## Qué es

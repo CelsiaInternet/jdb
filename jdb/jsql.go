@@ -13,33 +13,33 @@ const (
 )
 
 /**
-* RunQuery: Crea la consulta sobre model a partir de query y devuelve la página pedida.
+* RunQuery: Crea la consulta sobre model a partir de query y devuelve la página pedida con el total de registros.
 * @param model *Model
-* @param query et.Json   (where, order_by, page, limit)
-* @return et.Items, error
+* @param query et.Json   (wheres, selects, order_by, page, rows; limit se acepta como alias de rows)
+* @return et.List, error
 **/
-func RunQuery(model *Model, query et.Json) (et.Items, error) {
+func RunQuery(model *Model, query et.Json) (et.List, error) {
 	ql := From(model)
 	var err error
 
 	ql, err = queryJoin(ql, query)
 	if err != nil {
-		return et.Items{}, err
+		return et.List{}, err
 	}
 
 	ql, err = queryWhere(model, ql, query.ArrayJson("wheres"))
 	if err != nil {
-		return et.Items{}, err
+		return et.List{}, err
 	}
 
 	ql, err = querySelect(ql, query.ArrayStr("selects"))
 	if err != nil {
-		return et.Items{}, err
+		return et.List{}, err
 	}
 
 	ql, err = queryOrderBy(model, ql, query.Json("order_by"))
 	if err != nil {
-		return et.Items{}, err
+		return et.List{}, err
 	}
 
 	page := query.Int("page")
@@ -47,15 +47,18 @@ func RunQuery(model *Model, query et.Json) (et.Items, error) {
 		page = 1
 	}
 
-	limit := query.Int("limit")
-	if limit < 1 {
-		limit = QUERY_DEFAULT_LIMIT
+	rows := query.Int("rows")
+	if rows < 1 {
+		rows = query.Int("limit")
 	}
-	if limit > QUERY_MAX_LIMIT {
-		limit = QUERY_MAX_LIMIT
+	if rows < 1 {
+		rows = QUERY_DEFAULT_LIMIT
+	}
+	if rows > QUERY_MAX_LIMIT {
+		rows = QUERY_MAX_LIMIT
 	}
 
-	return ql.Page(page).Rows(limit)
+	return ql.List(page, rows)
 }
 
 func whereElement(where et.Json) (field string, operator interface{}, value interface{}) {
@@ -124,7 +127,7 @@ func queryWhere(model *Model, ql *Ql, wheres []et.Json) (*Ql, error) {
 				field := model.GetField(column)
 				if field == nil {
 					continue
-				} 
+				}
 				ql = ql.Where(column)
 			}
 

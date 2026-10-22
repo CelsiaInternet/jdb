@@ -73,6 +73,27 @@ func NewSerie(kind, tag, format string, lastValue int) error {
 }
 
 /**
+* GetSerie
+* @param kind, tag string
+* @return et.Item, error
+**/
+func GetSerie(kind, tag string) (et.Item, error) {
+	if coreSeries == nil {
+		return et.Item{}, fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
+	}
+
+	item, err := coreSeries.
+		Where("kind").Eq(kind).
+		And("tag").Eq(tag).
+		One()
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	return item, nil
+}
+
+/**
 * GetSeries
 * @param kind, tag string
 * @return string, error

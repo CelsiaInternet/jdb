@@ -401,11 +401,62 @@ func (s ShowRollup) Str() string {
 	}
 }
 
+/**
+* MarshalJSON: Serializa el modo como texto ("attribs" u "objects").
+* @return []byte, error
+**/
+func (s ShowRollup) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.Str())
+}
+
+/**
+* UnmarshalJSON: Lee el modo como texto ("attribs" u "objects") o como numero (definiciones anteriores).
+* @param data []byte
+* @return error
+**/
+func (s *ShowRollup) UnmarshalJSON(data []byte) error {
+	var text string
+	if err := json.Unmarshal(data, &text); err == nil {
+		*s = ShowAtrib
+		if text == ShowObject.Str() {
+			*s = ShowObject
+		}
+		return nil
+	}
+
+	var number int
+	if err := json.Unmarshal(data, &number); err != nil {
+		return err
+	}
+
+	*s = ShowRollup(number)
+	return nil
+}
+
+/**
+* Rollup: Campos de otro modelo (With) que se agregan a cada fila, buscados por las llaves Fk (campo local -> campo en With).
+* Name es la columna virtual del modelo y WithName el nombre de With, para reconstruirlo desde la definicion serializada.
+**/
 type Rollup struct {
-	With   *Model            `json:"-"`
-	Fk     map[string]string `json:"fk"`
-	Fields []string          `json:"fields"`
-	Show   ShowRollup        `json:"show"`
+	Name     string            `json:"name"`
+	With     *Model            `json:"-"`
+	WithName string            `json:"with"`
+	Fk       map[string]string `json:"fk"`
+	Fields   []string          `json:"fields"`
+	Show     ShowRollup        `json:"show"`
+}
+
+/**
+* getWith: Modelo del que se traen los datos; si no esta cargado (definicion serializada) lo busca por WithName.
+* @param db *DB
+* @return *Model
+**/
+func (s *Rollup) getWith(db *DB) *Model {
+	if s.With == nil && db != nil && s.WithName != "" {
+		s.With = db.GetModel(s.WithName)
+	}
+
+	return s.With
 }
 
 /**

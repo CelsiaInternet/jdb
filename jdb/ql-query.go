@@ -2,18 +2,119 @@ package jdb
 
 import (
 	"fmt"
+	"maps"
+	"sort"
 
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/et"
 )
 
 /**
-* getDetailsTx
+* getDetailsTx: Completa la fila con lo que no sale del select: hoy los rollups pedidos (Select o Detail).
 * @param tx *Tx, item et.Json
-* @return et.Json
+* @return et.Json, error
 **/
-func (s *Ql) getDetailsTx(tx *Tx, item et.Json) et.Json {
-	return item
+func (s *Ql) getDetailsTx(tx *Tx, item et.Json) (et.Json, error) {
+	for _, rollup := range s.Rollups {
+		value, err := s.rollupValueTx(tx, rollup, item)
+		if err != nil {
+			return item, err
+		}
+
+		item[rollup.Name] = value
+	}
+
+	return item, nil
+}
+
+/**
+* rollupValueTx: Valor de un rollup para la fila: consulta sus Fields en With por las llaves Fk.
+* Con ShowAtrib y un solo campo devuelve el valor del campo; con varios campos, o con ShowObject, un objeto con los campos.
+* Si a la fila le falta una llave o no hay registro relacionado, los campos quedan en nil.
+* Las filas con las mismas llaves comparten la consulta (cache por Ql).
+* @param tx *Tx, rollup *Rollup, item et.Json
+* @return any, error
+**/
+func (s *Ql) rollupValueTx(tx *Tx, rollup *Rollup, item et.Json) (any, error) {
+	with := rollup.getWith(s.Db)
+	if with == nil {
+		return nil, fmt.Errorf(MSG_MODEL_NOT_FOUND, rollup.WithName)
+	}
+
+	// Orden fijo de las llaves: arma el mismo where y la misma llave de cache para filas iguales.
+	fkNames := make([]string, 0, len(rollup.Fk))
+	for fkName := range rollup.Fk {
+		fkNames = append(fkNames, fkName)
+	}
+	sort.Strings(fkNames)
+
+	found := et.Json{}
+	complete := true
+	query := From(with)
+	cacheKey := rollup.Name
+	for idx, fkName := range fkNames {
+		value, ok := item[fkName]
+		if !ok || value == nil {
+			complete = false
+			break
+		}
+
+		pkName := rollup.Fk[fkName]
+		cacheKey += fmt.Sprintf("|%s=%v", pkName, value)
+		if idx == 0 {
+			query.Where(pkName).Eq(value)
+		} else {
+			query.And(pkName).Eq(value)
+		}
+	}
+
+	if complete {
+		if cached, ok := s.rollupCache[cacheKey]; ok {
+			return cloneRollupValue(cached), nil
+		}
+
+		// El select explicito no recorta las columnas en el driver: los campos se toman del resultado.
+		row, err := query.OneTx(tx)
+		if err != nil {
+			return nil, err
+		}
+
+		if row.Ok {
+			found = row.Result
+		}
+	}
+
+	fields := et.Json{}
+	for _, name := range rollup.Fields {
+		fields[name] = found[name]
+	}
+
+	var result any = fields
+	if rollup.Show == ShowAtrib && len(rollup.Fields) == 1 {
+		result = fields[rollup.Fields[0]]
+	}
+
+	if complete {
+		if s.rollupCache == nil {
+			s.rollupCache = make(map[string]any)
+		}
+		s.rollupCache[cacheKey] = cloneRollupValue(result)
+	}
+
+	return result, nil
+}
+
+/**
+* cloneRollupValue: Copia un objeto de rollup para que cada fila tenga el suyo (un valor simple se devuelve igual).
+* @param value any
+* @return any
+**/
+func cloneRollupValue(value any) any {
+	if fields, ok := value.(et.Json); ok {
+		return maps.Clone(fields)
+	}
+
+	return value
 }
 
 /**
@@ -54,7 +155,10 @@ func (s *Ql) AllTx(tx *Tx) (et.Items, error) {
 	}
 
 	for _, data := range result.Result {
-		s.getDetailsTx(tx, data)
+		_, err = s.getDetailsTx(tx, data)
+		if err != nil {
+			return et.Items{}, err
+		}
 	}
 
 	return result, nil

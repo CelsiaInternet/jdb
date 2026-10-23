@@ -325,10 +325,12 @@ func (s *Model) defineRollup(name, withName string, fks map[string]string, field
 	}
 
 	result := &Rollup{
-		With:   with,
-		Fk:     fks,
-		Fields: fields,
-		Show:   showRollup,
+		Name:     name,
+		With:     with,
+		WithName: with.Name,
+		Fk:       fks,
+		Fields:   fields,
+		Show:     showRollup,
 	}
 
 	col := newColumn(s, name, "", TpRollup, TypeDataNone, TypeDataNone.DefaultValue())

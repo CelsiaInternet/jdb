@@ -178,6 +178,7 @@ type Ql struct {
 	wg             *sync.WaitGroup           `json:"-"`
 	isExists       bool                      `json:"-"`
 	isCounted      bool                      `json:"-"`
+	rollupCache    map[string]any            `json:"-"`
 }
 
 /**

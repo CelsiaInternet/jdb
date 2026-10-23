@@ -85,6 +85,15 @@ func (s *QlFroms) getField(name string) *Field {
 		}
 	}
 
+	// Ruta JSON (_data->'a'->>'b' o _data.a.b): solo cuando el nombre no es un campo definido.
+	for _, from := range s.Froms {
+		result := from.getPathField(name)
+		if result != nil {
+			result.SetFromAs(from.As)
+			return result
+		}
+	}
+
 	return nil
 }
 

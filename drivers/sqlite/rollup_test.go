@@ -141,3 +141,138 @@ func TestRollupSerialize(t *testing.T) {
 		t.Errorf("describe must include rollup: %v", describe)
 	}
 }
+
+/**
+* newKeyModels: tipos de identificacion con varios registros por codigo (key) y personas que los referencian.
+* @param t *testing.T, db *jdb.DB
+* @return *jdb.Model, *jdb.Model
+**/
+func newKeyModels(t *testing.T, db *jdb.DB) (*jdb.Model, *jdb.Model) {
+	schema := jdb.NewSchema(db, "test")
+	types := jdb.NewModel(schema, "id_types", 1)
+	types.DefineModel()
+	types.DefineColumn("code", jdb.TypeDataText)
+	types.DefineColumn("key", jdb.TypeDataText)
+	types.DefineColumn("name", jdb.TypeDataText)
+	if err := types.Init(); err != nil {
+		t.Fatal(err)
+	}
+
+	people := jdb.NewModel(schema, "people", 1)
+	people.DefineModel()
+	people.DefineColumn("type_code", jdb.TypeDataText)
+	if err := people.Init(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, row := range []et.Json{
+		{"_id": "k1", "code": "1", "key": "CC", "name": "Cedula"},
+		{"_id": "k2", "code": "1", "key": "TI", "name": "Tarjeta"},
+		{"_id": "k3", "code": "2", "key": "NIT", "name": "Nit"},
+	} {
+		if _, err := types.Insert(row).Exec(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := people.Insert(et.Json{"_id": "p1", "type_code": "1"}).Exec(); err != nil {
+		t.Fatal(err)
+	}
+
+	return types, people
+}
+
+func TestRollupWheres(t *testing.T) {
+	db := connect(t)
+	types, people := newKeyModels(t, db)
+
+	fk := map[string]string{"type_code": "code"}
+	if _, err := people.DefineRollup("type_cc", types.Name, fk, []string{"name"}).SetWheres(et.Json{"key": et.Json{"eq": "CC"}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := people.DefineRollup("type_ti", types.Name, fk, []string{"name"}).SetWheres(et.Json{"key": et.Json{"in": []interface{}{"TI", "PA"}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := people.DefineRollup("type_none", types.Name, fk, []string{"name"}).SetWheres(et.Json{"key": et.Json{"eq": "NIT"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	item, err := people.Select(jdb.KEY, "type_code", "type_cc", "type_ti", "type_none").Where(jdb.KEY).Eq("p1").One()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if item.Result.Str("type_cc") != "Cedula" || item.Result.Str("type_ti") != "Tarjeta" {
+		t.Errorf("rollup wheres: %v", item.Result)
+	}
+	// La llave coincide pero el filtro no: sin registro.
+	if item.Result["type_none"] != nil {
+		t.Errorf("type_none must be nil: %v", item.Result["type_none"])
+	}
+
+	if _, err := people.DefineRollup("bad", types.Name, fk, []string{"name"}).SetWheres(et.Json{"key": et.Json{"regex": "C"}}); err == nil {
+		t.Error("unknown operator must fail")
+	}
+	if _, err := people.DefineRollup("bad2", types.Name, fk, []string{"name"}).SetWheres(et.Json{"key": "CC"}); err == nil {
+		t.Error("where without operator must fail")
+	}
+
+	definition, err := json.Marshal(people.Rollup["type_cc"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	loaded := jdb.Rollup{}
+	if err := json.Unmarshal(definition, &loaded); err != nil || len(loaded.Wheres) != 1 || loaded.Wheres[0].Json("key").Str("eq") != "CC" {
+		t.Errorf("serialized wheres: %s", definition)
+	}
+}
+
+func TestQueryWhereGroups(t *testing.T) {
+	db := connect(t)
+	types, _ := newKeyModels(t, db)
+
+	// limit 0: todas las filas (con limit > 1 Query devuelve la fila n, defecto conocido de setLimitTx).
+	result, err := types.Query(et.Json{"limit": 0, "where": et.Json{"or": []interface{}{
+		et.Json{"key": et.Json{"eq": "CC"}},
+		et.Json{"key": et.Json{"eq": "NIT"}},
+	}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Int("count") != 2 {
+		t.Errorf("or group must return 2 rows: %v", result)
+	}
+
+	result, err = types.Query(et.Json{"limit": 0, "where": et.Json{"and": []interface{}{
+		et.Json{"code": et.Json{"eq": "1"}},
+		et.Json{"key": et.Json{"eq": "TI"}},
+	}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Int("count") != 1 {
+		t.Errorf("and group must return 1 row: %v", result)
+	}
+}
+
+func TestRunQueryWithRollups(t *testing.T) {
+	db := connect(t)
+	types, people := newKeyModels(t, db)
+
+	// Rollup suelto: no se agrega al modelo, solo a esta consulta.
+	rollup := jdb.NewRollup("type_name", types, map[string]string{"type_code": "code"}, []string{"name", "key"}, jdb.StrToShowRollup("objects"))
+	if _, err := rollup.SetWheres(et.Json{"key": et.Json{"eq": "TI"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := jdb.RunQuery(people, et.Json{"wheres": []interface{}{et.Json{jdb.KEY: et.Json{"eq": "p1"}}}}, rollup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list.Result) != 1 || list.Result[0].Json("type_name").Str("name") != "Tarjeta" {
+		t.Fatalf("RunQuery rollup: %v", list.Result)
+	}
+
+	if _, ok := people.Rollup["type_name"]; ok {
+		t.Error("NewRollup must not change the model")
+	}
+}

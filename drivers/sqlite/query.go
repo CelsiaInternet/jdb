@@ -138,6 +138,12 @@ func asField(field jdb.Field) string {
 		tableAlias = field.Model.As
 	}
 
+	if len(field.Path) > 0 {
+		// Ruta JSON dentro de la columna: ->> devuelve el valor con su tipo (texto, numero o booleano).
+		column := strs.Append(tableAlias, quoteIdent(field.Name), ".")
+		return strs.Format(`%s ->> %s`, column, jsonPathKeys(field.Path))
+	}
+
 	if field.TypeColumn == jdb.TpColumn {
 		return strs.Append(tableAlias, quoteIdent(field.Name), ".")
 	} else if field.TypeColumn == jdb.TpAtribute && field.Model != nil && field.Model.SourceField != nil {

@@ -77,6 +77,24 @@ func (s *Ql) setSelectField(field *Field) *Ql {
 }
 
 /**
+* AddRollups: Agrega rollups que no son columnas del modelo (NewRollup); se resuelven por fila como los definidos.
+* Omite los nil y los que ya estan en la consulta (por nombre).
+* @param rollups ...*Rollup
+* @return *Ql
+**/
+func (s *Ql) AddRollups(rollups ...*Rollup) *Ql {
+	for _, rollup := range rollups {
+		if rollup == nil || slices.ContainsFunc(s.Rollups, func(item *Rollup) bool { return item.Name == rollup.Name }) {
+			continue
+		}
+
+		s.Rollups = append(s.Rollups, rollup)
+	}
+
+	return s
+}
+
+/**
 * Select
 * @param fields ...interface{}
 * @return *Ql

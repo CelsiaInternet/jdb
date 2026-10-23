@@ -918,7 +918,18 @@ func (s *QlWhere) setWheres(wheres et.Json) *QlWhere {
 			case "neg":
 				s.Neg(val)
 			case "in":
-				s.In(val)
+				// La lista del JSON llega como un solo valor: se expande para que In reciba cada elemento.
+				if list, ok := val.([]interface{}); ok {
+					s.In(list...)
+				} else {
+					s.In(val)
+				}
+			case "notIn":
+				if list, ok := val.([]interface{}); ok {
+					s.NotIn(list...)
+				} else {
+					s.NotIn(val)
+				}
 			case "like":
 				s.Like(val)
 			case "more":
@@ -939,22 +950,23 @@ func (s *QlWhere) setWheres(wheres et.Json) *QlWhere {
 		}
 	}
 
+	// Grupos "and"/"or" (sin importar mayusculas): lista de condiciones { campo: { operador: valor } }.
 	for key := range wheres {
-		if strings.ToLower(key) == "AND" {
+		if strings.ToLower(key) == "and" {
 			value := wheres.ArrayJson(key)
 			for _, where := range value {
-				for key := range where {
-					val := wheres.Json(key)
-					s.setWhere(key)
+				for field := range where {
+					val := where.Json(field)
+					s.setWhere(field)
 					setOperatorValue(val)
 				}
 			}
-		} else if strings.ToLower(key) == "OR" {
+		} else if strings.ToLower(key) == "or" {
 			value := wheres.ArrayJson(key)
 			for _, where := range value {
-				for key := range where {
-					val := wheres.Json(key)
-					s.setOr(key)
+				for field := range where {
+					val := where.Json(field)
+					s.setOr(field)
 					setOperatorValue(val)
 				}
 			}

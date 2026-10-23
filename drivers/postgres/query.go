@@ -113,6 +113,13 @@ func asField(field jdb.Field) string {
 		tableAlias = field.Model.As
 	}
 
+	if len(field.Path) > 0 {
+		// Ruta JSON dentro de la columna: se lee como texto (#>>). Las llaves ya vienen validadas por jdb.
+		column := strs.Append(tableAlias, field.Name, ".")
+		result := strs.Format(`%s#>>'{%s}'`, column, strings.Join(field.Path, ","))
+		return result
+	}
+
 	if field.TypeColumn == jdb.TpColumn {
 		result := strs.Append(tableAlias, field.Name, ".")
 		return result
@@ -476,6 +483,7 @@ func whereCondition(con *jdb.QlCondition) string {
 	}
 
 	key := whereValue(con.Field)
+	key = pathCast(con.Field, con.Value, key)
 	if con.Operator == jdb.Between {
 		return strs.Format("%v%v", key, whereBetween(con.Value))
 	}
@@ -483,6 +491,46 @@ func whereCondition(con *jdb.QlCondition) string {
 	values := whereValue(con.Value)
 	def := whereOperator(con, values)
 	return strs.Format("%v%v", key, def)
+}
+
+/**
+* pathCast: Una ruta JSON se lee como texto (#>>); si el valor comparado es numero o booleano,
+* convierte la ruta a ese tipo para que Postgres no falle con "text = integer" y para que
+* More/Less comparen como numero y no como texto. En In/NotIn/Between mira el primer elemento.
+* @param field interface{}, value interface{}, key string
+* @return string
+**/
+func pathCast(field interface{}, value interface{}, key string) string {
+	var path []string
+	switch v := field.(type) {
+	case *jdb.Field:
+		path = v.Path
+	case jdb.Field:
+		path = v.Path
+	}
+	if len(path) == 0 {
+		return key
+	}
+
+	sample := value
+	if val, ok := value.(jdb.Value); ok {
+		sample = val.Value
+		if items := arrayItems(val.Value); items != nil && len(items) > 0 {
+			sample = items[0]
+		}
+	}
+	if val, ok := sample.(jdb.Value); ok {
+		sample = val.Value
+	}
+
+	switch sample.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return strs.Format(`(%s)::numeric`, key)
+	case bool:
+		return strs.Format(`(%s)::boolean`, key)
+	}
+
+	return key
 }
 
 /**

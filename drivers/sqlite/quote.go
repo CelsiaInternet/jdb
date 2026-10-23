@@ -15,6 +15,21 @@ import (
 )
 
 /**
+* jsonPathKeys: literal de ruta JSON '$."a"."b"' para las llaves de un campo con Path (ya validadas por jdb).
+* @param keys []string
+* @return string
+**/
+func jsonPathKeys(keys []string) string {
+	parts := make([]string, len(keys))
+	for i, key := range keys {
+		key = strings.ReplaceAll(key, `"`, ``)
+		key = strings.ReplaceAll(key, `'`, `''`)
+		parts[i] = strs.Format(`"%s"`, key)
+	}
+	return strs.Format(`'$.%s'`, strings.Join(parts, "."))
+}
+
+/**
 * quoteIdent: identificador entre comillas dobles (SQLite reserva palabras como index u order).
 * @param name string
 * @return string

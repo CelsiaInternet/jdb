@@ -127,7 +127,7 @@ items, err := db.Query("SELECT * FROM public.users WHERE age > $1", 18)
 | `DefineRequired(cols...)`, `DefineHidden(cols...)`                                                                                                | Requeridos / ocultos en resultados              |
 | `DefineCreatedAtField()`, `DefineUpdatedAtField()`, `DefineStatusField()`, `DefineSystemKeyField()`, `DefineIndexField()`, `DefineProjectField()` | Campos de sistema (se rellenan automáticamente) |
 | `DefineRelation(name, with, fks, limit)`                                                                                                          | Relación uno-a-muchos                           |
-| `DefineRollup(name, with, fks, fields)`                                                                                                           | Agregación desde otra tabla                     |
+| `DefineRollup(name, with, fks, fields).SetWheres(...)`                                                                                                        | Agregación desde otra tabla                     |
 | `DefineObject(name, with, fks, fields)`                                                                                                           | Objeto embebido uno-a-uno                       |
 | `DefineDetail(name, fks, limit)`                                                                                                                  | Detalle                                         |
 | `DefineCalc(name, fn)`, `DefineCalcTx(name, fn)`                                                                                                  | Campo calculado en Go                           |
@@ -193,7 +193,14 @@ ok, err := users.Where("email").Eq("x@y.com").ItExists()
 
 // Join (con *Model)
 items, err = jdb.From(users).Join(profiles, "id", "=", "user_id").All()
+
+// Ruta JSON: flechas de Postgres o puntos, desde una columna JSON (TypeDataObject) o dentro del source (_data)
+items, err = scheduling.Where("customer_id").Eq(customerId).
+	And("_data->'sync_external'->>'oss_order_id'").Eq(ossOrderId). // igual a "_data.sync_external.oss_order_id" o "sync_external.oss_order_id"
+	OrderByDesc("start_date").All()
 ```
+
+Las llaves de una ruta JSON solo admiten letras, numeros, `_` y `-`; si no, el nombre no se resuelve como campo. En Postgres la ruta se lee como texto y se convierte a `numeric` o `boolean` cuando el valor comparado es un numero o un booleano.
 
 ### Comandos (`*Command`)
 

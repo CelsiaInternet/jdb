@@ -16,10 +16,11 @@ const (
 * RunQuery: Crea la consulta sobre model a partir de query y devuelve la página pedida con el total de registros.
 * @param model *Model
 * @param query et.Json   (wheres, selects, order_by, page, rows; limit se acepta como alias de rows)
+* @param rollups ...*Rollup   rollups extra (NewRollup) que se resuelven en cada fila
 * @return et.List, error
 **/
-func RunQuery(model *Model, query et.Json) (et.List, error) {
-	ql := From(model)
+func RunQuery(model *Model, query et.Json, rollups ...*Rollup) (et.List, error) {
+	ql := From(model).AddRollups(rollups...)
 	var err error
 
 	ql, err = queryJoin(ql, query)

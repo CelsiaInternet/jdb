@@ -15,6 +15,8 @@ type Field struct {
 	TypeData   TypeData    `json:"type_data"`
 	Default    interface{} `json:"default"`
 	Hidden     bool        `json:"hidden"`
+	// Path: llaves de una ruta JSON dentro de la columna (ej. _data.sync_external.oss_order_id); el driver la lee como texto.
+	Path []string `json:"path,omitempty"`
 }
 
 /**

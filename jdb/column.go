@@ -3,6 +3,7 @@ package jdb
 import (
 	"encoding/gob"
 	"encoding/json"
+	"fmt"
 	"slices"
 
 	"github.com/celsiainternet/elvis/et"
@@ -436,6 +437,7 @@ func (s *ShowRollup) UnmarshalJSON(data []byte) error {
 /**
 * Rollup: Campos de otro modelo (With) que se agregan a cada fila, buscados por las llaves Fk (campo local -> campo en With).
 * Name es la columna virtual del modelo y WithName el nombre de With, para reconstruirlo desde la definicion serializada.
+* Wheres son condiciones fijas sobre With ({ campo: { operador: valor } }), unidas con AND a las llaves.
 **/
 type Rollup struct {
 	Name     string            `json:"name"`
@@ -444,6 +446,75 @@ type Rollup struct {
 	Fk       map[string]string `json:"fk"`
 	Fields   []string          `json:"fields"`
 	Show     ShowRollup        `json:"show"`
+	Wheres   []et.Json         `json:"wheres"`
+}
+
+// Operadores que acepta una condicion de Rollup.Wheres (los de QlWhere.setWheres).
+var rollupOperators = map[string]bool{
+	"eq": true, "neg": true, "in": true, "notIn": true, "like": true, "more": true, "less": true,
+	"moreEq": true, "lessEq": true, "between": true, "isNull": true, "notNull": true,
+}
+
+/**
+* SetWheres: Condiciones fijas sobre With, unidas con AND a las llaves; reemplaza las anteriores.
+* Cada una es { campo: { operador: valor } }, ej. et.Json{"key": et.Json{"eq": "CC"}}.
+* @param wheres ...et.Json
+* @return *Rollup, error
+**/
+func (s *Rollup) SetWheres(wheres ...et.Json) (*Rollup, error) {
+	for _, where := range wheres {
+		for field, condition := range where {
+			operators, ok := condition.(map[string]interface{})
+			if jsonCondition, isJson := condition.(et.Json); isJson {
+				operators, ok = jsonCondition, true
+			}
+			if !ok || len(operators) == 0 {
+				return s, fmt.Errorf(MSG_ROLLUP_WHERE_INVALID, s.Name, field)
+			}
+			for operator := range operators {
+				if !rollupOperators[operator] {
+					return s, fmt.Errorf(MSG_ROLLUP_OPERATOR_INVALID, s.Name, operator)
+				}
+			}
+		}
+	}
+
+	s.Wheres = wheres
+	return s, nil
+}
+
+/**
+* NewRollup: Rollup suelto (sin columna en el modelo) para pasarlo a una consulta con Ql.AddRollups o RunQuery.
+* Sirve para rollups definidos en datos (no en codigo) sin tocar el modelo compartido mientras se consulta.
+* @param name string, with *Model, fks map[string]string, fields []string, show ShowRollup
+* @return *Rollup
+**/
+func NewRollup(name string, with *Model, fks map[string]string, fields []string, show ShowRollup) *Rollup {
+	result := &Rollup{
+		Name:   name,
+		With:   with,
+		Fk:     fks,
+		Fields: fields,
+		Show:   show,
+	}
+	if with != nil {
+		result.WithName = with.Name
+	}
+
+	return result
+}
+
+/**
+* StrToShowRollup: Modo de un rollup desde su texto ("objects"); cualquier otro es attribs.
+* @param value string
+* @return ShowRollup
+**/
+func StrToShowRollup(value string) ShowRollup {
+	if value == ShowObject.Str() {
+		return ShowObject
+	}
+
+	return ShowAtrib
 }
 
 /**

@@ -68,6 +68,11 @@ func (s *Ql) rollupValueTx(tx *Tx, rollup *Rollup, item et.Json) (any, error) {
 		}
 	}
 
+	// Condiciones fijas del rollup sobre With: se suman con AND a las llaves.
+	for _, where := range rollup.Wheres {
+		query.setWheres(where)
+	}
+
 	if complete {
 		if cached, ok := s.rollupCache[cacheKey]; ok {
 			return cloneRollupValue(cached), nil

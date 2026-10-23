@@ -15,6 +15,8 @@ var (
 	MSG_SCHEMA_IS_REQUIRED          = "Schema is required"
 	MSG_QUERY_FAILED                = "Query failed: %s\nSQL: %s"
 	MSG_MODEL_NOT_FOUND             = "Model not found (%s)"
+	MSG_ROLLUP_WHERE_INVALID        = "Rollup %s: where of %s must be { operator: value }"
+	MSG_ROLLUP_OPERATOR_INVALID     = "Rollup %s: operator %s not supported"
 	MSG_MODEL_REQUIRED              = "Model is required"
 	MSG_FIELD_NOT_FOUND             = "Field not found (%s)"
 	MSG_QUERY_EMPTY                 = "Query is empty"

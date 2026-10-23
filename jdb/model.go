@@ -268,6 +268,7 @@ func (s *Model) Describe() et.Json {
 	delete(result, "definitions")
 	result["kind"] = "model"
 	result["columns"] = columns
+	result["rollup"] = s.Rollup
 	result["primary_keys"] = s.PrimaryKeys
 	result["foreign_keys"] = s.ForeignKeys
 	result["indices"] = s.Indices

@@ -127,7 +127,7 @@ items, err := db.Query("SELECT * FROM public.users WHERE age > $1", 18)
 | `DefineRequired(cols...)`, `DefineHidden(cols...)`                                                                                                | Requeridos / ocultos en resultados              |
 | `DefineCreatedAtField()`, `DefineUpdatedAtField()`, `DefineStatusField()`, `DefineSystemKeyField()`, `DefineIndexField()`, `DefineProjectField()` | Campos de sistema (se rellenan automáticamente) |
 | `DefineRelation(name, with, fks, limit)`                                                                                                          | Relación uno-a-muchos                           |
-| `DefineRollup(name, with, fks, fields).SetWheres(...)`                                                                                                        | Agregación desde otra tabla                     |
+| `DefineRollup(name, with, fks, fields).SetWheres(...)`                                                                                            | Agregación desde otra tabla                     |
 | `DefineObject(name, with, fks, fields)`                                                                                                           | Objeto embebido uno-a-uno                       |
 | `DefineDetail(name, fks, limit)`                                                                                                                  | Detalle                                         |
 | `DefineCalc(name, fn)`, `DefineCalcTx(name, fn)`                                                                                                  | Campo calculado en Go                           |

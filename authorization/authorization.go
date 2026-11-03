@@ -72,7 +72,9 @@ func Define(db *jdb.DB, schema string) (*Authorization, error) {
 	model.DefineColumn("profile_id", jdb.TypeDataKey)
 	model.DefineColumn("method", jdb.TypeDataText)
 	model.DefineColumn("path", jdb.TypeDataText)
+	model.DefineColumn("package_name", jdb.TypeDataText)
 	model.DefinePrimaryKey("project_id", "profile_id", "method", "path")
+	model.DefineIndex(true, "package_name")
 	model.BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
 		projectId := data.Str("project_id")
 		profileId := data.Str("profile_id")
@@ -156,10 +158,10 @@ func (s *Authorization) RemoveAuthor(projectId, profileId, method, path string) 
 
 /**
 * SetAuthor: Grants a profile authorization to access a given method and path within a project.
-* @param projectId string, profileId string, method string, path string
+* @param projectId string, profileId string, method string, path string, packageName string
 * @return error
 **/
-func (s *Authorization) SetAuthor(projectId, profileId, method, path string) error {
+func (s *Authorization) SetAuthor(projectId, profileId, method, path, packageName string) error {
 	if !utility.ValidStr(method, 0, []string{""}) {
 		return fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "method")
 	}
@@ -171,10 +173,11 @@ func (s *Authorization) SetAuthor(projectId, profileId, method, path string) err
 	now := timezone.Now()
 	_, err := s.model.
 		Insert(et.Json{
-			"project_id": projectId,
-			"profile_id": profileId,
-			"method":     method,
-			"path":       path,
+			"project_id":   projectId,
+			"profile_id":   profileId,
+			"method":       method,
+			"path":         path,
+			"package_name": packageName,
 		}).
 		BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
 			data.Set(jdb.CREATED_AT, now)
@@ -192,11 +195,11 @@ func (s *Authorization) SetAuthor(projectId, profileId, method, path string) err
 
 /**
 * SetPath: Registers a method and path as a known authorization endpoint.
-* @param method string, path string
+* @param method string, path string, packageName string
 * @return error
 **/
-func (s *Authorization) SetPath(method, path string) error {
-	err := s.SetAuthor("", "", method, path)
+func (s *Authorization) SetPath(method, path, packageName string) error {
+	err := s.SetAuthor("", "", method, path, packageName)
 	if err != nil && !errors.Is(err, ErrorInsert) {
 		return err
 	}

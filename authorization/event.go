@@ -47,8 +47,9 @@ func (s *Authorization) eventSetResolve(m event.EvenMessage) {
 	data := m.Data
 	method := data.Str("method")
 	path := data.Str("path")
+	packageName := data.Str("package_name")
 	for _, profile := range s.defaultProfiles {
-		err := s.SetAuthor(s.defaultProjectId, profile, method, path)
+		err := s.SetAuthor(s.defaultProjectId, profile, method, path, packageName)
 		if err != nil && !errors.Is(err, ErrorInsert) {
 			console.AlertF(`Authorization gateway error:%s`, err.Error())
 			continue

@@ -34,28 +34,28 @@ func RemoveAuthor(projectId, profileId, method, path string) error {
 
 /**
 * SetAuthor: Grants a profile authorization to access a given method and path within a project.
-* @param projectId string, profileId string, method string, path string
+* @param projectId string, profileId string, method string, path string, packageName string
 * @return error
 **/
-func SetAuthor(projectId, profileId, method, path string) error {
+func SetAuthor(projectId, profileId, method, path, packageName string) error {
 	if auth == nil {
 		return errors.New(MSG_AUTHORIZATION_NOT_DEFINED)
 	}
 
-	return auth.SetAuthor(projectId, profileId, method, path)
+	return auth.SetAuthor(projectId, profileId, method, path, packageName)
 }
 
 /**
 * SetPath: Registers a method and path as a known authorization endpoint.
-* @param method string, path string
+* @param method string, path string, packageName string
 * @return error
 **/
-func SetPath(method, path string) error {
+func SetPath(method, path, packageName string) error {
 	if auth == nil {
 		return errors.New(MSG_AUTHORIZATION_NOT_DEFINED)
 	}
 
-	return auth.SetPath(method, path)
+	return auth.SetPath(method, path, packageName)
 }
 
 /**

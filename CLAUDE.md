@@ -19,7 +19,7 @@ Go version: **1.23.0** (see `.go-version`). Primary dependency: `github.com/cels
 
 ## Workspace (which `elvis` and which consumers)
 
-`go env GOWORK` resolves to **`/Users/cesargalvisleon/Projects/internet/go.work`** (two levels above this repo, not `library/`). It `use`s `./library/elvis`, `./library/jdb` and ~15 services, so:
+`go env GOWORK` resolves to **`/Users/cgalvisleon/Projects/internet/go.work`** (`/Users/cesargalvisleon/...` on the old Mac) (two levels above this repo, not `library/`). It `use`s `./library/elvis`, `./library/jdb` and ~15 services, so:
 - `elvis` is built from the **local `library/elvis` checkout**, not the `v1.1.311` pinned in `go.mod`. Edits in either repo are live for the other with no tag/replace.
 - Workspace modules that import `jdb`: `catalog/api` (pins v1.0.92), `octopus/api` (v1.0.94), `services/publisher` (v1.0.76), `services/cleandb` (v1.0.15). In workspace mode they compile against *this* checkout regardless of the pinned version, so a public signature change here can break them — grep those directories before changing an exported API. (`services/maia`, `services/bulkfailures` also pin jdb but are not in `go.work`.)
 - The outer `library/` directory is not a Git repo; run `git` from inside `jdb/`.
@@ -42,7 +42,7 @@ git add . && git commit -m 'Update version' && ./version.sh --r
 
 `cmd/` contains three separate `main` packages:
 - `cmd/test` — a hand-edited scratch program (currently just `jdb.Load()` + `jdb.GetSeries`). Treat it as a sandbox.
-- `cmd/install` — installs a fixed list of third-party Go dependencies via `go get` (bootstrapping a new consumer project).
+- `cmd/install` — installs a fixed list of third-party Go dependencies via `go get` (bootstrapping a new consumer project), then calls `agentsguide.Install()`.
 - `cmd/create` — a Cobra CLI (`cmd/create/v2`) that scaffolds microservice projects/models from templates under `cmd/create/v2/template`.
 
 Tests: `go test ./drivers/...`. `drivers/postgres/command_test.go` only checks generated SQL; `drivers/sqlite` runs end-to-end against an in-memory database; `drivers/oracle` runs end-to-end only when `ORA_TEST_HOST` (+ `ORA_TEST_PORT`, `ORA_TEST_USER`, `ORA_TEST_PASSWORD`, `ORA_TEST_SERVICE`) points at a server, otherwise it skips — e.g. `docker run -d -p 15210:1521 -e ORACLE_PASSWORD=x -e APP_USER=jdb -e APP_USER_PASSWORD=jdbtest gvenzl/oracle-free:slim`, service `FREEPDB1`. There are no tests for the `jdb` package itself. Commits on `main` are auto-generated "Backup:" snapshots, so `git log` says little; use `git log -L` / `git show` on the file to find when behavior changed.
@@ -66,6 +66,7 @@ authorization/  Feature singleton: auth/session model (wires into elvis/middlewa
 config/         Feature singleton: runtime config model
 inbox/          Feature singleton: message inbox model
 cmd/            Standalone tool binaries (test/install/create) — not the library
+agentsguide/    JDB.md (agent guide: patterns + known defects) installed into consumers via elvis agentsguide.InstallGuide
 ```
 
 ### Two layers
@@ -103,7 +104,7 @@ items, err := userModel.Upsert(data).Exec()
 
 ### Command execution and hooks
 
-`Command.ExecTx` → `inserted()` / `updated(current)` / `deleted(current)` / `upsert()` (in `command-*.go`). Update/Delete first run a SELECT (`getCurrent`) to load `old` rows. `NewCommand` registers default trigger functions (`command-trigger.go`) that fill `IndexField`, `SystemKeyField`, `CreatedAt`/`UpdatedAt`. Hooks exist at two levels — `Model.BeforeInsert…/AfterInsert…` (`model-before.go`, `model-after.go`) and per-command `Command.BeforeInsert…` — each as plain (`DataFunctionTx`) and `*Trigger` (`old, new`) variants. `command-delete.go`'s `deleted()` is the reference-correct ordering (model before → command before → write → model after → command after); insert and update deviate (see defects). `Tx` (`tx.go`) begins lazily in `queryTx`, so `NewTx()` needs no explicit `Begin`.
+`Command.ExecTx` → `inserted()` / `updated(current)` / `deleted(current)` / `upsert()` (in `command-*.go`). Update/Delete first run a SELECT (`getCurrent`) to load `old` rows. `NewCommand` registers default trigger functions (`command-trigger.go`) that fill `IndexField`, `SystemKeyField`, `CreatedAt`/`UpdatedAt`. Hooks exist at two levels — `Model.BeforeInsert…/AfterInsert…` (`model-before.go`, `model-after.go`) and per-command `Command.BeforeInsert…` — each as plain (`DataFunctionTx`) and `*Trigger` (`old, new`) variants. `command-delete.go`'s `deleted()` is the reference-correct ordering (model before → command before → write → model after → command after); insert and update deviate (see defects). `Tx` (`tx.go`) has no public constructor (`newTx` is unexported): a command or query begins one lazily in `queryTx`, hooks receive it as `tx *jdb.Tx`, and callers propagate it with `ExecTx(tx)`/`AllTx(tx)`/`OneTx(tx)`.
 
 ### Driver registration and connecting
 
@@ -118,9 +119,18 @@ db, err := jdb.ConnectTo(jdb.ConnectParams{Driver: "postgres", Name: "myapp", Pa
   - **`DB.UseCore`** — the field `Model.Save`/`DB.Save`/`DB.Load` actually gate on (`!s.UseCore`) — is **never assigned** anywhere (not in `NewDatabase`, not in `Conected`, not in `createCore`), so those three stay no-ops even with `UseCore: true`.
   - **`jdb.Load()` (the env-var path) still never enables core.** `postgres.Connection` also grew a `UseCore` field (env `USE_CORE`, default `true`, uncommitted `drivers/postgres/driver.go` diff), but it's dead: `Chain`/`ToJson`/`Load`/`Validate` never read it, and it isn't what `ConnectTo` checks — that's the separate top-level `ConnectParams.UseCore`, which the postgres driver's `init()` → `jdb.Register(...)` call never sets (only `Params.UseCore` inside the nested `Connection`). So `jdb.Load()` builds a `ConnectParams` with `UseCore` still `false`; only an explicit `jdb.ConnectTo(ConnectParams{UseCore: true})` triggers `createCore()`.
 
+### JSON queries and commands (JSQL)
+
+[jsql.md](jsql.md) documents every JSON format with full examples, generated SQL and responses (verified 2026-11-04 on SQLite in memory + postgres SQL generation). Read it before touching these paths. There are two query dialects with different shapes:
+
+- **`RunQuery(model, query, rollups...)`** (`jdb/jsql.go`) — the one consumers use (`octopus/api/internal/models/vcore/query.go`). `wheres` is an **ordered list** (`{campo:{op:v}}`, `{"and":{...}}`, `{"or":{...}}`, one condition per element), plus `selects`, `order_by {asc,desc}` (validated: unknown column → `MSG_QUERY_COLUMN_NOT_VALID`), `page`, `rows` (alias `limit`, default `QUERY_DEFAULT_LIMIT` 100, max `QUERY_MAX_LIMIT` 1000), and `join`/`left_join`/… Returns `et.List` (`all`, `count`, `page`, `start`, `end`, `result`).
+- **`Ql.Query` / `Model.Query` / `DB.JQuery` / `ModelQuery`** (`ql-query.go` `queryTx`) — `where` is an **object** (plain keys + `and`/`or` arrays), plus `select`, `join`, `group_by`, `having`, `order_by`, `page`, `limit`, `debug`. Returns `{ok,count,result}` (or one object with `limit: 1`).
+
+Operator names (both dialects, case-sensitive): `eq`, `neg`, `more`, `less`, `moreEq`, `lessEq`, `like`, `in`, `notIn`, `between`, `isNull`, `notNull`; `StrToOperator` also maps `=`, `!=`, `>`, `<`, `>=`, `<=`, `search`.
+
 ### HTTP handlers
 
-`jdb/jdb.go` exposes four `http.HandlerFunc`s for any Chi/std router: `ModelDefine`, `ModelQuery` (runs a `Ql` from a JSON body via `Ql.Query`), `ModelCommand`, `ModelDescribe`.
+`jdb/jdb.go` exposes `http.HandlerFunc`s for any Chi/std router: `ModelDefine` (body `{params:{type,name}}`), `ModelQuery` (runs a `Ql` from a JSON body via `Ql.Query`, model from `from`), `ModelCommand` (body `{"schema.model": {insert|bulk|update|delete|upsert, where}}`), `ModelDescribe` (body `{kind,name}`). `JSQL` is a stub that echoes the body.
 
 ### Package-level singleton pattern (`instances`, `authorization`, `config`, `inbox`)
 
@@ -130,12 +140,15 @@ Each holds an unexported package-level singleton (`inst`, `auth`, `cfg`, `inb`) 
 
 Verified 2026-09-22 on `27a3772` + the uncommitted `ql-join.go`/`where.go`/`connected.go`/`jdb.go`/`drivers/postgres/driver.go` diff, by reading code and, where marked (SQL), by generating SQL as described above. **Re-verify before relying on or "fixing" any of these** — the repo changes daily. Full write-up and fix order: the `jdb-querybuilder-core-analysis` memory.
 
-- **`Select("a","b")` renders `SELECT *`** (SQL). `sqlSelect` (`drivers/postgres/query.go`) only fills its local `selects` when `ql.Selects` is empty, so explicit selects are dropped; with `GroupBy` this yields `SELECT * … GROUP BY`.
+- ~~`Select("a","b")` renders `SELECT *`~~ — **no longer true** (re-verified 2026-11-04, SQL): postgres renders `jsonb_build_object('name', A.name, 'age', A.age) AS result`, also with `GROUP BY`; SQLite uses `json_object(...)`.
 - **`Update`/`Delete` with `Where` are invalid SQL** (SQL): `UPDATE public.users … WHERE A.id='u1'` — the table is not aliased in UPDATE/DELETE but `asField` always prefixes the alias.
 - **`Upsert` produces no SQL** (SQL): `Command.upsert()` leaves `Command == Upsert` and the postgres `Command()` switch only handles Insert/Update/Delete. Affects `instances.Set`, `config.Set`, `inbox.UpsertInboxes`, `SetSeries/GetSeries`. (Effect on a live Postgres — empty query — is inferred, not run.) Its update path would also have an empty WHERE, since `getCurrent` puts the PK conditions on a temporary `Ql`, not on the command.
 - **`Ql.Join("name", …)` is silently ignored** (SQL) when `name` is a string not already in `Froms` — the uncommitted change dropped the `s.GetModel(withName)` fallback. With a `*Model` it works.
 - **Join RHS value is a string literal** (SQL): `ON A.id='user_id'`, never resolved to a field. `Ql.Having(x)` likewise doesn't resolve fields (`HAVING 'age'>3`).
 - **JSON query path is partly broken** (SQL; affects `Ql.Query`, `Model.Query`, `ModelQuery`, `DB.JQuery`): `setHavings` calls `setWhere` instead of `setWheres`, so a non-empty `having` emits `HAVING '{}'`. The `and`/`or` groups of `QlWhere.setWheres` were fixed (2026-10-23: case-insensitive key, values read from each condition, and `in`/`notIn` expand JSON lists); an `or` group is not parenthesized, so mixing it with other conditions follows SQL precedence. Also `setLimitTx` with `limit > 1` calls `FirstTx(tx, limit)` and returns the row at that index: pass `limit: 0` for all rows.
+  Re-verified 2026-11-04 by running it (SQLite in memory, see [jsql.md](jsql.md)): `limit > 1` — including the default 1000 when `limit` is omitted — **panics** (`index out of range [N] with length N`, `FirstTx` only guards `n > Count`) when at least N rows match, and returns empty otherwise. `page` with `limit: 0` emits `LIMIT 0 OFFSET 0` (no rows). Because `where` is a Go map, mixing an `or` group with other keys yields a **different SQL per run** (when the `or` condition lands first its connector is dropped and the `OR` becomes `AND`). `having` renders `HAVING '{"kind":{"eq":"lead"}}'`. `join` (`setJoins`) is ignored per the `Ql.Join` string defect above.
+- **`RunQuery` (`jsql.go` `queryWhere`) silently drops conditions** (verified by running): a `wheres` key that is not a model field (`model.GetField` nil) is skipped, so a typo returns **all rows**; JSON paths (`_data.x`) are skipped the same way. Its operator switch has no `between`/`notIn`, but `ql.Where(column)` was already opened: `between` returns all rows and `notIn` returns none. `join` keys are ignored (same `Ql.Join` string defect).
+- **`ModelCommand` `update`/`delete` are no-ops** (verified by running): `Command.setWheres` (`command-where.go`) does not call `resolveWhereField` (unlike `Ql.setWheres`), so the keys reach the SQL as string literals (`'_id'='c9'`): HTTP 200 with `{ok:false,count:0}` and nothing changes. `upsert` with an existing key goes to INSERT and fails with a UNIQUE violation. Only `insert` and `bulk` work. Fluent `Command.Where/And/Or` do resolve fields.
 - **Hook wiring typos** (`command-insert.go`, `command-update.go`): `inserted()` runs `s.afterInsert*` *before* the write where `model.beforeInsert*` belongs (so `Model.BeforeInsert*` never fires) and runs the after-hooks again post-write; `updated()` iterates `s.afterUpdate` pre-write where `s.beforeUpdate` belongs, so per-command `BeforeUpdate` never fires (e.g. `GetSeries`'s `value + 1`).
 - **`ExecTx(nil)` commits on hook failure** (`command.go`): inner `err :=` shadows the outer `err`, so the deferred `Commit` runs after a hook error and its own error is discarded. `Bulk` keeps only the last row in `Result`.
 - **`DB_RECORD_LIMIT` cap is dead code** (`From()` checks `Limit` before it is set); fluent queries default to `Limit == 0` (no `LIMIT`).

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os/exec"
+
+	"github.com/celsiainternet/jdb/agentsguide"
 )
 
 var dependencies = []string{
@@ -43,7 +45,14 @@ func main() {
 		}
 	}
 
-	fmt.Printf("\r[%-50s] %d%% ¡Completado!", progressBar(total, total, 50), 100)
+	fmt.Printf("\r[%-50s] %d%% ¡Completado!\n", progressBar(total, total, 50), 100)
+
+	if err := agentsguide.Install(); err != nil {
+		fmt.Printf("Advertencia: no se pudo instalar la guía de agentes - %v\n", err)
+		return
+	}
+
+	fmt.Println("Guía de agentes de jdb instalada en .claude/guides/jdb/ (referenciada desde CLAUDE.md y AGENTS.md)")
 }
 
 func installLibrary(library string) error {

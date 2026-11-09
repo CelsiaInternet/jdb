@@ -1,7 +1,7 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v1.0.112-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v1.0.113-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
@@ -13,7 +13,7 @@ go mod init github.com/<organizacion>/<proyecto>
 
 # Pide los comandos (no solo el módulo) para que go.sum quede completo;
 # con "go get github.com/celsiainternet/jdb@..." los go run fallan con "missing go.sum entry"
-go get github.com/celsiainternet/jdb/cmd/install@v1.0.112 github.com/celsiainternet/jdb/cmd/create@v1.0.112
+go get github.com/celsiainternet/jdb/cmd/install@v1.0.113 github.com/celsiainternet/jdb/cmd/create@v1.0.113
 go run github.com/celsiainternet/jdb/cmd/install
 go run github.com/celsiainternet/jdb/cmd/create go
 ```

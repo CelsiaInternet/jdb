@@ -6,7 +6,7 @@ import (
 )
 
 /**
-* MakeCmd
+* MakeCmd: Genera cmd/<name> (Dockerfile y main.go).
 * @param packageName, name string
 * @return error
 **/
@@ -30,33 +30,29 @@ func MakeCmd(packageName, name string) error {
 }
 
 /**
-* DeleteCmd
-* @param packageName string
+* DeleteCmd: Borra lo que genera makeMicroservice para name.
+* @param name string
 * @return error
 **/
-func DeleteCmd(packageName string) error {
-	path := strs.Format(`./cmd/%s`, packageName)
-	_, err := file.RemoveFile(path)
-	if err != nil {
-		return err
+func DeleteCmd(name string) error {
+	paths := []string{
+		strs.Format(`./cmd/%s`, name),
+		strs.Format(`./deployments/%s`, name),
+		strs.Format(`./internal/services/%s`, name),
+		strs.Format(`./internal/models/%s`, name),
+		strs.Format(`./pkg/%s`, name),
+		strs.Format(`./scripts/%s.http`, name),
+		strs.Format(`./www/%s`, name),
 	}
+	for _, path := range paths {
+		if !file.ExistPath(path) {
+			continue
+		}
 
-	path = strs.Format(`./internal/service/%s`, packageName)
-	_, err = file.RemoveFile(path)
-	if err != nil {
-		return err
-	}
-
-	path = strs.Format(`./internal/pkg/%s`, packageName)
-	_, err = file.RemoveFile(path)
-	if err != nil {
-		return err
-	}
-
-	path = strs.Format(`./internal/rest/%s.http`, packageName)
-	_, err = file.RemoveFile(path)
-	if err != nil {
-		return err
+		_, err := file.RemoveFile(path)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

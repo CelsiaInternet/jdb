@@ -651,7 +651,7 @@ func (s *Column) idx() int {
 		return -1
 	}
 
-	return slices.IndexFunc(s.model.Columns, func(e *Column) bool { return e.Name == s.Name })
+	return slices.IndexFunc(s.model.GetColumns(), func(e *Column) bool { return e.Name == s.Name })
 }
 
 /**

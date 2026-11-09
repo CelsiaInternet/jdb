@@ -41,20 +41,21 @@ func quote(val interface{}) any {
 	case *jdb.Value:
 		return quoteValue(*v)
 	case et.Json:
-		return strs.Format(format, v.ToString())
+		// Como texto, para escapar sus comillas: un JSON con un apóstrofo cerraba el literal
+		return quote(v.ToString())
 	case jdb.Agregation:
 		return quoteAgregation(v)
 	case *jdb.Agregation:
 		return quoteAgregation(*v)
 	case map[string]interface{}:
-		return strs.Format(format, et.Json(v).ToString())
+		return quote(et.Json(v).ToString())
 	case []string, []int, []int8, []int16, []int32, []int64, []uint, []uint16, []uint32, []uint64, []float32, []float64, []et.Json, []interface{}, []map[string]interface{}:
 		bt, err := json.Marshal(v)
 		if err != nil {
 			logs.Errorf("Quote", "type:%v, value:%v, error marshalling array: %v", reflect.TypeOf(v), v, err)
 			return strs.Format(format, `[]`)
 		}
-		return strs.Format(format, string(bt))
+		return quote(string(bt))
 	case []uint8:
 		b := []byte(val.([]uint8))
 		return fmt.Sprintf("'\\x%s'", hex.EncodeToString(b))

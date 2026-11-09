@@ -105,8 +105,8 @@ func (s *Params) sqlSelect(ql *jdb.Ql) string {
 
 	selects := []interface{}{}
 	if len(ql.Selects) == 0 {
-		from := ql.Froms.Froms[0]
-		fields := from.GetColumnsFields()
+		// Sin select explicito: todas menos las ocultas (DefineHidden, Ql.Hidden)
+		fields := ql.DefaultFields()
 		for _, field := range fields {
 			selects = append(selects, field)
 		}
@@ -593,6 +593,10 @@ func whereValue(val interface{}) string {
 		return asField(v)
 	case *jdb.Field:
 		return asField(*v)
+	case *jdb.Concat:
+		return concatField(*v)
+	case jdb.Concat:
+		return concatField(v)
 	case jdb.Column:
 		return quoteIdent(v.Name)
 	case *jdb.Column:
@@ -763,4 +767,27 @@ func (s *Params) Select(ql *jdb.Ql) (et.Items, error) {
 	}
 
 	return normalizeResult(result), nil
+}
+
+/**
+* concatField: Campos de un jdb.Concat unidos con un espacio, en mayusculas porque Like compara
+* contra UPPER(valor). En Oracle || trata el nulo como texto vacio.
+* @param concat jdb.Concat
+* @return string
+**/
+func concatField(concat jdb.Concat) string {
+	parts := []string{}
+	for _, field := range concat.Fields {
+		if field == nil {
+			continue
+		}
+		if part := asField(*field); part != "" {
+			parts = append(parts, part)
+		}
+	}
+	if len(parts) == 0 {
+		return "''"
+	}
+
+	return strs.Format(`UPPER(%s)`, strings.Join(parts, " || ' ' || "))
 }

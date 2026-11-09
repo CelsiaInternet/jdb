@@ -31,7 +31,9 @@ func (s *Params) Exists(ql *jdb.Ql) (bool, error) {
 		console.Debug(ql.Sql)
 	}
 
-	item, err := jdb.Query(s.jdb, ql.Sql)
+	// En la transaccion de la consulta (ItExistsTx abre una): con otra conexion del pool, cada
+	// ItExists ocupaba dos y con DB_MAX_OPEN_CONNS llamadas a la vez se bloqueaban para siempre
+	item, err := jdb.QueryTx(s.jdb, ql.Tx(), ql.Sql)
 	if err != nil {
 		return false, err
 	}
@@ -57,7 +59,8 @@ func (s *Params) Count(ql *jdb.Ql) (int, error) {
 		console.Debug(ql.Sql)
 	}
 
-	result, err := jdb.Query(s.jdb, ql.Sql)
+	// En la transaccion de la consulta si la hay (CountedTx abre una), como Exists
+	result, err := jdb.QueryTx(s.jdb, ql.Tx(), ql.Sql)
 	if err != nil {
 		return 0, err
 	}
@@ -81,8 +84,8 @@ func (s *Params) sqlSelect(ql *jdb.Ql) string {
 
 	selects := []interface{}{}
 	if len(ql.Selects) == 0 {
-		from := ql.Froms.Froms[0]
-		fields := from.GetColumnsFields()
+		// Sin select explicito: todas menos las ocultas (DefineHidden, Ql.Hidden)
+		fields := ql.DefaultFields()
 		for _, field := range fields {
 			selects = append(selects, field)
 		}
@@ -618,6 +621,10 @@ func whereValue(val interface{}) string {
 		return asField(v)
 	case *jdb.Field:
 		return asField(*v)
+	case *jdb.Concat:
+		return concatField(*v)
+	case jdb.Concat:
+		return concatField(v)
 	case jdb.Column:
 		return v.Name
 	case *jdb.Column:
@@ -858,4 +865,26 @@ func (s *Params) Select(ql *jdb.Ql) (et.Items, error) {
 	}
 
 	return result, nil
+}
+
+/**
+* concatField: Campos de un jdb.Concat unidos con un espacio; concat_ws salta los nulos.
+* @param concat jdb.Concat
+* @return string
+**/
+func concatField(concat jdb.Concat) string {
+	parts := []string{}
+	for _, field := range concat.Fields {
+		if field == nil {
+			continue
+		}
+		if part := asField(*field); part != "" {
+			parts = append(parts, part)
+		}
+	}
+	if len(parts) == 0 {
+		return "''"
+	}
+
+	return strs.Format(`concat_ws(' ', %s)`, strings.Join(parts, ", "))
 }

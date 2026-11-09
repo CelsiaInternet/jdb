@@ -3,8 +3,10 @@ package jdb
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/celsiainternet/elvis/et"
@@ -95,6 +97,7 @@ type Model struct {
 	isLocked            bool                      `json:"-"`
 	isInit              bool                      `json:"-"`
 	needMutate          bool                      `json:"-"`
+	mu                  sync.RWMutex              `json:"-"` // Columns y Rollup se cambian en caliente (AddRollup, RemoveColumn)
 }
 
 /**
@@ -261,14 +264,19 @@ func (s *Model) Describe() et.Json {
 	}
 
 	columns := make([]et.Json, 0)
-	for _, column := range s.Columns {
+	for _, column := range s.GetColumns() {
 		columns = append(columns, column.Describe())
+	}
+
+	rollups := map[string]*Rollup{}
+	for _, rollup := range s.GetRollups() {
+		rollups[rollup.Name] = rollup
 	}
 
 	delete(result, "definitions")
 	result["kind"] = "model"
 	result["columns"] = columns
-	result["rollup"] = s.Rollup
+	result["rollup"] = rollups
 	result["primary_keys"] = s.PrimaryKeys
 	result["foreign_keys"] = s.ForeignKeys
 	result["indices"] = s.Indices
@@ -356,21 +364,21 @@ func (s *Model) Init() error {
 
 	if s.SourceField != nil {
 		idx := s.SourceField.idx()
-		if idx != len(s.Columns)-1 && idx != -1 {
+		if idx != len(s.GetColumns())-1 && idx != -1 {
 			s.moveColumnToEnd(s.SourceField, idx)
 		}
 	}
 
 	if s.SystemKeyField != nil {
 		idx := s.SystemKeyField.idx()
-		if idx != len(s.Columns)-1 && idx != -1 {
+		if idx != len(s.GetColumns())-1 && idx != -1 {
 			s.moveColumnToEnd(s.SystemKeyField, idx)
 		}
 	}
 
 	if s.IndexField != nil {
 		idx := s.IndexField.idx()
-		if idx != len(s.Columns)-1 && idx != -1 {
+		if idx != len(s.GetColumns())-1 && idx != -1 {
 			s.moveColumnToEnd(s.IndexField, idx)
 		}
 	}
@@ -499,14 +507,40 @@ func (s *Model) Debug() *Model {
 }
 
 /**
+* GetColumns: Copia de las columnas del modelo; se puede recorrer aunque otra rutina agregue o quite columnas.
+* @return []*Column
+**/
+func (s *Model) GetColumns() []*Column {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return slices.Clone(s.Columns)
+}
+
+/**
+* setColumns: Reemplaza las columnas por una lista nueva (nunca cambia la anterior, que pueden estar recorriendo).
+* @param change func(columns []*Column) []*Column
+**/
+func (s *Model) setColumns(change func(columns []*Column) []*Column) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.Columns = change(slices.Clone(s.Columns))
+}
+
+/**
 * addColumn
 * @param column *Column
 **/
 func (s *Model) addColumn(column *Column) {
-	idx := slices.IndexFunc(s.Columns, func(e *Column) bool { return strings.ToLower(e.Name) == strings.ToLower(column.Name) })
-	if idx == -1 {
-		s.Columns = append(s.Columns, column)
-	}
+	s.setColumns(func(columns []*Column) []*Column {
+		idx := slices.IndexFunc(columns, func(e *Column) bool { return strings.ToLower(e.Name) == strings.ToLower(column.Name) })
+		if idx == -1 {
+			columns = append(columns, column)
+		}
+
+		return columns
+	})
 }
 
 /**
@@ -514,9 +548,13 @@ func (s *Model) addColumn(column *Column) {
 * @param column *Column, idx int
 **/
 func (s *Model) addColumnToIdx(column *Column, idx int) {
-	if idx != -1 {
-		s.Columns = append(s.Columns[:idx], append([]*Column{column}, s.Columns[idx:]...)...)
+	if idx == -1 {
+		return
 	}
+
+	s.setColumns(func(columns []*Column) []*Column {
+		return slices.Insert(columns, idx, column)
+	})
 }
 
 /**
@@ -524,8 +562,65 @@ func (s *Model) addColumnToIdx(column *Column, idx int) {
 * @param column *Column, idx int
 **/
 func (s *Model) moveColumnToEnd(column *Column, idx int) {
-	s.Columns = append(s.Columns[:idx], s.Columns[idx+1:]...)
+	s.setColumns(func(columns []*Column) []*Column {
+		return slices.Delete(columns, idx, idx+1)
+	})
 	s.addColumn(column)
+}
+
+/**
+* RemoveColumn: Quita una columna virtual (atributo, rollup o calculada) y su rollup; las columnas fisicas no se quitan.
+* Sirve para las definiciones que se cargan de datos y se borran o renombran con el servicio arriba.
+* @param name string
+* @return bool, si la quito
+**/
+func (s *Model) RemoveColumn(name string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	idx := slices.IndexFunc(s.Columns, func(e *Column) bool { return e.Name == name })
+	if idx == -1 || s.Columns[idx].TypeColumn == TpColumn {
+		return false
+	}
+
+	s.Columns = slices.Delete(slices.Clone(s.Columns), idx, idx+1)
+	if _, exists := s.Rollup[name]; exists {
+		rollups := maps.Clone(s.Rollup)
+		delete(rollups, name)
+		s.Rollup = rollups
+	}
+
+	return true
+}
+
+/**
+* GetRollups: Los rollups del modelo (copia), para pasarlos a una consulta con AddRollups o RunQuery.
+* @return []*Rollup
+**/
+func (s *Model) GetRollups() []*Rollup {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result := make([]*Rollup, 0, len(s.Rollup))
+	for _, rollup := range s.Rollup {
+		result = append(result, rollup)
+	}
+	slices.SortFunc(result, func(a, b *Rollup) int { return strings.Compare(a.Name, b.Name) })
+
+	return result
+}
+
+/**
+* getRollup
+* @param name string
+* @return *Rollup, bool
+**/
+func (s *Model) getRollup(name string) (*Rollup, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	result, exists := s.Rollup[name]
+	return result, exists
 }
 
 /**
@@ -534,7 +629,7 @@ func (s *Model) moveColumnToEnd(column *Column, idx int) {
 * @return *Column
 **/
 func (s *Model) getColumn(name string) *Column {
-	for _, col := range s.Columns {
+	for _, col := range s.GetColumns() {
 		if col.Name == name {
 			return col
 		}

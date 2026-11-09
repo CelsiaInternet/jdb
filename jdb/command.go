@@ -304,27 +304,17 @@ func (s *Command) Tx() *Tx {
 * @param tx *Tx
 * @return et.Items, error
 **/
-func (s *Command) ExecTx(tx *Tx) (et.Items, error) {
-	var err error
+func (s *Command) ExecTx(tx *Tx) (result et.Items, err error) {
 	if tx == nil {
 		tx, err = s.beginTx()
 		if err != nil {
 			return et.Items{}, err
 		}
 
-		defer func() (et.Items, error) {
-			if err != nil {
-				tx.rollback()
-				return et.Items{}, err
-			}
-
-			err = tx.commit()
-			if err != nil {
-				return et.Items{}, err
-			}
-
-			return s.Result, err
-		}()
+		// Retornos con nombre: el defer ve el error con que sale la funcion (tambien los de
+		// Update y Delete, que antes quedaban en un err sombreado y se confirmaba igual) y un
+		// fallo del commit llega a quien llama
+		defer tx.finish(&err)
 	} else if s.tx == nil && tx != nil {
 		s.tx = tx
 	}

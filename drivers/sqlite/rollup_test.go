@@ -276,3 +276,75 @@ func TestRunQueryWithRollups(t *testing.T) {
 		t.Error("NewRollup must not change the model")
 	}
 }
+
+func TestRollupAddRemoveWhileQuerying(t *testing.T) {
+	db := connect(t)
+	roles := newRollupModels(t, db)
+	teams := roles.GetModel("teams")
+	if teams == nil {
+		t.Fatal("teams model not found")
+	}
+
+	// Se agregan y quitan rollups mientras otras rutinas consultan con los del modelo: sin carreras (correr con -race).
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 50 {
+			roles.AddRollup(jdb.NewRollup("team_logo", teams, map[string]string{"team_id": jdb.KEY}, []string{"logo"}, jdb.ShowAtrib))
+			roles.RemoveColumn("team_logo")
+		}
+	}()
+
+	for range 20 {
+		if _, err := jdb.RunQuery(roles, et.Json{}, roles.GetRollups()...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	<-done
+
+	roles.AddRollup(jdb.NewRollup("team_logo", teams, map[string]string{"team_id": jdb.KEY}, []string{"logo"}, jdb.ShowAtrib))
+	item, err := roles.Select(jdb.KEY, "team_id", "team_logo").Where(jdb.KEY).Eq("r1").One()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.Result.Str("team_logo") != "v.png" {
+		t.Errorf("added rollup must resolve on select: %v", item.Result)
+	}
+
+	if !roles.RemoveColumn("team_logo") || roles.RemoveColumn("team_id") {
+		t.Error("RemoveColumn must remove the rollup and keep physical columns")
+	}
+	for _, rollup := range roles.GetRollups() {
+		if rollup.Name == "team_logo" {
+			t.Error("removed rollup must not stay in the model")
+		}
+	}
+}
+
+func TestUpdateWithCalc(t *testing.T) {
+	db := connect(t)
+	schema := jdb.NewSchema(db, "test")
+	counters := jdb.NewModel(schema, "counters", 1)
+	counters.DefineModel()
+	counters.DefineColumn("value", jdb.TypeDataInt)
+	if err := counters.Init(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := counters.Insert(et.Json{jdb.KEY: "c1", "value": 1}).Exec(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Un CALC en el UPDATE se aplica como expresion SQL, no se guarda como texto
+	for range 2 {
+		if _, err := counters.Update(et.Json{"value": jdb.CALC("value + 1")}).Where(jdb.KEY).Eq("c1").Exec(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	item, err := counters.Where(jdb.KEY).Eq("c1").One()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.Int("value") != 3 {
+		t.Errorf("value: got %v, want 3", item.Result["value"])
+	}
+}

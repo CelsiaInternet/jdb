@@ -43,7 +43,7 @@ func returningResult(from *jdb.QlFrom, requested []*jdb.Field) string {
 			}
 		}
 	} else {
-		for _, column := range from.Model.Columns {
+		for _, column := range from.Model.GetColumns() {
 			if isReturnable(column.Name, column.TypeColumn) {
 				pairs = append(pairs, jsonPair(column.Name, jsonExpr(quoteIdent(column.Name), column.TypeData), source != ""))
 			}
@@ -128,6 +128,12 @@ func (s *Params) sqlUpdate(command *jdb.Command) (string, []any) {
 		switch field.TypeColumn {
 		case jdb.TpColumn:
 			if from.SourceField != nil && field.Name == from.SourceField.Name {
+				continue
+			}
+
+			// Una expresion (CALC, ej. value + 1) va como SQL, no como parametro: si no, se guardaba su JSON
+			if expression, ok := updateExpression(val); ok {
+				set = append(set, fmt.Sprintf(`%s = %s`, quoteIdent(field.Name), expression))
 				continue
 			}
 
@@ -216,4 +222,20 @@ func (s *Params) Command(command *jdb.Command) (et.Items, error) {
 	}
 
 	return normalizeResult(result), nil
+}
+
+/**
+* updateExpression: Expresion SQL de un valor que es una agregacion (CALC) en un UPDATE.
+* @param val any
+* @return string, bool
+**/
+func updateExpression(val any) (string, bool) {
+	switch v := val.(type) {
+	case *jdb.Agregation:
+		return fmt.Sprintf(`%v`, asAgregation(v)), true
+	case jdb.Agregation:
+		return fmt.Sprintf(`%v`, asAgregation(&v)), true
+	}
+
+	return "", false
 }

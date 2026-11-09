@@ -102,65 +102,91 @@ func queryJoin(ql *Ql, joins et.Json) (*Ql, error) {
 * @return *Ql, error
 **/
 func queryWhere(model *Model, ql *Ql, wheres []et.Json) (*Ql, error) {
+	var applyOperators func(operators et.Json)
+
+	// open: Abre la condicion de column con su conector (where, and, or) y aplica sus operadores. column es un campo
+	// del modelo o concat ({ "fields": [...], "like": "%texto%" }: los campos unidos con un espacio). Lo que no se
+	// reconoce se omite entero: sus operadores no deben caer sobre la condicion anterior.
+	open := func(connector, column string, operators et.Json) bool {
+		var fld interface{} = column
+		if strings.EqualFold(column, "concat") {
+			fields := []*Field{}
+			for _, name := range operators.ArrayStr("fields") {
+				if field := ql.getField(name); field != nil {
+					fields = append(fields, field)
+				}
+			}
+			if len(fields) == 0 {
+				return false
+			}
+			fld = NewConcat(fields...)
+			rest := et.Json{}
+			for operator, value := range operators {
+				if operator != "fields" {
+					rest[operator] = value
+				}
+			}
+			operators = rest
+		} else if model.GetField(column) == nil {
+			return false
+		}
+
+		if connector == "or" {
+			ql = ql.Or(fld)
+		} else {
+			ql = ql.Where(fld)
+		}
+		applyOperators(operators)
+		return true
+	}
+
 	applyWhere := func(where et.Json) {
 		for column := range where {
-			if strings.ToLower(column) == "and" {
-				where = where.Json("and")
-				for column = range where {
-					field := model.GetField(column)
-					if field == nil {
-						continue
-					}
-					ql = ql.And(column)
-					break
-				}
-			} else if strings.ToLower(column) == "or" {
-				where = where.Json("or")
-				for column = range where {
-					field := model.GetField(column)
-					if field == nil {
-						continue
-					}
-					ql = ql.Or(column)
-					break
-				}
-			} else {
-				field := model.GetField(column)
-				if field == nil {
-					continue
-				}
-				ql = ql.Where(column)
+			connector := strings.ToLower(column)
+			if connector != "and" && connector != "or" {
+				open("where", column, where.Json(column))
+				continue
 			}
 
-			for operator, value := range where.Json(column) {
-				switch operator {
-				case "eq":
-					ql = ql.Eq(value)
-				case "neg":
-					ql = ql.Neg(value)
-				case "in":
-					values, ok := value.([]interface{})
-					if !ok {
-						continue
-					}
-					ql = ql.In(values...)
-				case "like":
-					ql = ql.Like(value)
-				case "more":
-					ql = ql.More(value)
-				case "less":
-					ql = ql.Less(value)
-				case "moreEq":
-					ql = ql.MoreEq(value)
-				case "lessEq":
-					ql = ql.LessEq(value)
-				case "isNull":
-					ql = ql.IsNull()
-				case "notNull":
-					ql = ql.NotNull()
-				default:
+			// { "and": { campo: {...} } } u { "or": ... }: la primera condicion reconocida
+			group := where.Json(column)
+			for inner := range group {
+				if open(connector, inner, group.Json(inner)) {
+					break
+				}
+			}
+		}
+	}
+
+	applyOperators = func(operators et.Json) {
+		for operator, value := range operators {
+			switch operator {
+			case "eq":
+				ql = ql.Eq(value)
+			case "neg":
+				ql = ql.Neg(value)
+			case "in":
+				values, ok := value.([]interface{})
+				if !ok {
 					continue
 				}
+				ql = ql.In(values...)
+			case "like":
+				ql = ql.Like(value)
+			case "more":
+				ql = ql.More(value)
+			case "less":
+				ql = ql.Less(value)
+			case "moreEq":
+				ql = ql.MoreEq(value)
+			case "lessEq":
+				ql = ql.LessEq(value)
+			case "isNull":
+				ql = ql.IsNull()
+			case "notNull":
+				ql = ql.NotNull()
+			default:
+				continue
 			}
 		}
 	}

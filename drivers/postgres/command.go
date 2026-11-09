@@ -46,7 +46,7 @@ func returningColumns(from *jdb.QlFrom, requested []*jdb.Field) []string {
 		return result
 	}
 
-	for _, column := range from.Model.Columns {
+	for _, column := range from.Model.GetColumns() {
 		if !isReturnable(column.Name, column.TypeColumn) {
 			continue
 		}

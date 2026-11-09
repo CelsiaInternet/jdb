@@ -127,29 +127,20 @@ func cloneRollupValue(value any) any {
 * @param tx *Tx
 * @return et.Items, error
 **/
-func (s *Ql) AllTx(tx *Tx) (et.Items, error) {
+func (s *Ql) AllTx(tx *Tx) (result et.Items, err error) {
 	if s.Db == nil {
 		return et.Items{}, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
-	var err error
-	var result et.Items
 	if tx == nil {
 		tx, err = s.beginTx()
 		if err != nil {
 			return et.Items{}, err
 		}
 
-		defer func() (et.Items, error) {
-			if err == nil {
-				err = tx.commit()
-				if err != nil {
-					return et.Items{}, err
-				}
-			}
-
-			return result, err
-		}()
+		// Transaccion propia: se revierte si hay error y se confirma si no (antes un error la dejaba
+		// abierta, reteniendo una conexion del pool)
+		defer tx.finish(&err)
 	} else if s.tx == nil && tx != nil {
 		s.tx = tx
 	}
@@ -240,29 +231,20 @@ func (s *Ql) RowsTx(tx *Tx, val int) (et.Items, error) {
 * @param tx *Tx
 * @return bool, error
 **/
-func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
+func (s *Ql) ItExistsTx(tx *Tx) (result bool, err error) {
 	if s.Db == nil {
 		return false, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
-	var err error
-	var result bool
 	if tx == nil {
 		tx, err = s.beginTx()
 		if err != nil {
 			return false, err
 		}
 
-		defer func() (bool, error) {
-			if err == nil {
-				err = tx.commit()
-				if err != nil {
-					return false, err
-				}
-			}
-
-			return result, err
-		}()
+		// Transaccion propia: se revierte si hay error y se confirma si no (antes un error la dejaba
+		// abierta, reteniendo una conexion del pool)
+		defer tx.finish(&err)
 	} else if s.tx == nil && tx != nil {
 		s.tx = tx
 	}
@@ -280,29 +262,20 @@ func (s *Ql) ItExistsTx(tx *Tx) (bool, error) {
 * @param tx *Tx
 * @return int, error
 **/
-func (s *Ql) CountedTx(tx *Tx) (int, error) {
+func (s *Ql) CountedTx(tx *Tx) (result int, err error) {
 	if s.Db == nil {
 		return 0, fmt.Errorf(MSG_DATABASE_IS_REQUIRED)
 	}
 
-	var err error
-	var result int
 	if tx == nil {
 		tx, err = s.beginTx()
 		if err != nil {
 			return 0, err
 		}
 
-		defer func() (int, error) {
-			if err == nil {
-				err = tx.commit()
-				if err != nil {
-					return 0, err
-				}
-			}
-
-			return result, err
-		}()
+		// Transaccion propia: se revierte si hay error y se confirma si no (antes un error la dejaba
+		// abierta, reteniendo una conexion del pool)
+		defer tx.finish(&err)
 	} else if s.tx == nil && tx != nil {
 		s.tx = tx
 	}

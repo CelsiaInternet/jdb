@@ -48,7 +48,7 @@ func returningResult(from *jdb.QlFrom, requested []*jdb.Field) string {
 			}
 		}
 	} else {
-		for _, col := range from.Model.Columns {
+		for _, col := range from.Model.GetColumns() {
 			if isReturnable(col.Name, col.TypeColumn) {
 				pairs = append(pairs, jsonPair(col.Name, jsonExpr(column(col.Name), col.TypeData)))
 			}

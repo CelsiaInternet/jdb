@@ -164,7 +164,7 @@ func (s *Params) existTable(schema, name string) (bool, error) {
 **/
 func (s *Params) ddlTable(model *jdb.Model) string {
 	var columnsDef string
-	for _, column := range model.Columns {
+	for _, column := range model.GetColumns() {
 		if column.TypeColumn == jdb.TpColumn {
 			def := strs.Format("\n\t%s %s DEFAULT %v", column.Name, s.typeData(column.TypeData), s.defaultValue(column.TypeData))
 			columnsDef = strs.Append(columnsDef, def, ",")
@@ -195,7 +195,7 @@ func (s *Params) ddlTableRename(oldName, newName string) string {
 **/
 func (s *Params) ddlTableInsertTo(model *jdb.Model, tableOrigin string) string {
 	fields := ""
-	for _, column := range model.Columns {
+	for _, column := range model.GetColumns() {
 		if column.TypeColumn == jdb.TpColumn {
 			fields = strs.Append(fields, strs.Format("%s", column.Name), ", ")
 		}

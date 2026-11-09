@@ -2,8 +2,12 @@ package create
 
 import "github.com/celsiainternet/elvis/file"
 
-func MakeReadme(packageName, author string) error {
-	_, _ = file.MakeFile(".", "README.md", modelReadme, packageName, author)
-
-	return nil
+/**
+* MakeReadme: Escribe README.md si no existe.
+* @param name, author string
+* @return error
+**/
+func MakeReadme(name, author string) error {
+	_, err := file.MakeFile(".", "README.md", modelReadme, name, author)
+	return err
 }

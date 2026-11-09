@@ -124,7 +124,7 @@ func objectName(model *jdb.Model, name string) string {
 **/
 func (s *Params) ddlTable(model *jdb.Model, table string) string {
 	defs := []string{}
-	for _, column := range model.Columns {
+	for _, column := range model.GetColumns() {
 		if column.TypeColumn != jdb.TpColumn {
 			continue
 		}
@@ -219,7 +219,7 @@ func (s *Params) ddlTableRename(table, newName string) string {
 **/
 func (s *Params) ddlTableInsertTo(model *jdb.Model, target, origin string, current map[string]bool) string {
 	fields := []string{}
-	for _, column := range model.Columns {
+	for _, column := range model.GetColumns() {
 		if column.TypeColumn == jdb.TpColumn && current[column.Name] {
 			fields = append(fields, quoteIdent(column.Name))
 		}

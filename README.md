@@ -8,14 +8,19 @@
 ## Instalación
 
 ```bash
-go get github.com/celsiainternet/jdb@v1.0.112
+# En una carpeta nueva
+go mod init github.com/<organizacion>/<proyecto>
+
+# Pide los comandos (no solo el módulo) para que go.sum quede completo;
+# con "go get github.com/celsiainternet/jdb@..." los go run fallan con "missing go.sum entry"
+go get github.com/celsiainternet/jdb/cmd/install@v1.0.112 github.com/celsiainternet/jdb/cmd/create@v1.0.112
+go run github.com/celsiainternet/jdb/cmd/install
+go run github.com/celsiainternet/jdb/cmd/create go
 ```
 
-`jdb` depende de `elvis`, así que normalmente también necesitarás:
+`jdb` depende de `elvis` (llega como dependencia de jdb). `cmd/install` completa el `go.mod` con `go mod tidy` (solo si el proyecto ya tiene código; no fija versiones) e instala la guía de agentes de jdb en `.claude/guides/jdb/`, referenciada desde `CLAUDE.md` y `AGENTS.md`. Para la guía de elvis: `go run github.com/celsiainternet/elvis/cmd/install`.
 
-```bash
-go get github.com/celsiainternet/elvis@v1.1.321
-```
+La opción **Project** de `cmd/create` genera un microservicio completo sobre elvis y jdb (`cmd/`, `internal/services/`, `internal/models/`, `pkg/`, `.env`, `README.md`, reglas para agentes y las guías de jdb y elvis) y termina con `go mod tidy`. **Modelo** agrega un modelo jdb con su CRUD y registra sus rutas en `router.go`; **Rpc** agrega `rpc.go` a un paquete existente.
 
 ## Qué es
 
@@ -416,8 +421,8 @@ items, err := inbox.GetInboxesByClientId("c1", "app", "pending", 1, 20)
 
 ```bash
 go run ./cmd/test                                       # sandbox contra una base real
-go run github.com/celsiainternet/jdb/cmd/install        # instala dependencias de terceros
-go run github.com/celsiainternet/jdb/cmd/create go      # CLI de scaffolding de proyectos/modelos
+go run github.com/celsiainternet/jdb/cmd/install        # go mod tidy + guía de agentes de jdb
+go run github.com/celsiainternet/jdb/cmd/create go      # genera proyectos, microservicios, modelos y RPC
 ```
 
 ## Versionado

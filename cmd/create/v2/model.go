@@ -55,14 +55,16 @@ const modelMain = `package main
 import (
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/envar"
-	serv "$1/internal/services/$2"	
+
+	serv "$1/internal/services/$2"
 )
 
 func main() {
-	envar.SetInt("port", 3000, "Port server", "PORT")
+	envar.SetInt("port", 3300, "Port server", "PORT")
 	envar.SetInt("rpc", 4200, "Port rpc server", "RPC_PORT")
 	envar.SetStr("dbhost", "localhost", "Database host", "DB_HOST")
 	envar.SetInt("dbport", 5432, "Database port", "DB_PORT")
@@ -78,18 +80,20 @@ func main() {
 	go srv.Start()
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 
 	srv.Close()
 }
 `
 
-const modelService = `package module
+const modelService = `package $2
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"net/http"
+	"time"
 
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/envar"
@@ -97,24 +101,23 @@ import (
 	"github.com/celsiainternet/elvis/response"
 	"github.com/celsiainternet/elvis/strs"
 	"github.com/go-chi/chi/v5"
+
 	v1 "$1/internal/services/$2/v1"
-	"github.com/rs/cors"	
 )
 
 type Server struct {
 	http *http.Server
 }
 
+/**
+* New: Arma el router HTTP del servicio con los middleware de elvis.
+* @return *Server, error
+**/
 func New() (*Server, error) {
-	server := Server{}
-
-	port := envar.EnvarInt(3300, "PORT")
-	if port == 0 {
-		return nil, fmt.Errorf("variable PORT es requerida")
-	}
+	port := envar.GetInt(3300, "PORT")
 
 	r := chi.NewRouter()
-
+	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
@@ -127,34 +130,54 @@ func New() (*Server, error) {
 	r.Mount("/", latest)
 	r.Mount("/v1", latest)
 
-	handler := cors.AllowAll().Handler(r)
+	handler := middleware.AllowAll([]string{}).Handler(r)
 	addr := strs.Format(":%d", port)
-	serv := &http.Server{
-		Addr:    addr,
-		Handler: handler,
+	result := &Server{
+		http: &http.Server{
+			Addr:    addr,
+			Handler: handler,
+		},
 	}
 
-	server.http = serv
-
-	return &server, nil
+	return result, nil
 }
 
+/**
+* Close: Detiene el servidor HTTP y libera las conexiones del servicio.
+**/
 func (serv *Server) Close() {
+	if serv.http != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := serv.http.Shutdown(ctx); err != nil {
+			console.Error(err)
+		}
+	}
+
 	v1.Close()
 
 	console.LogK("Http", "Shutting down server...")
 }
 
+/**
+* StartHttpServer: Atiende peticiones HTTP hasta que se llama Close.
+**/
 func (serv *Server) StartHttpServer() {
 	if serv.http == nil {
 		return
 	}
 
-	svr := serv.http
-	console.LogKF("Http", "Running on http://localhost%s", svr.Addr)
-	console.Fatal(serv.http.ListenAndServe())
+	console.LogKF("Http", "Running on http://localhost%s", serv.http.Addr)
+	err := serv.http.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		console.Fatal(err)
+	}
 }
 
+/**
+* Start: Arranca el servidor HTTP y muestra el banner.
+**/
 func (serv *Server) Start() {
 	go serv.StartHttpServer()
 
@@ -181,9 +204,16 @@ import (
 	"github.com/dimiro1/banner"
 	"github.com/go-chi/chi/v5"
 	"github.com/mattn/go-colorable"
-	pkg "$1/pkg/$2"	
+
+	pkg "$1/pkg/$2"
 )
 
+/**
+* New: Conecta cache, eventos, RPC y base de datos, y monta el router del paquete.
+* La base se elige con DB_DRIVER (postgres por defecto); para sqlite u oracle
+* importa tambien github.com/celsiainternet/jdb/drivers/sqlite o /oracle.
+* @return http.Handler
+**/
 func New() http.Handler {
 	r := chi.NewRouter()
 
@@ -198,6 +228,11 @@ func New() http.Handler {
 	}
 
 	_, err = event.Load()
+	if err != nil {
+		console.Panic(err)
+	}
+
+	err = pkg.StartRpcServer()
 	if err != nil {
 		console.Panic(err)
 	}
@@ -218,12 +253,18 @@ func New() http.Handler {
 	return r
 }
 
+/**
+* Close: Cierra RPC, cache y eventos.
+**/
 func Close() {
 	jrpc.Close()
 	cache.Close()
 	event.Close()
 }
 
+/**
+* Banner: Imprime el nombre del servicio al arrancar.
+**/
 func Banner() {
 	time.Sleep(3 * time.Second)
 	templ := utility.BannerTitle(pkg.PackageName, 4)
@@ -242,15 +283,19 @@ import (
 	"github.com/celsiainternet/elvis/cache"
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/event"
-	"github.com/celsiainternet/elvis/jdb"
 	"github.com/celsiainternet/elvis/jrpc"
 	"github.com/celsiainternet/elvis/utility"
 	"github.com/dimiro1/banner"
 	"github.com/go-chi/chi/v5"
 	"github.com/mattn/go-colorable"
-	pkg "$1/pkg/$2"	
+
+	pkg "$1/pkg/$2"
 )
 
+/**
+* New: Conecta cache, eventos y RPC, y monta el router del paquete.
+* @return http.Handler
+**/
 func New() http.Handler {
 	r := chi.NewRouter()
 
@@ -269,15 +314,13 @@ func New() http.Handler {
 		console.Panic(err)
 	}
 
-	db, err := jdb.Load()
+	err = pkg.StartRpcServer()
 	if err != nil {
 		console.Panic(err)
 	}
 
 	_pkg := &pkg.Router{
-		Repository: &pkg.Controller{
-			Db: db,
-		},
+		Repository: &pkg.Controller{},
 	}
 
 	r.Mount(pkg.PackagePath, _pkg.Routes())
@@ -285,12 +328,18 @@ func New() http.Handler {
 	return r
 }
 
+/**
+* Close: Cierra RPC, cache y eventos.
+**/
 func Close() {
 	jrpc.Close()
 	cache.Close()
 	event.Close()
 }
 
+/**
+* Banner: Imprime el nombre del servicio al arrancar.
+**/
 func Banner() {
 	time.Sleep(3 * time.Second)
 	templ := utility.BannerTitle(pkg.PackageName, 4)
@@ -304,305 +353,51 @@ const modelEvent = `package $1
 import (
 	"github.com/celsiainternet/elvis/console"
 	"github.com/celsiainternet/elvis/event"
-	"github.com/celsiainternet/elvis/et"
 )
 
-func initEvents() {	
-	err := event.Stack("<channel>", eventAction)
+/**
+* initEvents: Suscribe los manejadores de eventos del paquete.
+**/
+func initEvents() {
+	// TODO: cambia el canal por el evento real que consume el servicio
+	err := event.Subscribe(PackageName+"/event", eventAction)
 	if err != nil {
 		console.Error(err)
 	}
-
 }
 
+/**
+* eventAction: Maneja un mensaje recibido por NATS.
+* @param m event.EvenMessage
+**/
 func eventAction(m event.EvenMessage) {
-	data, err := et.ToJson(m.Data)
-	if err != nil {
-		console.Error(err)
-	}
-
-	console.Log("eventAction", data)
+	console.LogK("eventAction", m.Data.ToString())
 }
 `
 
-const modelData = `package $1
-
-import (
-	"fmt"
-
-	"github.com/celsiainternet/elvis/console"
-	"github.com/celsiainternet/elvis/dt"
-	"github.com/celsiainternet/elvis/et"
-	"github.com/celsiainternet/elvis/msg"
-	"github.com/celsiainternet/elvis/utility"
-	"github.com/celsiainternet/jdb/jdb"
-)
-
-var $2 *jdb.Model
-
-func Define$2(db *jdb.DB) error {
-	if err := defineSchema(db); err != nil {
-		return console.Panic(err)
-	}
-
-	if $2 != nil {
-		return nil
-	}
-
-	$2 = jdb.NewModel(schema, "$3", 1)
-	$2.DefineModel()
-	$2.DefineAtribute("name", jdb.TypeDataText)
-	$2.DefineIndex(true,
-		"name",
-	)
-	
-	if err := $2.Init(); err != nil {
-		return console.Panic(err)
-	}
-
-	return nil
-}
+const modelMsg = `package $1
 
 /**
-* Get$2ById
-* @param id string
-* @return dt.Object, error
+* Mensajes propios del paquete. Usa primero las constantes de
+* github.com/celsiainternet/elvis/msg y agrega aqui solo las que no existan.
 **/
-func Get$2ById(id string) (dt.Object, error) {
-	result := dt.Get(id)
-	if result.Ok {
-		return result, nil
-	}
-
-	return up$2ById(id)
-}
-
-/**
-* up$2ById
-* @param id string
-* @return dt.Object, error
-**/
-func up$2ById(id string) (dt.Object, error) {
-	item, err := $2.
-		Where(jdb.KEY).Eq(id).
-		One()
-	if err != nil {
-		return dt.Object{}, err
-	}
-
-	return dt.Up(id, item), nil
-}
-
-/**
-* insert$2
-* @param projectId, statusId, id, name, description string, data et.Json, createdBy string
-* @return dt.Object, error
-**/
-func insert$2(projectId, statusId, id, name, description string, data et.Json, createdBy string) (dt.Object, error) {
-	if !utility.ValidStr(projectId, 0, []string{""}) {
-		return dt.Object{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.PROJECT_ID)
-	}
-
-	if !utility.ValidStr(id, 0, []string{""}) {
-		return dt.Object{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.KEY)
-	}
-
-	if !utility.ValidStr(name, 0, []string{""}) {
-		return dt.Object{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "name")
-	}
-
-	id = $2.GetId(id)
-	now := utility.Now()
-	data[jdb.PROJECT_ID] = projectId
-	data[jdb.KEY] = id
-	data["name"] = name
-	data["description"] = description
-	_, err := $2.
-		Insert(data).
-		BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
-			exists, err := $2.
-				Where(jdb.PROJECT_ID).Eq(projectId).
-				And("name").Eq(name).
-				And(jdb.KEY).Neg(id).
-				ItExistsTx(tx)
-			if err != nil {
-				return err
-			}
-
-			if exists {
-				return fmt.Errorf(msg.RECORD_NOT_FOUND)
-			}
-
-			data[jdb.CREATED_AT] = now
-			data[jdb.UPDATED_AT] = now
-			data[jdb.STATUS_ID] = statusId
-			data["created_by"] = createdBy
-			return nil
-		}).		
-		Exec()
-	if err != nil {
-		return dt.Object{}, err
-	}
-
-	return up$2ById(id)
-}
-
-/**
-* Upsert$2
-* @param projectId, id, name, description string, data et.Json, createdBy string
-* @return dt.Object, error
-**/
-func Upsert$2(projectId, id, name, description string, data et.Json, createdBy string) (dt.Object, error) {
-	if !utility.ValidStr(projectId, 0, []string{""}) {
-		return dt.Object{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.PROJECT_ID)
-	}
-
-	if !utility.ValidStr(id, 0, []string{""}) {
-		return dt.Object{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.KEY)
-	}
-
-	if !utility.ValidStr(name, 0, []string{""}) {
-		return dt.Object{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "name")
-	}
-
-	id = $2.GetId(id)
-	now := utility.Now()
-	data[jdb.PROJECT_ID] = projectId
-	data[jdb.KEY] = id
-	data["name"] = name
-	data["description"] = description
-	_, err := $2.
-		Upsert(data).
-		BeforeInsert(func(tx *jdb.Tx, data et.Json) error {
-			exists, err := $2.
-				Where(jdb.PROJECT_ID).Eq(projectId).
-				And("name").Eq(name).
-				And(jdb.KEY).Neg(id).
-				ItExistsTx(tx)
-			if err != nil {
-				return err
-			}
-
-			if exists {
-				return fmt.Errorf(msg.RECORD_NOT_FOUND)
-			}
-
-			data[jdb.CREATED_AT] = now
-			data[jdb.UPDATED_AT] = now
-			data[jdb.STATUS_ID] = utility.ACTIVE
-			data["created_by"] = createdBy
-			return nil
-		}).
-		BeforeUpdate(func(tx *jdb.Tx, data et.Json) error {
-			exists, err := $2.
-				Where(jdb.PROJECT_ID).Eq(projectId).
-				And("name").Eq(name).
-				And(jdb.KEY).Neg(id).
-				ItExistsTx(tx)
-			if err != nil {
-				return err
-			}
-
-			if exists {
-				return fmt.Errorf(msg.RECORD_NOT_FOUND)
-			}
-
-			data[jdb.UPDATED_AT] = now
-			data["updated_by"] = createdBy
-			return nil
-		}).
-		Where(jdb.STATUS_ID).Eq(utility.ACTIVE).
-		Exec()
-	if err != nil {
-		return dt.Object{}, err
-	}
-
-	return up$2ById(id)
-}
-
-/**
-* State$2
-* @param id, stateId, createdBy string
-* @return et.Item, error
-**/
-func State$2(id, stateId, createdBy string) (et.Item, error) {
-	if !utility.ValidStr(stateId, 0, []string{""}) {
-		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.STATUS_ID)
-	}
-
-	if !utility.ValidStr(id, 0, []string{""}) {
-		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.KEY)
-	}
-
-	result, err := $2.
-		Update(et.Json{
-			jdb.STATUS_ID: stateId,
-			"updated_by":  createdBy,
-		}).
-		Where(jdb.KEY).Eq(id).
-		And(jdb.STATUS_ID).Neg(stateId).
-		One()
-	if err != nil {
-		return et.Item{}, err
-	}
-
-	dt.Drop(id)
-
-	return et.Item{
-		Ok: result.Ok,
-		Result: et.Json{
-			"message": msg.RECORD_UPDATE,
-		},
-	}, nil
-}
-
-/**
-* Query$2
-* @param query et.Json
-* @return interface{}, error
-**/
-func Query$2(query et.Json) (interface{}, error) {
-	result, err := jdb.From($2).
-		Query(query)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
+const ()
 `
 
-const modelModel = `package $1
+const modelConfig = `package $1
 
 import (
-	"github.com/celsiainternet/elvis/console"
-	"github.com/celsiainternet/jdb/jdb"
-	"github.com/$1/internal/models/$2"
+	"github.com/celsiainternet/elvis/config"
+	"github.com/celsiainternet/elvis/envar"
 )
 
-func initModels(db *jdb.DB) error {
-	if err := $1.Define$2(db); err != nil {
-		return console.Panic(err)
-	}
-
-	return nil
-}
-`
-
-const modelSchema = `package $1
-
-import (
-	"github.com/celsiainternet/jdb/jdb"
-)
-
-var $2 *jdb.Schema
-
-func defineSchema(db *jdb.DB) error {
-	if $2 == nil {
-		$2 = jdb.NewSchema(db, "$3")
-	}
-
-	return nil
+/**
+* LoadConfig: Carga la configuracion del paquete para el STAGE actual.
+* @return error
+**/
+func LoadConfig() error {
+	stage := envar.GetStr("local", "STAGE")
+	return config.Load(stage, PackageName)
 }
 `
 
@@ -613,80 +408,50 @@ import (
 	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/jrpc"
-	"github.com/$1/internal/models/$1"
 )
 
 type Services struct{}
 
-func StartRpcServer() {
+/**
+* StartRpcServer: Registra los metodos de Services como RPC ($1.Services.<Metodo>).
+* @return error
+**/
+func StartRpcServer() error {
 	pkg, err := jrpc.Load(PackageName)
 	if err != nil {
-		console.Panic(err)
+		return err
 	}
 
 	services := new(Services)
 	err = jrpc.Mount(services)
 	if err != nil {
-		console.Fatal(err)
-	}
-
-	go pkg.Start()
-}
-
-func (c *Services) Version(require et.Json, response *et.Item) error {
-	company := envar.EnvarStr("", "COMPANY")
-	web := envar.EnvarStr("", "WEB")
-	version := envar.EnvarStr("", "VERSION")
-	help := envar.EnvarStr("", "RPC_HELP")
-	response.Ok = true
-	response.Result = et.Json{
-		"methos":  "RPC",
-		"version": version,
-		"service": PackageName,
-		"host":    HostName,
-		"company": company,
-		"web":     web,
-		"help":    help,
-	}
-
-	return console.Rpc(response)
-}
-
-func (c *Services) Get$2ById(require et.Json, response *et.Item) error {
-	id := require.Str("id")
-
-	result, err := $1.Get$2ById(id)
-	if err != nil {
 		return err
 	}
 
-	*response = result.Item
+	go pkg.Start()
+
+	return nil
+}
+
+/**
+* Version: Describe el servicio por RPC.
+* @param require et.Json
+* @param response *et.Item
+* @return error
+**/
+func (c *Services) Version(require et.Json, response *et.Item) error {
+	response.Ok = true
+	response.Result = et.Json{
+		"method":  "RPC",
+		"version": PackageVersion,
+		"service": PackageName,
+		"host":    HostName,
+		"company": envar.GetStr("", "COMPANY"),
+		"web":     envar.GetStr("", "WEB"),
+		"help":    envar.GetStr("", "RPC_HELP"),
+	}
 
 	return console.Rpc(response)
-}	
-`
-
-const modelMsg = `package $1
-
-const (
-	// MSG
-	MSG_ATRIB_REQUIRED      = "Atributo requerido (%s)"
-	MSG_VALUE_REQUIRED      = "Atributo requerido (%s) value:%s"
-)
-`
-
-const modelConfig = `package $1
-
-import (
-	"github.com/celsiainternet/elvis/config"
-	"github.com/celsiainternet/elvis/envar"
-)
-
-func LoadConfig() error {
-	StartRpcServer()
-
-	stage := envar.GetStr("local", "STAGE")
-	return config.Load(stage, PackageName)
 }
 `
 
@@ -700,36 +465,46 @@ import (
 	"github.com/celsiainternet/jdb/jdb"
 )
 
-type Repository interface {
-	Version(ctx context.Context) (et.Json, error)
-	Init(ctx context.Context)
-}
-
 type Controller struct {
 	Db *jdb.DB
 }
 
-func (s *Controller) Version(ctx context.Context) (et.Json, error) {
-	company := envar.EnvarStr("", "COMPANY")
-	web := envar.EnvarStr("", "WEB")
-	version := envar.EnvarStr("", "VERSION")
+/**
+* Version: Describe el servicio.
+* @param ctx context.Context
+* @return et.Json, error
+**/
+func (c *Controller) Version(ctx context.Context) (et.Json, error) {
 	service := et.Json{
-		"version":      version,
-		"service":      PackageName,
-		"host":         HostName,
-		"company":      company,
-		"web":          web,
-		"serviceSMS":   "Brevo",
-		"serviceEmail": "Go4clients",
-		"help":         "",
+		"version": PackageVersion,
+		"service": PackageName,
+		"host":    HostName,
+		"company": envar.GetStr("", "COMPANY"),
+		"web":     envar.GetStr("", "WEB"),
+		"help":    "",
 	}
 
 	return service, nil
 }
 
-func (s *Controller) Init(ctx context.Context) {
-	initModels(s.Db)
+/**
+* Init: Define los modelos y suscribe los eventos del paquete.
+* @param ctx context.Context
+* @return error
+**/
+func (c *Controller) Init(ctx context.Context) error {
+	if err := initModels(c.Db); err != nil {
+		return err
+	}
+
 	initEvents()
+
+	return nil
+}
+
+type Repository interface {
+	Version(ctx context.Context) (et.Json, error)
+	Init(ctx context.Context) error
 }
 `
 
@@ -740,37 +515,506 @@ import (
 
 	"github.com/celsiainternet/elvis/envar"
 	"github.com/celsiainternet/elvis/et"
-	"github.com/celsiainternet/elvis/jdb"
 )
 
-type Controller struct {
-	Db *jdb.DB
-}
+type Controller struct{}
 
+/**
+* Version: Describe el servicio.
+* @param ctx context.Context
+* @return et.Json, error
+**/
 func (c *Controller) Version(ctx context.Context) (et.Json, error) {
-	company := envar.GetStr("", "COMPANY")
-	web := envar.GetStr("", "WEB")
-	version := envar.EnvarStr("0.0.1", "VERSION")
-  service := et.Json{
-		"version": version,
+	service := et.Json{
+		"version": PackageVersion,
 		"service": PackageName,
 		"host":    HostName,
-		"company": company,
-		"web":     web,
+		"company": envar.GetStr("", "COMPANY"),
+		"web":     envar.GetStr("", "WEB"),
 		"help":    "",
 	}
 
 	return service, nil
 }
 
-func (c *Controller) Init(ctx context.Context) {
+/**
+* Init: Suscribe los eventos del paquete.
+* @param ctx context.Context
+* @return error
+**/
+func (c *Controller) Init(ctx context.Context) error {
 	initEvents()
+
+	return nil
 }
 
 type Repository interface {
 	Version(ctx context.Context) (et.Json, error)
-	Init(ctx context.Context)
+	Init(ctx context.Context) error
 }
+`
+
+const modelModel = `package $1
+
+import (
+	"github.com/celsiainternet/jdb/jdb"
+
+	models "$2/internal/models/$1"
+)
+
+/**
+* initModels: Define e inicializa los modelos del paquete.
+* @param db *jdb.DB
+* @return error
+**/
+func initModels(db *jdb.DB) error {
+	if err := models.Define$3(db); err != nil {
+		return err
+	}
+
+	return nil
+}
+`
+
+const modelSchema = `package $1
+
+import (
+	"github.com/celsiainternet/jdb/jdb"
+)
+
+var schema$2 *jdb.Schema
+
+/**
+* defineSchema$2: Registra el schema $3 (postgres lo crea si no existe;
+* sqlite y oracle lo usan como prefijo de las tablas: $3_<tabla>).
+* @param db *jdb.DB
+* @return error
+**/
+func defineSchema$2(db *jdb.DB) error {
+	if schema$2 == nil {
+		schema$2 = jdb.NewSchema(db, "$3")
+	}
+
+	return nil
+}
+`
+
+const modelData = `package $1
+
+import (
+	"fmt"
+
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/msg"
+	"github.com/celsiainternet/elvis/utility"
+	"github.com/celsiainternet/jdb/jdb"
+)
+
+var $2 *jdb.Model
+
+/**
+* Define$2: Define la tabla $3. DefineProjectModel agrega las columnas que
+* jdb mantiene solo (_id, project_id, _status, created_at, updated_at, _data,
+* jdbid, idx); los atributos que no son columnas se guardan en _data.
+* @param db *jdb.DB
+* @return error
+**/
+func Define$2(db *jdb.DB) error {
+	if err := defineSchema$4(db); err != nil {
+		return err
+	}
+
+	if $2 != nil {
+		return nil
+	}
+
+	model := jdb.NewModel(schema$4, "$3", 1)
+	model.DefineProjectModel()
+	model.DefineAtribute("name", jdb.TypeDataText)
+	model.DefineAtribute("description", jdb.TypeDataText)
+	if err := model.Init(); err != nil {
+		return err
+	}
+
+	$2 = model
+	return nil
+}
+
+/**
+* Get$2ById: Busca un registro por id; Ok=false si no existe.
+* @param id string
+* @return et.Item, error
+**/
+func Get$2ById(id string) (et.Item, error) {
+	return $2.
+		Where(jdb.KEY).Eq(id).
+		One()
+}
+
+/**
+* Insert$2: Crea el registro; si id viene vacio se genera uno. Si el id ya
+* existe devuelve Ok=false con el registro actual.
+* @param projectId, id, name, description string
+* @param data et.Json
+* @return et.Item, error
+**/
+func Insert$2(projectId, id, name, description string, data et.Json) (et.Item, error) {
+	if !utility.ValidStr(projectId, 0, []string{""}) {
+		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, jdb.PROJECT_ID)
+	}
+
+	if !utility.ValidStr(name, 0, []string{""}) {
+		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "name")
+	}
+
+	id = $2.GetId(id)
+	current, err := Get$2ById(id)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	if current.Ok {
+		return et.Item{Ok: false, Result: current.Result}, nil
+	}
+
+	data[jdb.PROJECT_ID] = projectId
+	data[jdb.KEY] = id
+	data[jdb.STATUS_ID] = utility.ACTIVE
+	data["name"] = name
+	data["description"] = description
+
+	return $2.
+		Insert(data).
+		One()
+}
+
+/**
+* Upsert$2: Crea el registro o, si ya existe y esta activo, lo actualiza.
+* @param projectId, id, name, description string
+* @param data et.Json
+* @return et.Item, error
+**/
+func Upsert$2(projectId, id, name, description string, data et.Json) (et.Item, error) {
+	current, err := Insert$2(projectId, id, name, description, data)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	if current.Ok {
+		return current, nil
+	}
+
+	if current.Str(jdb.STATUS_ID) != utility.ACTIVE {
+		return et.Item{}, fmt.Errorf(msg.RECORD_NOT_UPDATE)
+	}
+
+	id = current.Str(jdb.KEY)
+	delete(data, jdb.STATUS_ID)
+	data[jdb.PROJECT_ID] = projectId
+	data[jdb.KEY] = id
+	data["name"] = name
+	data["description"] = description
+
+	return $2.
+		Update(data).
+		Where(jdb.KEY).Eq(id).
+		One()
+}
+
+/**
+* State$2: Cambia el estado (_status) de un registro.
+* @param id, state string
+* @return et.Item, error
+**/
+func State$2(id, state string) (et.Item, error) {
+	if !utility.ValidStr(state, 0, []string{""}) {
+		return et.Item{}, fmt.Errorf(msg.MSG_ATRIB_REQUIRED, "state")
+	}
+
+	current, err := Get$2ById(id)
+	if err != nil {
+		return et.Item{}, err
+	}
+
+	if !current.Ok {
+		return et.Item{}, fmt.Errorf(msg.RECORD_NOT_FOUND)
+	}
+
+	if current.Str(jdb.STATUS_ID) == state {
+		return et.Item{}, fmt.Errorf(msg.RECORD_NOT_CHANGE)
+	}
+
+	return $2.
+		Update(et.Json{
+			jdb.STATUS_ID: state,
+		}).
+		Where(jdb.KEY).Eq(id).
+		One()
+}
+
+/**
+* Delete$2: Marca el registro para borrar (borrado logico).
+* @param id string
+* @return et.Item, error
+**/
+func Delete$2(id string) (et.Item, error) {
+	return State$2(id, utility.FOR_DELETE)
+}
+
+/**
+* All$2: Lista paginada del proyecto. state "" = activos, "*" = todos
+* menos los marcados para borrar; search filtra por name (LIKE).
+* @param projectId, state, search string
+* @param page, rows int
+* @return et.List, error
+**/
+func All$2(projectId, state, search string, page, rows int) (et.List, error) {
+	if state == "" {
+		state = utility.ACTIVE
+	}
+
+	ql := $2.
+		Where(jdb.PROJECT_ID).Eq(projectId)
+	if state == "*" {
+		ql.And(jdb.STATUS_ID).Neg(utility.FOR_DELETE)
+	} else {
+		ql.And(jdb.STATUS_ID).Eq(state)
+	}
+
+	if search != "" {
+		ql.And("name").Like("%" + search + "%")
+	}
+
+	return ql.
+		OrderByAsc("name").
+		List(page, rows)
+}
+
+/**
+* Query$2: Consulta en formato JSON (wheres, selects, order_by, page, rows),
+* ver jsql.md en el repo de jdb.
+* @param query et.Json
+* @return et.List, error
+**/
+func Query$2(query et.Json) (et.List, error) {
+	return jdb.RunQuery($2, query)
+}
+`
+
+const modelDbHandler = `package $1
+
+import (
+	"net/http"
+
+	"github.com/celsiainternet/elvis/console"
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/response"
+	"github.com/celsiainternet/jdb/jdb"
+	"github.com/go-chi/chi/v5"
+
+	models "$4/internal/models/$1"
+)
+
+/**
+* Get$2ById: Expone models.Get$2ById por RPC ($1.Services.Get$2ById).
+* @param require et.Json
+* @param response *et.Item
+* @return error
+**/
+func (c *Services) Get$2ById(require et.Json, response *et.Item) error {
+	result, err := models.Get$2ById(require.Str("id"))
+	if err != nil {
+		return err
+	}
+
+	*response = result
+
+	return console.Rpc(response)
+}
+
+/**
+* upsert$2: POST, crea o actualiza.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
+func (rt *Router) upsert$2(w http.ResponseWriter, r *http.Request) {
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	projectId := body.Str(jdb.PROJECT_ID)
+	id := body.Str(jdb.KEY)
+	name := body.Str("name")
+	description := body.Str("description")
+
+	result, err := models.Upsert$2(projectId, id, name, description, body)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.ITEM(w, r, http.StatusOK, result)
+}
+
+/**
+* get$2ById: GET /{id}.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
+func (rt *Router) get$2ById(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	result, err := models.Get$2ById(id)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.ITEM(w, r, http.StatusOK, result)
+}
+
+/**
+* state$2: PUT /state/{id}, body {"state": "..."}.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
+func (rt *Router) state$2(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := models.State$2(id, body.Str("state"))
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.ITEM(w, r, http.StatusOK, result)
+}
+
+/**
+* delete$2: DELETE /{id}.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
+func (rt *Router) delete$2(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	result, err := models.Delete$2(id)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.ITEM(w, r, http.StatusOK, result)
+}
+
+/**
+* all$2: GET /?project_id=&state=&search=&page=&rows=.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
+func (rt *Router) all$2(w http.ResponseWriter, r *http.Request) {
+	query := response.GetQuery(r)
+	projectId := query.Str(jdb.PROJECT_ID)
+	state := query.Str("state")
+	search := query.Str("search")
+	page := query.ValInt(1, "page")
+	rows := query.ValInt(30, "rows")
+
+	result, err := models.All$2(projectId, state, search, page, rows)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.LIST(w, r, http.StatusOK, result)
+}
+
+/**
+* query$2: POST /query, body con wheres, selects, order_by, page y rows.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
+func (rt *Router) query$2(w http.ResponseWriter, r *http.Request) {
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := models.Query$2(body)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.LIST(w, r, http.StatusOK, result)
+}
+
+/** El generador agrega estas rutas a Routes() de router.go; si no pudo (router.go editado), copialas:
+	// $2
+	er.ProtectRoute(r, er.Get, "/$3/{id}", rt.get$2ById, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Post, "/$3", rt.upsert$2, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Put, "/$3/state/{id}", rt.state$2, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Delete, "/$3/{id}", rt.delete$2, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Get, "/$3", rt.all$2, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Post, "/$3/query", rt.query$2, PackageName, PackagePath, host)
+**/
+`
+
+const modelHandler = `package $1
+
+import (
+	"net/http"
+
+	"github.com/celsiainternet/elvis/et"
+	"github.com/celsiainternet/elvis/response"
+)
+
+/**
+* $2: Logica del caso de uso.
+* @param projectId, id string
+* @param params et.Json
+* @return et.Item, error
+**/
+func $2(projectId, id string, params et.Json) (et.Item, error) {
+	return et.Item{Ok: true, Result: params}, nil
+}
+
+/**
+* $3: Handler HTTP de $2.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
+func (rt *Router) $3(w http.ResponseWriter, r *http.Request) {
+	body, err := response.GetBody(r)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	projectId := body.Str("project_id")
+	id := body.Str("id")
+
+	result, err := $2(projectId, id, body)
+	if err != nil {
+		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.ITEM(w, r, http.StatusOK, result)
+}
+
+/** El generador agrega esta ruta a Routes() de router.go; si no pudo (router.go editado), copiala:
+	// $2
+	er.ProtectRoute(r, er.Post, "/$3", rt.$3, PackageName, PackagePath, host)
+**/
 `
 
 const modelDbRouter = `package $1
@@ -793,13 +1037,17 @@ import (
 var PackageName = "$1"
 var PackageTitle = "$1"
 var PackagePath = envar.GetStr("/api/$1", "PATH_URL")
-var PackageVersion = envar.EnvarStr("0.0.1", "VERSION")
+var PackageVersion = envar.GetStr("0.0.1", "VERSION")
 var HostName, _ = os.Hostname()
 
 type Router struct {
 	Repository Repository
 }
 
+/**
+* Routes: Registra las rutas del paquete e inicializa el repositorio.
+* @return http.Handler
+**/
 func (rt *Router) Routes() http.Handler {
 	defaultHost := strs.Format("http://%s", HostName)
 	var host = strs.Format("%s:%d", envar.GetStr(defaultHost, "HOST"), envar.GetInt(3300, "PORT"))
@@ -813,16 +1061,24 @@ func (rt *Router) Routes() http.Handler {
 	er.ProtectRoute(r, er.Post, "/", rt.upsert$2, PackageName, PackagePath, host)
 	er.ProtectRoute(r, er.Put, "/state/{id}", rt.state$2, PackageName, PackagePath, host)
 	er.ProtectRoute(r, er.Delete, "/{id}", rt.delete$2, PackageName, PackagePath, host)
-	er.ProtectRoute(r, er.Get, "/", rt.query$2, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Get, "/", rt.all$2, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Post, "/query", rt.query$2, PackageName, PackagePath, host)
 
 	ctx := context.Background()
-	rt.Repository.Init(ctx)
+	if err := rt.Repository.Init(ctx); err != nil {
+		console.Panic(err)
+	}
 	middleware.SetServiceName(PackageName)
 
 	console.LogKF(PackageName, "Router version:%s", PackageVersion)
 	return r
 }
 
+/**
+* version: Responde la version del servicio.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
 func (rt *Router) version(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	result, err := rt.Repository.Version(ctx)
@@ -834,6 +1090,11 @@ func (rt *Router) version(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, r, http.StatusOK, result)
 }
 
+/**
+* routes: Lista las rutas registradas.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
 func (rt *Router) routes(w http.ResponseWriter, r *http.Request) {
 	_routes := er.GetRoutes()
 	routes := []et.Json{}
@@ -874,13 +1135,17 @@ import (
 var PackageName = "$1"
 var PackageTitle = "$1"
 var PackagePath = envar.GetStr("/api/$1", "PATH_URL")
-var PackageVersion = envar.EnvarStr("0.0.1", "VERSION")
+var PackageVersion = envar.GetStr("0.0.1", "VERSION")
 var HostName, _ = os.Hostname()
 
 type Router struct {
 	Repository Repository
 }
 
+/**
+* Routes: Registra las rutas del paquete e inicializa el repositorio.
+* @return http.Handler
+**/
 func (rt *Router) Routes() http.Handler {
 	defaultHost := strs.Format("http://%s", HostName)
 	var host = strs.Format("%s:%d", envar.GetStr(defaultHost, "HOST"), envar.GetInt(3300, "PORT"))
@@ -891,15 +1156,22 @@ func (rt *Router) Routes() http.Handler {
 	er.ProtectRoute(r, er.Get, "/routes", rt.routes, PackageName, PackagePath, host)
 	// $2
 	er.ProtectRoute(r, er.Post, "/", rt.$2, PackageName, PackagePath, host)
-	
+
 	ctx := context.Background()
-	rt.Repository.Init(ctx)
+	if err := rt.Repository.Init(ctx); err != nil {
+		console.Panic(err)
+	}
 	middleware.SetServiceName(PackageName)
 
 	console.LogKF(PackageName, "Router version:%s", PackageVersion)
 	return r
 }
 
+/**
+* version: Responde la version del servicio.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
 func (rt *Router) version(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	result, err := rt.Repository.Version(ctx)
@@ -911,6 +1183,11 @@ func (rt *Router) version(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, r, http.StatusOK, result)
 }
 
+/**
+* routes: Lista las rutas registradas.
+* @param w http.ResponseWriter
+* @param r *http.Request
+**/
 func (rt *Router) routes(w http.ResponseWriter, r *http.Request) {
 	_routes := er.GetRoutes()
 	routes := []et.Json{}
@@ -931,183 +1208,101 @@ func (rt *Router) routes(w http.ResponseWriter, r *http.Request) {
 }
 `
 
-const restHttp = `@host=localhost:3300
-@token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IlVTRVIuQURNSU4iLCJhcHAiOiJEZXZvcHMtSW50ZXJuZXQiLCJuYW1lIjoiQ2VzYXIgR2FsdmlzIExlw7NuIiwia2luZCI6ImF1dGgiLCJ1c2VybmFtZSI6Iis1NzMxNjA0Nzk3MjQiLCJkZXZpY2UiOiJkZXZlbG9wIiwiZHVyYXRpb24iOjI1OTIwMDB9.dexIOute7r9o_P8U3t6l9RihN8BOnLl4xpoh9QbQI4k
+const modelDbRoutes = `	// $1
+	er.ProtectRoute(r, er.Get, "/$2/{id}", rt.get$1ById, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Post, "/$2", rt.upsert$1, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Put, "/$2/state/{id}", rt.state$1, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Delete, "/$2/{id}", rt.delete$1, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Get, "/$2", rt.all$1, PackageName, PackagePath, host)
+	er.ProtectRoute(r, er.Post, "/$2/query", rt.query$1, PackageName, PackagePath, host)
+`
 
-###
-GET /auth HTTP/1.1
-Host: {{host}}/version
+const modelRoutes = `	// $1
+	er.ProtectRoute(r, er.Post, "/$2", rt.$2, PackageName, PackagePath, host)
+`
+
+const restHttp = `@host=localhost:3300
+# JWT firmado con el SECRET del servicio (claim.NewToken); no lo subas al repositorio
+@token=
+
+### Version (publica)
+GET http://{{host}}/api/$1/version
+
+### Rutas registradas
+GET http://{{host}}/api/$1/routes
 Authorization: Bearer {{token}}
 
-###
-POST /api/test/test HTTP/1.1
-Host: {{host}}
+### Crear o actualizar
+POST http://{{host}}/api/$1
 Content-Type: application/json
 Authorization: Bearer {{token}}
-Content-Length: 227
 
 {
+  "project_id": "-1",
+  "name": "Ejemplo"
 }
 `
 
-const modelDbModelRouter = `package $1
+const modelReadme = `# $1
 
-import (
-	"net/http"
+Autor: $2
 
-	"github.com/celsiainternet/elvis/claim"
-	"github.com/celsiainternet/elvis/response"
-	"github.com/celsiainternet/elvis/utility"
-	"github.com/celsiainternet/jdb/jdb"
-	"github.com/go-chi/chi/v5"
-	"github.com/$1/internal/models/$1"
-)
+Microservicio construido sobre [elvis](https://github.com/celsiainternet/elvis) y [jdb](https://github.com/celsiainternet/jdb).
 
-/**
-* upsert$2
-* @param w http.ResponseWriter
-* @param r *http.Request
-**/
-func (rt *Router) upsert$2(w http.ResponseWriter, r *http.Request) {
-	body, _ := response.GetBody(r)
-	projectId := body.Str(jdb.PROJECT_ID)
-	id := body.Str(jdb.KEY)
-	name := body.Str("name")
-	description := body.Str("description")
-	clientName := claim.ClientName(r)
-	result, err := $1.Upsert$3(projectId, id, name, description, body, clientName)
-	if err != nil {
-		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
+## Actualizar elvis y jdb
 
-	response.JSON(w, r, http.StatusOK, result)
-}
+` + "`" + `` + "`" + `` + "`" + `bash
+go get github.com/celsiainternet/elvis@latest github.com/celsiainternet/jdb@latest
+go mod tidy
+go run github.com/celsiainternet/elvis/cmd/install
+go run github.com/celsiainternet/jdb/cmd/install
+` + "`" + `` + "`" + `` + "`" + `
 
-/**
-* get$2ById
-* @param w http.ResponseWriter
-* @param r *http.Request
-**/
-func (rt *Router) get$2ById(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	result, err := $1.Get$3ById(id)
-	if err != nil {
-		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
+## Generar microservicios, modelos y RPC
 
-	response.JSON(w, r, http.StatusOK, result)
-}
+` + "`" + `` + "`" + `` + "`" + `bash
+go run github.com/celsiainternet/jdb/cmd/create go
+` + "`" + `` + "`" + `` + "`" + `
 
-/**
-* state$2
-* @param w http.ResponseWriter
-* @param r *http.Request
-**/
-func (rt *Router) state$2(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	body, _ := response.GetBody(r)
-	statusId := body.Str(jdb.STATUS_ID)
-	clientName := claim.ClientName(r)
-	result, err := $1.State$3(id, statusId, clientName)
-	if err != nil {
-		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
+## Ejecutar
 
-	response.ITEM(w, r, http.StatusOK, result)
-}
+Requiere la base de datos (` + "`" + `DB_DRIVER` + "`" + `, PostgreSQL por defecto), Redis y NATS; la configuracion esta en ` + "`" + `.env` + "`" + `.
 
-/**
-* delete$2
-* @param w http.ResponseWriter
-* @param r *http.Request
-**/
-func (rt *Router) delete$2(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	clientName := claim.ClientName(r)
-	result, err := $1.State$3(id, utility.FOR_DELETE, clientName)
-	if err != nil {
-		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
+` + "`" + `` + "`" + `` + "`" + `bash
+gofmt -w . && go run ./cmd/$1
+` + "`" + `` + "`" + `` + "`" + `
 
-	response.ITEM(w, r, http.StatusOK, result)
-}
+## Verificar
 
-/**
-* query$2
-* @param w http.ResponseWriter
-* @param r *http.Request
-**/
-func (rt *Router) query$2(w http.ResponseWriter, r *http.Request) {
-	body, _ := response.GetBody(r)
-	query := body.Json("query")
-	result, err := $1.Query$3(query)
-	if err != nil {
-		response.HTTPError(w, r, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	response.JSON(w, r, http.StatusOK, result)
-}
-
-/** Copy this code to router.go
-	// $4
-	er.ProtectRoute(r, er.Get, "/$4/{id}", rt.get$2ById, PackageName, PackagePath, host)
-	er.ProtectRoute(r, er.Post, "/$4", rt.upsert$2, PackageName, PackagePath, host)
-	er.ProtectRoute(r, er.Put, "/$4/{id}", rt.state$2, PackageName, PackagePath, host)
-	er.ProtectRoute(r, er.Delete, "/$4/{id}", rt.delete$2, PackageName, PackagePath, host)
-	er.ProtectRoute(r, er.Get, "/$4/query", rt.query$2, PackageName, PackagePath, host)
-**/
-
-/** Copy this code to func initModel in model.go
-	if err := %1.Define$3(db); err != nil {
-		return console.Panic(err)
-	}
-**/
+` + "`" + `` + "`" + `` + "`" + `bash
+go build ./... && go vet ./...
+` + "`" + `` + "`" + `` + "`" + `
 `
 
-const modelReadme = `
-## Project $1
-
-Author: $2
-
-## Create project
-
-go mod init github.com/$1/api
-
-### Dependencias
-
-go get github.com/celsiainternet/elvis@v1.1.2
-
-### Crear projecto, microservicios, modelos
-
-go run github.com/celsiainternet/elvis/cmd/create-go create
-
-### Run project
-
-gofmt -w . && go run ./cmd/$1 -port 3400 -rpc 4400
-`
-
-const modelEnvar = `APP=
+const modelEnvar = `APP=$1
 PORT=3300
 VERSION=0.0.0
 COMPANY=Company
-PATH_URL=
-WEB=
+WEB=https://www.company.com
+# HOST=http://localhost
+HOST=http://host.docker.internal
+PATH_URL=/api/$1
 PRODUCTION=false
-HOST=localhost
 
-# DB
+# RPC
+RPC_PORT=4200
+RPC_HOST=localhost
+
+# DB (jdb)
 DB_DRIVER=postgres
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=test
 DB_USER=test
 DB_PASSWORD=test
-DB_APPLICATION_NAME=test
+APP_NAME=$1
+USE_CORE=true
+DEBUG=false
 
 # REDIS
 REDIS_HOST=localhost:6379
@@ -1119,7 +1314,6 @@ NATS_HOST=localhost:4222
 
 # CALM
 SECRET=test
-
 `
 
 const modelDeploy = `version: "3"
@@ -1145,7 +1339,7 @@ services:
     deploy:
       replicas: 1
     environment:
-      - "APP=Celsia Internet"
+      - "APP=$1"
       - "PORT=3300"
       - "VERSION=1.0.1"
       - "COMPANY=Celsia Internet"
@@ -1153,14 +1347,14 @@ services:
       - "PATH_URL=/api/$1"
       - "PRODUCTION=true"
       - "HOST=stack"
-      # DB
+      # DB (jdb)
       - "DB_DRIVER=postgres"
       - "DB_HOST="
       - "DB_PORT=5432"
       - "DB_NAME=internet"
       - "DB_USER=internet"
       - "DB_PASSWORD="
-      - "DB_APPLICATION_NAME=$1"
+      - "APP_NAME=$1"
       # REDIS
       - "REDIS_HOST="
       - "REDIS_PASSWORD="
@@ -1170,7 +1364,7 @@ services:
       # CALM
       - "SECRET="
       # RPC
-      - "PORT_RPC=4200"
+      - "RPC_PORT=4200"
 `
 
 const modelGitignore = `# Created by https://www.toptal.com/developers/gitignore/api/go

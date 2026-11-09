@@ -9,7 +9,7 @@ func (s *Ql) GroupBy(fields ...string) *Ql {
 	if s.Groups == nil {
 		s.Groups = []*Field{}
 	}
-	
+
 	for _, field := range fields {
 		field := s.getField(field)
 		if field != nil {

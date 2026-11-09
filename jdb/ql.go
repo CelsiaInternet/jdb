@@ -2,6 +2,7 @@ package jdb
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -31,13 +32,34 @@ func (s *QlFrom) ToJson() et.Json {
 **/
 func (s *QlFrom) GetColumnsFields() []*Field {
 	result := []*Field{}
-	for _, column := range s.Model.Columns {
+	for _, column := range s.Model.GetColumns() {
 		if column.TypeColumn != TpColumn {
 			continue
 		}
 
 		field := GetField(column)
 		field.SetFromAs(s.As)
+		result = append(result, field)
+	}
+	return result
+}
+
+/**
+* DefaultFields: Columnas que trae una consulta sin select explicito: las del primer from menos las
+* ocultas (DefineHidden) y las marcadas con Ql.Hidden. Una columna oculta solo sale si se pide por
+* nombre (Data, Select o selects de jsql).
+* @return []*Field
+**/
+func (s *Ql) DefaultFields() []*Field {
+	result := []*Field{}
+	if len(s.Froms.Froms) == 0 {
+		return result
+	}
+
+	for _, field := range s.Froms.Froms[0].GetColumnsFields() {
+		if field.Hidden || slices.Contains(s.Hiddens, field.Name) {
+			continue
+		}
 		result = append(result, field)
 	}
 	return result

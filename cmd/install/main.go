@@ -2,78 +2,74 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/celsiainternet/jdb/agentsguide"
 )
 
-var dependencies = []string{
-	"github.com/joho/godotenv@v1.5.1",
-	"github.com/bwmarrin/snowflake@v0.3.0",
-	"github.com/oklog/ulid/v2@v2.1.1",
-	"github.com/matoous/go-nanoid/v2@v2.1.0",
-	"github.com/oklog/ulid@v1.3.1",
-	"github.com/lib/pq@v1.10.9",
-	"github.com/go-chi/chi/v5@v5.2.2",
-	"github.com/google/uuid@v1.6.0",
-	"golang.org/x/crypto@v0.38.0",
-	"golang.org/x/exp@v0.0.0-20250408133849-7e4ce0ab07d0",
-	"github.com/manifoldco/promptui@v0.9.0",
-	"github.com/schollz/progressbar/v3@v3.18.0",
-	"github.com/redis/go-redis/v9@v9.12.1",
-	"github.com/spf13/cobra@v1.10.2",
-	"github.com/nats-io/nats.go@v1.41.2",
-	"github.com/golang-jwt/jwt/v4@v4.5.2",
-	"github.com/robfig/cron/v3@v3.0.1",
-	"github.com/rs/cors@v1.11.1",
-	"github.com/rs/xid@v1.6.0",
-	"github.com/go-sql-driver/mysql@v1.9.3",
-	"github.com/dimiro1/banner@v1.1.0",
-	"github.com/mattn/go-colorable@v0.1.15",
-	"github.com/mattn/go-isatty@v0.0.20",
-}
-
+/**
+* main: Prepara un proyecto que consume jdb: completa el go.mod con
+* go mod tidy (solo si ya hay codigo) e instala la guia de agentes de jdb.
+* No fija versiones: tidy toma las que exigen jdb y elvis y nunca las baja.
+**/
 func main() {
-	total := len(dependencies)
-	for i, dep := range dependencies {
-		p := (i + 1) * 100 / total
-		fmt.Printf("\r[%-50s] %d%% Installing %s", progressBar(i+1, total, 50), p, dep)
-		err := installLibrary(dep)
-		if err != nil {
-			fmt.Printf("\r[%-50s] %d%% Error installing %s - %v", progressBar(i+1, total, 50), p, dep, err)
-			return
-		}
+	if _, err := os.Stat("go.mod"); err != nil {
+		fmt.Println("No se encontro go.mod en el directorio actual; ejecuta primero: go mod init <modulo> && go get github.com/celsiainternet/jdb/cmd/install")
+		os.Exit(1)
 	}
 
-	fmt.Printf("\r[%-50s] %d%% ¡Completado!\n", progressBar(total, total, 50), 100)
+	ok := tidy()
 
 	if err := agentsguide.Install(); err != nil {
-		fmt.Printf("Advertencia: no se pudo instalar la guía de agentes - %v\n", err)
-		return
+		fmt.Printf("Advertencia: no se pudo instalar la guia de agentes - %v\n", err)
+		ok = false
+	} else {
+		fmt.Println("Guia de agentes de jdb instalada en .claude/guides/jdb/ (referenciada desde CLAUDE.md y AGENTS.md)")
 	}
 
-	fmt.Println("Guía de agentes de jdb instalada en .claude/guides/jdb/ (referenciada desde CLAUDE.md y AGENTS.md)")
+	if _, err := os.Stat(".claude/guides/elvis"); err != nil {
+		fmt.Println("jdb usa elvis: instala tambien su guia con go run github.com/celsiainternet/elvis/cmd/install")
+	}
+
+	if !ok {
+		os.Exit(1)
+	}
 }
 
-func installLibrary(library string) error {
-	cmd := exec.Command("go", "get", library)
-	_, err := cmd.CombinedOutput()
+/**
+* tidy: Ejecuta go mod tidy si el modulo ya tiene paquetes Go. En un
+* proyecto vacio tidy quitaria jdb del go.mod (nada la importa todavia),
+* y despues cmd/install y cmd/create no se podrian ejecutar.
+* @return bool
+**/
+func tidy() bool {
+	if !hasPackages() {
+		fmt.Println("El proyecto aun no tiene codigo: se omite go mod tidy")
+		return true
+	}
+
+	fmt.Println("Ejecutando go mod tidy...")
+	out, err := exec.Command("go", "mod", "tidy").CombinedOutput()
 	if err != nil {
-		return err
+		fmt.Printf("go mod tidy fallo: %v\n%s\n", err, out)
+		return false
 	}
 
-	return nil
+	fmt.Println("go.mod actualizado")
+	return true
 }
 
-func progressBar(current, total, width int) string {
-	progress := int(float64(current) / float64(total) * float64(width))
-	return fmt.Sprintf("%s%s", string(repeatRune('=', progress)), string(repeatRune(' ', width-progress)))
-}
-
-func repeatRune(char rune, count int) []rune {
-	r := make([]rune, count)
-	for i := 0; i < count; i++ {
-		r[i] = char
+/**
+* hasPackages: Indica si el modulo actual tiene al menos un paquete Go.
+* @return bool
+**/
+func hasPackages() bool {
+	out, err := exec.Command("go", "list", "-e", "-f", "{{if .GoFiles}}{{.ImportPath}}{{end}}", "./...").Output()
+	if err != nil {
+		return false
 	}
-	return r
+
+	return strings.TrimSpace(string(out)) != ""
 }

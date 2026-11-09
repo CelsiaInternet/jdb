@@ -32,7 +32,7 @@ func (s *Ql) setSelectField(field *Field) *Ql {
 			return s
 		}
 
-		rollup, exist := field.Model.Model.Rollup[field.Name]
+		rollup, exist := field.Model.Model.getRollup(field.Name)
 		if !exist {
 			return s
 		}

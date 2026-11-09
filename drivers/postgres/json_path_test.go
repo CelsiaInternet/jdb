@@ -47,3 +47,33 @@ func TestWhereJsonPathSql(t *testing.T) {
 		})
 	}
 }
+
+func TestWhereConcatSql(t *testing.T) {
+	name := &jdb.Field{Model: &jdb.QlFrom{As: "A"}, Name: "name", TypeColumn: jdb.TpColumn, TypeData: jdb.TypeDataText}
+	email := &jdb.Field{Model: &jdb.QlFrom{As: "A", Model: &jdb.Model{SourceField: &jdb.Column{Name: "_data"}}}, Name: "email", TypeColumn: jdb.TpAtribute, TypeData: jdb.TypeDataText, Default: ""}
+
+	cases := []struct {
+		name  string
+		where func(where *jdb.QlWhere)
+		want  string
+	}{
+		{"columna y atributo", func(where *jdb.QlWhere) {
+			where.Where(jdb.NewConcat(name, email)).Like("%ana%")
+		}, `concat_ws(' ', A.name, COALESCE(A._data#>>'{email}', '')) ILIKE '%ana%'`},
+		{"con alcance", func(where *jdb.QlWhere) {
+			where.Where(name).Eq("x")
+			where.Where(jdb.NewConcat(name)).Like("%ana%")
+		}, `A.name='x' AND concat_ws(' ', A.name) ILIKE '%ana%'`},
+		{"sin campos", func(where *jdb.QlWhere) { where.Where(jdb.NewConcat()).Like("%ana%") }, `'' ILIKE '%ana%'`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			where := &jdb.QlWhere{}
+			c.where(where)
+			got := whereConditions(where)
+			if normalize(got) != normalize(c.want) {
+				t.Fatalf("got %s, want %s", got, c.want)
+			}
+		})
+	}
+}

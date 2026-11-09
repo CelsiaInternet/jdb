@@ -4,6 +4,7 @@ import (
 	"github.com/celsiainternet/elvis/et"
 	"github.com/celsiainternet/elvis/reg"
 	"github.com/celsiainternet/elvis/strs"
+	"maps"
 )
 
 /**
@@ -324,19 +325,29 @@ func (s *Model) defineRollup(name, withName string, fks map[string]string, field
 		return nil
 	}
 
-	result := &Rollup{
-		Name:     name,
-		With:     with,
-		WithName: with.Name,
-		Fk:       fks,
-		Fields:   fields,
-		Show:     showRollup,
+	result := NewRollup(name, with, fks, fields, showRollup)
+	s.AddRollup(result)
+	return result
+}
+
+/**
+* AddRollup: Agrega al modelo un rollup ya armado (NewRollup, con sus Wheres) como columna virtual; reemplaza el de igual nombre.
+* Se puede llamar con el modelo en uso: sirve para rollups definidos en datos que cambian con el servicio arriba.
+* @param rollup *Rollup
+**/
+func (s *Model) AddRollup(rollup *Rollup) {
+	if rollup == nil {
+		return
 	}
 
-	col := newColumn(s, name, "", TpRollup, TypeDataNone, TypeDataNone.DefaultValue())
+	col := newColumn(s, rollup.Name, "", TpRollup, TypeDataNone, TypeDataNone.DefaultValue())
 	s.addColumn(col)
-	s.Rollup[name] = result
-	return result
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rollups := maps.Clone(s.Rollup)
+	rollups[rollup.Name] = rollup
+	s.Rollup = rollups
 }
 
 /**

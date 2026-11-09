@@ -13,7 +13,7 @@ go mod init github.com/<organizacion>/<proyecto>
 
 # Pide los comandos (no solo el módulo) para que go.sum quede completo;
 # con "go get github.com/celsiainternet/jdb@..." los go run fallan con "missing go.sum entry"
-go get github.com/celsiainternet/jdb/cmd/install@v1.0.113 github.com/celsiainternet/jdb/cmd/create@v1.0.113
+go get github.com/celsiainternet/jdb@v1.0.113
 go run github.com/celsiainternet/jdb/cmd/install
 go run github.com/celsiainternet/jdb/cmd/create go
 ```

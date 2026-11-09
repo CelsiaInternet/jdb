@@ -179,3 +179,13 @@ Verified 2026-09-22 (core items re-verified 2026-11-04 on `ac5d257`, now committ
 | `ORA_DB_HOST`, `ORA_DB_PORT` (`1521`), `ORA_DB_USER`, `ORA_DB_PASSWORD`, `ORA_DB_SERVICE_NAME_ORACLE`, `ORA_DB_SSL_ORACLE`, `ORA_DB_SSL_VERIFY_ORACLE`, `ORA_VERSION` (`19`) | — | Oracle connection |
 
 (`NODE_ID` was listed previously; nothing in the code reads it any more.)
+
+<!-- elvis:agents-guide:start devel -->
+## Marco de trabajo para agentes: elvis devel
+
+Bloque generado por `go run github.com/celsiainternet/elvis/cmd/install`. No lo edites: se reemplaza al volver a ejecutarlo. Las guías están en `.claude/guides/elvis/` y tienen prioridad sobre lo que recuerdes de la librería; las reglas propias de este proyecto, fuera de este bloque, tienen prioridad sobre las guías.
+
+@.claude/guides/elvis/MARCO.md
+@.claude/guides/elvis/ELVIS.md
+@.claude/guides/elvis/REVISION.md
+<!-- elvis:agents-guide:end -->

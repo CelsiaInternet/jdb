@@ -11,8 +11,6 @@
 # En una carpeta nueva
 go mod init github.com/<organizacion>/<proyecto>
 
-# Pide los comandos (no solo el módulo) para que go.sum quede completo;
-# con "go get github.com/celsiainternet/jdb@..." los go run fallan con "missing go.sum entry"
 go get github.com/celsiainternet/jdb@v1.0.113
 go run github.com/celsiainternet/jdb/cmd/install
 go run github.com/celsiainternet/jdb/cmd/create go
@@ -26,7 +24,7 @@ La opción **Project** de `cmd/create` genera un microservicio completo sobre el
 
 `jdb` es una librería de Go para trabajar con bases de datos: defines modelos de forma declarativa y construyes consultas (`Ql`) y comandos (`Command`) con una API fluida; un driver traduce esa intención a SQL.
 
-- **Driver disponible:** solo **PostgreSQL** (`drivers/postgres`). `drivers/oracle` conecta pero sus operaciones devuelven `"not implemented"`. No hay drivers MySQL ni SQLite.
+- **Drivers:** **PostgreSQL** (`drivers/postgres`), **SQLite** (`drivers/sqlite`, `modernc.org/sqlite`, Go puro sin CGO) y **Oracle 19c+** (`drivers/oracle`, `sijms/go-ora`). No hay driver MySQL (`MysqlDriver` es solo una constante de nombre).
 - **Dependencia:** [`elvis`](https://github.com/celsiainternet/elvis) (tipos `et.Json`/`et.Item`/`et.Items`, logging, eventos).
 - **No es una aplicación:** `cmd/` contiene tres herramientas independientes (ver [Herramientas](#herramientas-de-cmd)).
 
@@ -36,6 +34,8 @@ La opción **Project** de `cmd/create` genera un microservicio completo sobre el
 | --------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
 | `jdb`           | `github.com/celsiainternet/jdb/jdb`              | Núcleo: conexión, modelos, consultas, comandos, hooks, handlers HTTP |
 | `postgres`      | `github.com/celsiainternet/jdb/drivers/postgres` | Driver PostgreSQL (se registra con import en blanco)                 |
+| `sqlite`        | `github.com/celsiainternet/jdb/drivers/sqlite`   | Driver SQLite: archivo o `:memory:` (import en blanco)               |
+| `oracle`        | `github.com/celsiainternet/jdb/drivers/oracle`   | Driver Oracle 19c+ (import en blanco)                                |
 | `instances`     | `github.com/celsiainternet/jdb/instances`        | Almacén genérico clave → objeto                                      |
 | `authorization` | `github.com/celsiainternet/jdb/authorization`    | Permisos por proyecto/perfil/método/ruta                             |
 | `config`        | `github.com/celsiainternet/jdb/config`           | Configuración por `tag` + `stage`                                    |
@@ -80,10 +80,12 @@ if err != nil {
 }
 defer db.Disconected()
 
-// o, desde variables de entorno:
+// o, desde variables de entorno (DB_DRIVER elige postgres, sqlite u oracle):
 // import _ "github.com/celsiainternet/jdb/drivers/postgres"
 // db, err := jdb.Load()
 ```
+
+`Load()`/`LoadTo()` crean por defecto los modelos del schema `core` (series); con `USE_CORE=false` no lo hacen.
 
 ### `*DB`
 
@@ -132,7 +134,7 @@ items, err := db.Query("SELECT * FROM public.users WHERE age > $1", 18)
 | `DefineRequired(cols...)`, `DefineHidden(cols...)`                                                                                                | Requeridos / ocultos en resultados              |
 | `DefineCreatedAtField()`, `DefineUpdatedAtField()`, `DefineStatusField()`, `DefineSystemKeyField()`, `DefineIndexField()`, `DefineProjectField()` | Campos de sistema (se rellenan automáticamente) |
 | `DefineRelation(name, with, fks, limit)`                                                                                                          | Relación uno-a-muchos                           |
-| `DefineRollup(name, with, fks, fields).SetWheres(...)`                                                                                            | Agregación desde otra tabla                     |
+| `DefineRollup(name, withName, fks, fields).SetWheres(...)`                                                                                        | Agregación desde otra tabla                     |
 | `DefineObject(name, with, fks, fields)`                                                                                                           | Objeto embebido uno-a-uno                       |
 | `DefineDetail(name, fks, limit)`                                                                                                                  | Detalle                                         |
 | `DefineCalc(name, fn)`, `DefineCalcTx(name, fn)`                                                                                                  | Campo calculado en Go                           |
@@ -205,7 +207,41 @@ items, err = scheduling.Where("customer_id").Eq(customerId).
 	OrderByDesc("start_date").All()
 ```
 
-Las llaves de una ruta JSON solo admiten letras, numeros, `_` y `-`; si no, el nombre no se resuelve como campo. En Postgres la ruta se lee como texto y se convierte a `numeric` o `boolean` cuando el valor comparado es un numero o un booleano.
+Las llaves de una ruta JSON solo admiten letras, números, `_` y `-`; si no, el nombre no se resuelve como campo. En Postgres la ruta se lee como texto y se convierte a `numeric` o `boolean` cuando el valor comparado es un número o un booleano.
+
+`WhereConcat("first_name", "last_name")` abre una sola condición sobre varios campos unidos por un espacio:
+
+```go
+items, err := jdb.From(users).WhereConcat("first_name", "last_name").Like("%ana gómez%").All()
+```
+
+### Consultas en JSON (`RunQuery`)
+
+`RunQuery(model, query, rollups...)` arma la consulta desde un `et.Json` y devuelve `et.List` (`all`, `count`, `page`, `start`, `end`, `result`). `wheres` es una lista ordenada con una condición por elemento (`{campo: {op: valor}}`, `{"and": {...}}`, `{"or": {...}}`, `{"concat": {"fields": [...], op: valor}}`); `rows` (alias `limit`) vale 100 por defecto y como máximo 1000. El detalle de todos los formatos, con el SQL que generan, está en [jsql.md](jsql.md).
+
+```go
+list, err := jdb.RunQuery(users, et.Json{
+    "wheres": []et.Json{
+        {"age": et.Json{"moreEq": 18}},
+        {"or": et.Json{"name": et.Json{"like": "%Ana%"}}},
+    },
+    "selects":  []string{"id", "name", "age"},
+    "order_by": et.Json{"desc": []string{"age"}},
+    "page":     1,
+    "rows":     20,
+})
+```
+
+Operadores (sensibles a mayúsculas): `eq`, `neg`, `more`, `less`, `moreEq`, `lessEq`, `like`, `in`, `notIn`, `between`, `isNull`, `notNull`.
+
+### Rollups
+
+`DefineRollup(name, withName, fks, fields)` agrega una columna virtual que, cuando se pide en `Select`/`Detail`, consulta el modelo `withName` por cada fila uniendo por `fks` (campo local → campo en `withName`). `SetWheres(et.Json{...})` añade filtros fijos. Para rollups que vienen de datos y no del modelo compartido, crea uno con `NewRollup(name, with, fks, fields, show)` y pásalo por consulta con `Ql.AddRollups(...)` o `RunQuery(model, query, rollup)`.
+
+```go
+users.DefineRollup("city_name", cities.Name, map[string]string{"city_id": "id"}, []string{"name"})
+items, err := users.Select("id", "name", "city_name").All()
+```
 
 ### Comandos (`*Command`)
 
@@ -284,7 +320,7 @@ sqlTx.Commit()
 
 | Función                                                                                              | Descripción                                                                |
 | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `NewSerie(kind, tag, format, last)`, `SetSeries(...)`, `GetSeries(kind, tag)`, `ImportSeries(items)` | Consecutivos en el schema `core` (requiere `ConnectParams{UseCore: true}`) |
+| `NewSerie(kind, tag, format, last)`, `SetSeries(...)`, `GetSeries(kind, tag)`, `ImportSeries(items)` | Consecutivos en el schema `core` (requiere `UseCore`, activo por defecto con `USE_CORE=true`) |
 | `Query(db, sql, args...)`, `QueryTx(db, tx, sql, args...)`                                           | SQL crudo                                                                  |
 | `RowsToItems(*sql.Rows)`                                                                             | Convierte filas a `et.Items`                                               |
 
@@ -318,6 +354,33 @@ r.Post("/model/describe", jdb.ModelDescribe)
 
 ```go
 import _ "github.com/celsiainternet/jdb/drivers/postgres" // registra el driver
+```
+
+## Paquetes `drivers/sqlite` y `drivers/oracle`
+
+Ambos se comportan como el driver de PostgreSQL, atributos dinámicos incluidos. Diferencias de dialecto:
+
+| Tema          | SQLite                                                          | Oracle 19c+                                                                                     |
+| ------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Conexión      | `sqlite.Connection{Database}`: ruta del archivo o `":memory:"`; vacía usa `<DB_NAME>.db` | `oracle.Connection{Host, Port, Username, Password, ServiceName, SSL, SSLVerify, Version}` |
+| Schemas       | `schema.table` se guarda como tabla `schema_table`               | Igual, dentro del usuario conectado                                                             |
+| Columna JSON  | TEXT; los atributos se actualizan con `json_set`                 | `CLOB CHECK (IS JSON)` con `JSON_MERGEPATCH`: un `null` **borra** la llave y los objetos se fusionan |
+| Valores       | INSERT/UPDATE con argumentos enlazados (`?N`)                    | INSERT/UPDATE con argumentos enlazados (`:N`)                                                   |
+| Otros         | `Search` es `LIKE '%v%'`                                        | `''` es `NULL`; `LIKE` compara con `UPPER()`; sin `ON UPDATE CASCADE`; el DDL hace commit implícito |
+
+Los dos rechazan `UPDATE`/`DELETE` sin `WHERE`.
+
+```go
+import (
+    "github.com/celsiainternet/jdb/drivers/sqlite"
+    "github.com/celsiainternet/jdb/jdb"
+)
+
+db, err := jdb.ConnectTo(jdb.ConnectParams{
+    Driver: jdb.SqliteDriver,
+    Name:   "myapp",
+    Params: &sqlite.Connection{Database: ":memory:"},
+})
 ```
 
 ---
@@ -409,13 +472,19 @@ items, err := inbox.GetInboxesByClientId("c1", "app", "pending", 1, 20)
 | `APP_NAME`    | `jdb`       | Nombre de la aplicación en la conexión |
 | `DB_VERSION`  | `13`        | Versión de PostgreSQL                  |
 | `DEBUG`       | `false`     | Imprime el SQL generado                |
+| `USE_CORE`    | `true`      | `Load()` crea los modelos del schema `core` (series) |
+| `SQLITE_PATH` | `<DB_NAME>.db` | Archivo SQLite (`:memory:` para memoria) |
+| `ORA_DB_HOST`, `ORA_DB_PORT` (`1521`), `ORA_DB_USER`, `ORA_DB_PASSWORD`, `ORA_DB_SERVICE_NAME_ORACLE`, `ORA_DB_SSL_ORACLE`, `ORA_DB_SSL_VERIFY_ORACLE`, `ORA_VERSION` (`19`) | — | Conexión Oracle |
 
 ## Limitaciones conocidas
 
-- Los valores se insertan como literales en el SQL (no parametrizados): no pases entrada de usuario en `CALC(...)` ni como nombre de campo.
-- `Select("a", "b")` hoy genera `SELECT *`.
-- `Update`/`Delete` con `Where` y `Upsert` tienen defectos en el SQL generado; verifica con `Debug()` antes de usarlos en producción.
-- No hay tests (`*_test.go`) en el repositorio.
+- Los valores del `WHERE` se insertan como literales en el SQL (en Postgres también los de INSERT/UPDATE, salvo la columna JSON): no pases entrada de usuario en `CALC(...)`, en agregaciones ni como nombre de campo.
+- `Ql.Join("nombre", …)` con un string que no está en la consulta se ignora; pasa el `*Model`. El valor del lado derecho del join y de `Having` se trata como literal, no como campo.
+- `RunQuery` descarta en silencio una llave de `wheres` que no es campo del modelo (un error de tipeo devuelve todas las filas) y no soporta `between` ni `notIn`.
+- `Ql.Query`/`Model.Query`/`ModelQuery`: con `limit > 1` devuelve el ítem en esa posición (o entra en pánico); usa `limit: 0` para todas las filas. `having` no funciona.
+- `ModelCommand`: solo `insert` y `bulk` funcionan; `update`/`delete` no cambian nada.
+- `Model.BeforeInsert*` y `Command.BeforeUpdate` no se ejecutan; los `AfterInsert*` corren dos veces.
+- En SQLite, `GetSeries` no incrementa el consecutivo.
 
 ## Herramientas de `cmd/`
 
@@ -424,6 +493,17 @@ go run ./cmd/test                                       # sandbox contra una bas
 go run github.com/celsiainternet/jdb/cmd/install        # go mod tidy + guía de agentes de jdb
 go run github.com/celsiainternet/jdb/cmd/create go      # genera proyectos, microservicios, modelos y RPC
 ```
+
+## Desarrollo
+
+```bash
+gofmt -w . && go build ./... && go vet ./...
+go test ./drivers/...                          # SQLite en memoria + SQL de postgres
+go test ./drivers/sqlite -run TestName -v      # un solo test
+go test ./cmd/create/...                       # plantillas del generador
+```
+
+Los tests de `drivers/oracle` corren solo si `ORA_TEST_HOST` (+ `ORA_TEST_PORT`, `ORA_TEST_USER`, `ORA_TEST_PASSWORD`, `ORA_TEST_SERVICE`) apunta a un servidor; si no, se saltan.
 
 ## Versionado
 

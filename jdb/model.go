@@ -291,20 +291,38 @@ func (s *Model) Describe() et.Json {
 }
 
 func (s *Model) Load() error {
-	curren, err := s.Db.getModel("model", s.Name)
+	current, err := s.Db.getModel("model", s.Name)
 	if err != nil {
 		return err
 	}
 
-	var ref *Model
-	define, err := curren.Byte("definition")
+	if !current.Ok {
+		return nil
+	}
+
+	var ref Model
+	define, err := current.Byte("definition")
 	if err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(define, ref)
+	err = json.Unmarshal(define, &ref)
 	if err != nil {
 		return err
+	}
+
+	if ref.SearchFields != nil {
+		s.SearchFields = ref.SearchFields
+	}
+
+	// Columnas guardadas que el codigo ya no define: se agregan al modelo para no perderlas.
+	for _, col := range ref.Columns {
+		if s.getColumn(col.Name) != nil {
+			continue
+		}
+
+		col.model = s
+		s.addColumn(col)
 	}
 
 	return nil
@@ -379,15 +397,6 @@ func (s *Model) Init() error {
 		return nil
 	}
 
-	exist, err := s.Db.LoadModel(s)
-	if err != nil {
-		return err
-	}
-
-	if exist {
-		return s.Load()
-	}
-
 	if s.SourceField != nil {
 		idx := s.SourceField.idx()
 		if idx != len(s.GetColumns())-1 && idx != -1 {
@@ -415,8 +424,23 @@ func (s *Model) Init() error {
 		}
 	}()
 
+	exist, err := s.Db.LoadModel(s)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		err = s.Save()
+	} else {
+		err = s.Load()
+	}
+
+	if err != nil {
+		return err
+	}
+
 	s.isInit = true
-	return s.Save()
+	return nil
 }
 
 /**

@@ -45,7 +45,7 @@ func (s *DB) defineModel() error {
 **/
 func (s *DB) getModel(kind, name string) (et.Item, error) {
 	if coreModel == nil || !coreModel.isInit {
-		return et.Item{}, fmt.Errorf(MSG_DATABASE_NOT_CONCURRENT)
+		return et.Item{}, nil
 	}
 
 	return coreModel.

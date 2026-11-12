@@ -137,11 +137,12 @@ items, err := db.Query("SELECT * FROM public.users WHERE age > $1", 18)
 | `DefineRollup(name, withName, fks, fields).SetWheres(...)`                                                                                        | Agregación desde otra tabla                     |
 | `DefineObject(name, with, fks, fields)`                                                                                                           | Objeto embebido uno-a-uno                       |
 | `DefineDetail(name, fks, limit)`                                                                                                                  | Detalle                                         |
+| `DefineSearch(cols...)`                                                                                                                           | Campos de la búsqueda de texto (ver Búsqueda)   |
 | `DefineCalc(name, fn)`, `DefineCalcTx(name, fn)`                                                                                                  | Campo calculado en Go                           |
 | `DefineModel()`, `DefineProjectModel()`                                                                                                           | Conjunto estándar de campos de sistema          |
 | `DefineIntegrity()`                                                                                                                               | Activa integridad referencial                   |
 
-Tipos de dato (`TypeData*`): `Text`, `Memo`, `ShortText`, `Key`, `Number`, `Int`, `Precision`, `DateTime`, `Checkbox`, `Bytes`, `Object`, `Select`, `MultiSelect`, `Geometry`, `FullText` (obsoleto: texto plano), `State`, `User`, `FilesMedia`, `Url`, `Email`, `Phone`, `Address`, `Relation`, `Rollup`.
+Tipos de dato (`TypeData*`): `Text`, `Memo`, `ShortText`, `Key`, `Number`, `Int`, `Precision`, `DateTime`, `Checkbox`, `Bytes`, `Object`, `Select`, `MultiSelect`, `Geometry`, `FullText` (obsoleto: texto plano; para buscar usa `DefineSearch`), `State`, `User`, `FilesMedia`, `Url`, `Email`, `Phone`, `Address`, `Relation`, `Rollup`.
 
 Modificadores de `*Column`: `SetDefaultValue`, `SetHidden`, `SetMax`, `SetMin`.
 
@@ -170,8 +171,8 @@ Se inicia con `jdb.From(model | "schema.table")`, `db.From(...)`, `Model.Where(.
 
 | Grupo       | Métodos                                                                                                | Descripción                                                   |
 | ----------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
-| Condiciones | `Where`, `And`, `Or`                                                                                   | Abren una condición sobre un campo                            |
-| Operadores  | `Eq`, `Neg`, `In`, `NotIn`, `Like`, `More`, `Less`, `MoreEq`, `LessEq`, `Between`, `IsNull`, `NotNull` | Completan la última condición                                 |
+| Condiciones | `Where`, `And`, `Or`, `WhereConcat`, `WhereSearch`                                                     | Abren una condición sobre un campo (o varios unidos)          |
+| Operadores  | `Eq`, `Neg`, `In`, `NotIn`, `Like`, `Search`, `More`, `Less`, `MoreEq`, `LessEq`, `Between`, `IsNull`, `NotNull` | Completan la última condición                       |
 | Proyección  | `Select`, `Data`, `Detail`, `Hidden`                                                                   | Campos a devolver                                             |
 | Joins       | `Join`, `LeftJoin`, `RightJoin`, `FullJoin`                                                            | Unión con otro modelo                                         |
 | Agrupación  | `GroupBy`, `Having`                                                                                    | Agrupa y filtra grupos                                        |
@@ -367,6 +368,8 @@ r.Post("/model/describe", jdb.ModelDescribe)
 | `Params.ExistDatabase`, `CreateDatabase`, `DropDatabase`, `DropSchema`        | Gestión de bases de datos y schemas                                           |
 | `JsonQuote`, `EscapeJSON`, `Normalize`                                        | Utilidades de escape de valores                                               |
 
+Con `DefineSearch`, `Init()` crea si faltan las extensiones `pg_trgm` y `unaccent`, la función `public.jdb_unaccent` y el índice GIN de trigramas de la búsqueda (también en tablas ya creadas): el usuario necesita permiso `CREATE` en la base.
+
 ```go
 import _ "github.com/celsiainternet/jdb/drivers/postgres" // registra el driver
 ```
@@ -381,7 +384,7 @@ Ambos se comportan como el driver de PostgreSQL, atributos dinámicos incluidos.
 | Schemas       | `schema.table` se guarda como tabla `schema_table`               | Igual, dentro del usuario conectado                                                             |
 | Columna JSON  | TEXT; los atributos se actualizan con `json_set`                 | `CLOB CHECK (IS JSON)` con `JSON_MERGEPATCH`: un `null` **borra** la llave y los objetos se fusionan |
 | Valores       | INSERT/UPDATE con argumentos enlazados (`?N`)                    | INSERT/UPDATE con argumentos enlazados (`:N`)                                                   |
-| Otros         | `Search` es `LIKE '%v%'` (en Postgres, `ILIKE`)                 | `''` es `NULL`; `LIKE` compara con `UPPER()`; sin `ON UPDATE CASCADE`; el DDL hace commit implícito |
+| Otros         | `Search` y `WhereSearch` son `LIKE '%v%'` sin índice ni tildes (en Postgres, `ILIKE` y el índice de trigramas) | `''` es `NULL`; `LIKE` compara con `UPPER()`; sin `ON UPDATE CASCADE`; el DDL hace commit implícito |
 
 Los dos rechazan `UPDATE`/`DELETE` sin `WHERE`.
 
@@ -500,6 +503,7 @@ items, err := inbox.GetInboxesByClientId("c1", "app", "pending", 1, 20)
 - `ModelCommand`: solo `insert` y `bulk` funcionan; `update`/`delete` no cambian nada.
 - `Model.BeforeInsert*` y `Command.BeforeUpdate` no se ejecutan; los `AfterInsert*` corren dos veces.
 - En SQLite, `GetSeries` no incrementa el consecutivo.
+- Búsqueda (`DefineSearch`): si cambian los campos se crea otro índice y el anterior queda (se borra a mano); `%` y `_` en el texto actúan como comodines; no ordena por parecido ni tolera errores de digitación.
 
 ## Herramientas de `cmd/`
 

@@ -1,7 +1,7 @@
 # JDB - Go Database Library
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.0+-blue.svg)](https://golang.org)
-[![Version](https://img.shields.io/badge/Version-v1.0.113-orange.svg)](https://github.com/celsiainternet/jdb/releases)
+[![Version](https://img.shields.io/badge/Version-v1.0.114-orange.svg)](https://github.com/celsiainternet/jdb/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-celsiainternet%2Fjdb-black.svg)](https://github.com/celsiainternet/jdb)
 
@@ -11,7 +11,7 @@
 # En una carpeta nueva
 go mod init github.com/<organizacion>/<proyecto>
 
-go get github.com/celsiainternet/jdb@v1.0.113
+go get github.com/celsiainternet/jdb@v1.0.114
 go run github.com/celsiainternet/jdb/cmd/install
 go run github.com/celsiainternet/jdb/cmd/create go
 ```

@@ -15,7 +15,7 @@ const (
 /**
 * RunQuery: Crea la consulta sobre model a partir de query y devuelve la página pedida con el total de registros.
 * @param model *Model
-* @param query et.Json   (wheres, selects, order_by, page, rows; limit se acepta como alias de rows)
+* @param query et.Json   (wheres, search, selects, order_by, page, rows; limit se acepta como alias de rows)
 * @param rollups ...*Rollup   rollups extra (NewRollup) que se resuelven en cada fila
 * @return et.List, error
 **/
@@ -32,6 +32,10 @@ func RunQuery(model *Model, query et.Json, rollups ...*Rollup) (et.List, error) 
 	if err != nil {
 		return et.List{}, err
 	}
+
+	// search: texto libre sobre los campos de busqueda del modelo (DefineSearch), una condicion por palabra.
+	search := query.Str("search")
+	ql = ql.WhereSearch(search)
 
 	ql, err = querySelect(ql, query.ArrayStr("selects"))
 	if err != nil {
@@ -173,6 +177,8 @@ func queryWhere(model *Model, ql *Ql, wheres []et.Json) (*Ql, error) {
 				ql = ql.In(values...)
 			case "like":
 				ql = ql.Like(value)
+			case "search":
+				ql = ql.Search(value)
 			case "more":
 				ql = ql.More(value)
 			case "less":

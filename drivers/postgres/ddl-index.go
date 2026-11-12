@@ -18,8 +18,6 @@ func ddlIndex(model *jdb.Model, name string, col *jdb.Column) string {
 	table := tableName(model)
 	if slices.Contains([]jdb.TypeData{jdb.TypeDataObject}, col.TypeData) {
 		result = sqlDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2 USING GIN($3 jsonb_path_ops);`, name, table, col.Name)
-	} else if slices.Contains([]jdb.TypeData{jdb.TypeDataFullText}, col.TypeData) {
-		result = sqlDDL(`CREATE INDEX IF NOT EXISTS $1 ON $2 USING GIN($3);`, name, table, col.Name)
 	} else if col.TypeColumn == jdb.TpAtribute && model.SourceField != nil {
 		// Match the #>>'{...}' path-extraction expression asField (query.go)
 		// actually generates at query time - ->>'key' is semantically

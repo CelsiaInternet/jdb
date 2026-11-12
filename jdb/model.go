@@ -66,7 +66,7 @@ type Model struct {
 	Required            map[string]bool           `json:"-"`
 	Detail              map[string]*Relation      `json:"detail"`
 	Rollup              map[string]*Rollup        `json:"rollup"`
-	FullText            map[string]*FullText      `json:"fulltext"`
+	SearchFields        []string                  `json:"search_fields"`
 	CalcFunction        map[string]DataFunction   `json:"-"`
 	CalcFunctionTx      map[string]DataFunctionTx `json:"-"`
 	RelationsTo         map[string]*Relation      `json:"-"`
@@ -76,7 +76,6 @@ type Model struct {
 	StatusField         *Column                   `json:"-"`
 	IndexField          *Column                   `json:"-"`
 	SourceField         *Column                   `json:"-"`
-	FullTextField       *Column                   `json:"-"`
 	ProjectField        *Column                   `json:"-"`
 	Version             int                       `json:"version"`
 	beforeInsert        []DataFunctionTx          `json:"-"`
@@ -138,7 +137,6 @@ func NewTable(db *DB, table string) *Model {
 		Required:            make(map[string]bool),
 		Detail:              make(map[string]*Relation),
 		Rollup:              make(map[string]*Rollup),
-		FullText:            make(map[string]*FullText),
 		CalcFunction:        make(map[string]DataFunction),
 		CalcFunctionTx:      make(map[string]DataFunctionTx),
 		RelationsTo:         make(map[string]*Relation),
@@ -194,7 +192,6 @@ func NewModel(schema *Schema, name string, version int) *Model {
 		Required:            make(map[string]bool),
 		Detail:              make(map[string]*Relation),
 		Rollup:              make(map[string]*Rollup),
-		FullText:            make(map[string]*FullText),
 		CalcFunction:        make(map[string]DataFunction),
 		CalcFunctionTx:      make(map[string]DataFunctionTx),
 		RelationsTo:         make(map[string]*Relation),
@@ -287,10 +284,30 @@ func (s *Model) Describe() et.Json {
 	result["status_field"] = s.StatusField
 	result["index_field"] = s.IndexField
 	result["source_field"] = s.SourceField
-	result["full_text_field"] = s.FullTextField
 	result["project_field"] = s.ProjectField
+	result["search_fields"] = s.SearchFields
 
 	return result
+}
+
+func (s *Model) Load() error {
+	curren, err := s.Db.getModel("model", s.Name)
+	if err != nil {
+		return err
+	}
+
+	var ref *Model
+	define, err := curren.Byte("definition")
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(define, ref)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /**
@@ -362,6 +379,15 @@ func (s *Model) Init() error {
 		return nil
 	}
 
+	exist, err := s.Db.LoadModel(s)
+	if err != nil {
+		return err
+	}
+
+	if exist {
+		return s.Load()
+	}
+
 	if s.SourceField != nil {
 		idx := s.SourceField.idx()
 		if idx != len(s.GetColumns())-1 && idx != -1 {
@@ -389,23 +415,8 @@ func (s *Model) Init() error {
 		}
 	}()
 
-	exist, err := s.Db.LoadModel(s)
-	if err != nil {
-		return err
-	}
-
 	s.isInit = true
-
-	if exist {
-		return nil
-	}
-
-	err = s.Save()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.Save()
 }
 
 /**

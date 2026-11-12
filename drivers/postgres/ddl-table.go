@@ -45,7 +45,7 @@ func (s *Params) typeData(tp jdb.TypeData) interface{} {
 	case jdb.TypeDataGeometry:
 		return "JSONB"
 	case jdb.TypeDataFullText:
-		return "TSVECTOR"
+		return "TEXT"
 	case jdb.TypeDataState:
 		return "VARCHAR(80)"
 	case jdb.TypeDataUser:

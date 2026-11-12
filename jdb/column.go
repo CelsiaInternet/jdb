@@ -76,7 +76,7 @@ const (
 	TypeDataSelect
 	TypeDataMultiSelect
 	TypeDataGeometry
-	/* Fulltext */
+	/* Deprecated: TypeDataFullText se conserva por compatibilidad; es texto plano (TEXT/CLOB) y Search lo filtra con LIKE. */
 	TypeDataFullText
 	/* Objects */
 	TypeDataState
@@ -272,7 +272,6 @@ type ColumnFields struct {
 	SystemId  string
 	CreatedTo string
 	UpdatedTo string
-	Fulltext  string
 	Checked   string
 }
 
@@ -292,7 +291,6 @@ func (s *ColumnFields) Json() et.Json {
 		"system_id":  s.SystemId,
 		"created_to": s.CreatedTo,
 		"updated_to": s.UpdatedTo,
-		"fulltext":   s.Fulltext,
 		"checked":    s.Checked,
 	}
 }
@@ -309,7 +307,6 @@ var (
 	SYSID      string
 	CREATED_TO string
 	UPDATED_TO string
-	FULLTEXT   string
 	HISTORYCAL string
 	CHECKED    string
 )
@@ -326,7 +323,6 @@ func init() {
 		SystemId:  "jdbid",
 		CreatedTo: "created_to",
 		UpdatedTo: "updated_to",
-		Fulltext:  "fulltext",
 		Checked:   "checked",
 	}
 
@@ -348,7 +344,6 @@ func SetColumnFields(fields *ColumnFields) {
 	SYSID = cf.SystemId
 	CREATED_TO = cf.CreatedTo
 	UPDATED_TO = cf.UpdatedTo
-	FULLTEXT = cf.Fulltext
 	CHECKED = cf.Checked
 }
 
@@ -563,11 +558,6 @@ func (s *Rollup) Serialize() ([]byte, error) {
 type Join struct {
 	On   et.Json  `json:"on"`
 	Type TypeJoin `json:"type"`
-}
-
-type FullText struct {
-	Language string   `json:"language"`
-	Columns  []string `json:"columns"`
 }
 
 type Column struct {

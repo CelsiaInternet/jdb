@@ -70,6 +70,7 @@ Una condición tiene siempre la forma `{ "campo": { "operador": valor } }`.
 | `between` | `BETWEEN a AND b` | lista de 2 | ⚠️ se ignora y devuelve todo | ✅ |
 | `isNull` | `IS NULL` | cualquiera (`true`) | ✅ | ✅ |
 | `notNull` | `IS NOT NULL` | cualquiera (`true`) | ✅ | ✅ |
+| `search` | contiene el valor: Postgres `ILIKE '%' \|\| v \|\| '%'`, SQLite `LIKE`, Oracle `UPPER` + `LIKE` | texto | ✅ | ✅ |
 
 Los nombres distinguen mayúsculas: `moreEq`, no `moreeq`.
 
@@ -114,6 +115,7 @@ list, err := jdb.RunQuery(customers, query)
 | --- | --- | --- |
 | `wheres` | lista de condiciones | Se aplican **en orden**. El primer elemento abre el `WHERE` y los siguientes sin conector se unen con `AND`. |
 | `{ "and": {...} }` / `{ "or": {...} }` | elemento de `wheres` | Une la condición con `AND` u `OR`. Va **un objeto** con una condición, no una lista. |
+| `search` | texto | Búsqueda en los campos de `DefineSearch` del modelo: una condición `AND` por palabra (hasta 10; vacío no filtra). En Postgres sin tildes ni mayúsculas y con índice de trigramas. Si el modelo no declaró campos, no devuelve nada. Ver README › Búsqueda. |
 | `selects` | lista de nombres | Columnas a devolver. Si se omite, devuelve el registro completo con los atributos de `_data`. |
 | `order_by` | `{ "asc": [...], "desc": [...] }` | Cada columna se valida: un nombre que no existe devuelve el error `Columna no válida en el query (x)`. Aplica primero `asc` y luego `desc`. |
 | `page` | entero | Página, desde 1. Por defecto 1. |

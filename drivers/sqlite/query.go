@@ -590,6 +590,10 @@ func whereValue(val interface{}) string {
 		return concatField(*v)
 	case jdb.Concat:
 		return concatField(v)
+	case *jdb.TextSearch:
+		return concatField(jdb.Concat{Fields: v.Fields})
+	case jdb.TextSearch:
+		return concatField(jdb.Concat{Fields: v.Fields})
 	case jdb.Column:
 		return quoteIdent(v.Name)
 	case *jdb.Column:

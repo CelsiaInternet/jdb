@@ -141,7 +141,7 @@ items, err := db.Query("SELECT * FROM public.users WHERE age > $1", 18)
 | `DefineModel()`, `DefineProjectModel()`                                                                                                           | Conjunto estándar de campos de sistema          |
 | `DefineIntegrity()`                                                                                                                               | Activa integridad referencial                   |
 
-Tipos de dato (`TypeData*`): `Text`, `Memo`, `ShortText`, `Key`, `Number`, `Int`, `Precision`, `DateTime`, `Checkbox`, `Bytes`, `Object`, `Select`, `MultiSelect`, `Geometry`, `FullText`, `State`, `User`, `FilesMedia`, `Url`, `Email`, `Phone`, `Address`, `Relation`, `Rollup`.
+Tipos de dato (`TypeData*`): `Text`, `Memo`, `ShortText`, `Key`, `Number`, `Int`, `Precision`, `DateTime`, `Checkbox`, `Bytes`, `Object`, `Select`, `MultiSelect`, `Geometry`, `FullText` (obsoleto: texto plano), `State`, `User`, `FilesMedia`, `Url`, `Email`, `Phone`, `Address`, `Relation`, `Rollup`.
 
 Modificadores de `*Column`: `SetDefaultValue`, `SetHidden`, `SetMax`, `SetMin`.
 
@@ -215,9 +215,24 @@ Las llaves de una ruta JSON solo admiten letras, números, `_` y `-`; si no, el 
 items, err := jdb.From(users).WhereConcat("first_name", "last_name").Like("%ana gómez%").All()
 ```
 
+### Búsqueda (`DefineSearch`)
+
+`DefineSearch(campos...)` declara los campos de texto (columnas o atributos ya definidos; las fechas se ignoran) en los que busca el modelo. `WhereSearch(texto)` agrega una condición por palabra (hasta `SEARCH_MAX_WORDS`, 10): cada palabra debe aparecer en alguno de esos campos, también como parte de una palabra. En `RunQuery` es la llave `"search"`.
+
+```go
+customers.DefineSearch("full_name", "name", "last_name")
+// ... Init()
+
+items, err := customers.WhereSearch("lui dia").All()                 // Luisa Díaz
+items, err = customers.Where("kind").Eq("lead").WhereSearch("gomez").All()
+list, err := jdb.RunQuery(customers, et.Json{"search": "ana gomez", "page": 1, "rows": 30})
+```
+
+En Postgres la condición es `jdb_unaccent(lower(campos unidos)) LIKE '%' || jdb_unaccent(lower(palabra)) || '%'`: no distingue tildes ni mayúsculas y usa un índice GIN de trigramas (`pg_trgm`). Al iniciar el modelo el driver crea, si no existen, las extensiones `pg_trgm` y `unaccent`, la función `public.jdb_unaccent` (unaccent marcada `IMMUTABLE`) y el índice `<tabla>_search_<hash>` con la misma expresión, también en tablas ya creadas. Requisitos: permiso `CREATE` en la base (desde Postgres 13 las dos extensiones no exigen superusuario); con palabras de menos de 3 letras el índice ayuda poco. Si cambian los campos se crea otro índice y el anterior queda: se borra a mano. En SQLite y Oracle es un `LIKE` sobre los campos unidos, sin índice ni manejo de tildes. `%` y `_` en el texto actúan como comodines. El operador `search` sobre un solo campo sigue siendo `ILIKE '%v%'` sin índice.
+
 ### Consultas en JSON (`RunQuery`)
 
-`RunQuery(model, query, rollups...)` arma la consulta desde un `et.Json` y devuelve `et.List` (`all`, `count`, `page`, `start`, `end`, `result`). `wheres` es una lista ordenada con una condición por elemento (`{campo: {op: valor}}`, `{"and": {...}}`, `{"or": {...}}`, `{"concat": {"fields": [...], op: valor}}`); `rows` (alias `limit`) vale 100 por defecto y como máximo 1000. El detalle de todos los formatos, con el SQL que generan, está en [jsql.md](jsql.md).
+`RunQuery(model, query, rollups...)` arma la consulta desde un `et.Json` y devuelve `et.List` (`all`, `count`, `page`, `start`, `end`, `result`). `wheres` es una lista ordenada con una condición por elemento (`{campo: {op: valor}}`, `{"and": {...}}`, `{"or": {...}}`, `{"concat": {"fields": [...], op: valor}}`); `search` busca texto libre en los campos de `DefineSearch`; `rows` (alias `limit`) vale 100 por defecto y como máximo 1000. El detalle de todos los formatos, con el SQL que generan, está en [jsql.md](jsql.md).
 
 ```go
 list, err := jdb.RunQuery(users, et.Json{
@@ -366,7 +381,7 @@ Ambos se comportan como el driver de PostgreSQL, atributos dinámicos incluidos.
 | Schemas       | `schema.table` se guarda como tabla `schema_table`               | Igual, dentro del usuario conectado                                                             |
 | Columna JSON  | TEXT; los atributos se actualizan con `json_set`                 | `CLOB CHECK (IS JSON)` con `JSON_MERGEPATCH`: un `null` **borra** la llave y los objetos se fusionan |
 | Valores       | INSERT/UPDATE con argumentos enlazados (`?N`)                    | INSERT/UPDATE con argumentos enlazados (`:N`)                                                   |
-| Otros         | `Search` es `LIKE '%v%'`                                        | `''` es `NULL`; `LIKE` compara con `UPPER()`; sin `ON UPDATE CASCADE`; el DDL hace commit implícito |
+| Otros         | `Search` es `LIKE '%v%'` (en Postgres, `ILIKE`)                 | `''` es `NULL`; `LIKE` compara con `UPPER()`; sin `ON UPDATE CASCADE`; el DDL hace commit implícito |
 
 Los dos rechazan `UPDATE`/`DELETE` sin `WHERE`.
 

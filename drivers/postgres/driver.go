@@ -219,13 +219,29 @@ func (s *Params) LoadModel(model *jdb.Model) (bool, error) {
 		return false, err
 	}
 
+	sqlSearch := ddlSearch(model)
 	if exist {
+		// La busqueda (DefineSearch) se asegura tambien en tablas ya creadas: su DDL es idempotente.
+		if sqlSearch == "" {
+			return true, nil
+		}
+
+		if model.IsDebug {
+			console.Debug(sqlSearch)
+		}
+
+		_, err = jdb.Query(s.jdb, sqlSearch)
+		if err != nil {
+			return true, err
+		}
+
 		return true, nil
 	}
 
 	sql := s.ddlTable(model)
 	sqlIndex := s.ddlTableIndex(model)
 	sql = strs.Append(sql, sqlIndex, "\n")
+	sql = strs.Append(sql, sqlSearch, "\n")
 	if model.IsDebug {
 		console.Debug(sql)
 	}

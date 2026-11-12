@@ -77,3 +77,16 @@ func TestWhereConcatSql(t *testing.T) {
 		})
 	}
 }
+
+func TestWhereSearchSql(t *testing.T) {
+	title := &jdb.Field{Model: &jdb.QlFrom{As: "A"}, Name: "title", TypeColumn: jdb.TpColumn, TypeData: jdb.TypeDataText}
+	where := &jdb.QlWhere{}
+	where.Where(title).Like("o'brien")
+	where.Wheres[0].Operator = jdb.Search
+
+	got := whereConditions(where)
+	want := `A.title ILIKE '%' || 'o''brien' || '%'`
+	if normalize(got) != normalize(want) {
+		t.Fatalf("got %s, want %s", got, want)
+	}
+}

@@ -485,6 +485,12 @@ func whereCondition(con *jdb.QlCondition) string {
 		return ""
 	}
 
+	search, isSearch := textSearch(con.Field)
+	if isSearch && con.Operator == jdb.Search {
+		values := whereValue(con.Value)
+		return searchCondition(search, values)
+	}
+
 	key := whereValue(con.Field)
 	key = pathCast(con.Field, con.Value, key)
 	if con.Operator == jdb.Between {
@@ -494,6 +500,22 @@ func whereCondition(con *jdb.QlCondition) string {
 	values := whereValue(con.Value)
 	def := whereOperator(con, values)
 	return strs.Format("%v%v", key, def)
+}
+
+/**
+* textSearch: El TextSearch de un campo de condicion, si lo es.
+* @param field interface{}
+* @return jdb.TextSearch, bool
+**/
+func textSearch(field interface{}) (jdb.TextSearch, bool) {
+	switch v := field.(type) {
+	case *jdb.TextSearch:
+		return *v, v != nil
+	case jdb.TextSearch:
+		return v, true
+	}
+
+	return jdb.TextSearch{}, false
 }
 
 /**
@@ -625,6 +647,10 @@ func whereValue(val interface{}) string {
 		return concatField(*v)
 	case jdb.Concat:
 		return concatField(v)
+	case *jdb.TextSearch:
+		return searchExpr(v.Fields)
+	case jdb.TextSearch:
+		return searchExpr(v.Fields)
 	case jdb.Column:
 		return v.Name
 	case *jdb.Column:
@@ -701,42 +727,10 @@ func whereOperator(condition *jdb.QlCondition, val interface{}) string {
 	case jdb.NotNull:
 		return " IS NOT NULL"
 	case jdb.Search:
-		return strs.Format(" @@ to_tsquery('%s', %v)", searchLanguage(condition.Field), val)
+		return strs.Format(" ILIKE '%%' || %v || '%%'", val)
 	default:
 		return ""
 	}
-}
-
-/**
-* searchLanguage resolves the text-search language ("english" by default,
-* postgres' own default config) for a full-text Search condition. jdb's
-* QlCondition carries no language of its own - the FullText language, if
-* declared, lives on the model of the field being searched.
-* @param field interface{}
-* @return string
-**/
-func searchLanguage(field interface{}) string {
-	var target *jdb.Field
-	switch v := field.(type) {
-	case *jdb.Field:
-		target = v
-	case jdb.Field:
-		target = &v
-	default:
-		return "english"
-	}
-
-	if target == nil || target.Model == nil {
-		return "english"
-	}
-
-	for _, ft := range target.Model.FullText {
-		if ft.Language != "" {
-			return ft.Language
-		}
-	}
-
-	return "english"
 }
 
 func whereConnector(con jdb.Connector) string {

@@ -64,6 +64,11 @@ func (s *DB) upsertModel(kind, name string, version int, definition []byte) erro
 		return nil
 	}
 
+	current, err := s.getModel(kind, name)
+	if err != nil {
+		return err
+	}
+
 	now := timezone.Now()
 	data := et.Json{
 		"kind":       kind,
@@ -71,22 +76,33 @@ func (s *DB) upsertModel(kind, name string, version int, definition []byte) erro
 		"version":    version,
 		"definition": definition,
 	}
-	_, err := coreModel.
-		Upsert(data).
-		BeforeInsert(func(tx *Tx, data et.Json) error {
-			data.Set(cf.CreatedAt, now)
-			data.Set(cf.UpdatedAt, now)
-			return nil
-		}).
+	if !current.Ok {
+		_, err = coreModel.
+			Insert(data).
+			BeforeInsert(func(tx *Tx, data et.Json) error {
+				data.Set(cf.CreatedAt, now)
+				data.Set(cf.UpdatedAt, now)
+				return nil
+			}).
+			Exec()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	_, err = coreModel.
+		Update(data).
 		BeforeUpdate(func(tx *Tx, data et.Json) error {
 			data.Set(cf.UpdatedAt, now)
 			return nil
 		}).
+		Where("kind").Eq(kind).
+		And("name").Eq(name).
 		Exec()
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

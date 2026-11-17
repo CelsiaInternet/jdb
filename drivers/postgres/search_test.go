@@ -64,3 +64,28 @@ func TestSearchIndexExpr(t *testing.T) {
 		t.Fatalf("misma expresion para campos distintos: %s", other)
 	}
 }
+
+func TestSearchIndexDrop(t *testing.T) {
+	// Con campos: crea el indice actual y borra los demas <tabla>_search_<hash>; sin campos: los borra todos.
+	model := &jdb.Model{Schema: "crm", Table: "people"}
+	keep := searchIndexName(model, "expr")
+	drop := ddlSearchDrop(model, keep)
+	wants := []string{
+		"lower(schemaname) = lower('crm')",
+		"lower(tablename) = lower('people')",
+		"left(lower(indexname), 14) = lower('people_search_')",
+		"substr(indexname, 15) ~ '^[0-9a-f]{8}$'",
+		"lower(indexname) <> lower('" + keep + "')",
+		"DROP INDEX IF EXISTS %I.%I",
+	}
+	for _, want := range wants {
+		if !strings.Contains(drop, want) {
+			t.Fatalf("falta %q en %s", want, drop)
+		}
+	}
+
+	empty := ddlSearch(model)
+	if strings.Contains(empty, "CREATE INDEX") || !strings.Contains(empty, "lower(indexname) <> lower('')") {
+		t.Fatalf("sin campos: %s", empty)
+	}
+}

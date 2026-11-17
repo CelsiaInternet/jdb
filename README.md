@@ -130,21 +130,44 @@ items, err := db.Query("SELECT * FROM public.users WHERE age > $1", 18)
 | `DefineSourceField()`, `DefineSource(name)`                                                                                                       | Columna jsonb fuente (`_data`)                  |
 | `DefinePrimaryKey(cols...)`, `DefinePrimaryKeyField()`                                                                                            | Llave primaria                                  |
 | `DefineForeignKey(fks, with, onDelete, onUpdate)`                                                                                                 | Llave foránea                                   |
-| `DefineIndex(sort, cols...)`, `DefineUnique(cols...)`                                                                                             | Índices                                         |
-| `DefineRequired(cols...)`, `DefineHidden(cols...)`                                                                                                | Requeridos / ocultos en resultados              |
+| `DefineIndex(sort, cols...)`, `DefineUnique(cols...)`                                                                                             | Índices (ver [Índices](#índices))               |
+| `DefineRequired(cols...)`, `DefineHidden(cols...)`                                                                                                | Requeridos / ocultos (ver abajo)                |
 | `DefineCreatedAtField()`, `DefineUpdatedAtField()`, `DefineStatusField()`, `DefineSystemKeyField()`, `DefineIndexField()`, `DefineProjectField()` | Campos de sistema (se rellenan automáticamente) |
 | `DefineRelation(name, with, fks, limit)`                                                                                                          | Relación uno-a-muchos                           |
 | `DefineRollup(name, withName, fks, fields).SetWheres(...)`                                                                                        | Agregación desde otra tabla                     |
 | `DefineObject(name, with, fks, fields)`                                                                                                           | Objeto embebido uno-a-uno                       |
 | `DefineDetail(name, fks, limit)`                                                                                                                  | Detalle                                         |
 | `DefineSearch(cols...)`                                                                                                                           | Campos de la búsqueda de texto (ver Búsqueda)   |
-| `DefineCalc(name, fn)`, `DefineCalcTx(name, fn)`                                                                                                  | Campo calculado en Go                           |
+| `DefineCalc(name, fn)`, `DefineCalcTx(name, fn)`                                                                                                  | Declara un campo calculado; **hoy no se ejecuta** (ver abajo) |
 | `DefineModel()`, `DefineProjectModel()`                                                                                                           | Conjunto estándar de campos de sistema          |
 | `DefineIntegrity()`                                                                                                                               | Activa integridad referencial                   |
 
-Tipos de dato (`TypeData*`): `Text`, `Memo`, `ShortText`, `Key`, `Number`, `Int`, `Precision`, `DateTime`, `Checkbox`, `Bytes`, `Object`, `Select`, `MultiSelect`, `Geometry`, `FullText` (obsoleto: texto plano; para buscar usa `DefineSearch`), `State`, `User`, `FilesMedia`, `Url`, `Email`, `Phone`, `Address`, `Relation`, `Rollup`.
+`NewModel(schema, name, version)` devuelve el modelo ya registrado si existe uno con ese nombre en la base (no lo redefine). `DefineColumn` crea una columna real; `DefineAtribute` guarda el valor dentro de la columna JSON fuente (`_data`). Un nombre ya definido no se vuelve a crear.
+
+Tipos de dato (`TypeData*`) y su tipo en PostgreSQL:
+
+| Tipo | PostgreSQL | Valor por defecto |
+| --- | --- | --- |
+| `TypeDataText`, `TypeDataSelect`, `TypeDataUser`, `TypeDataEmail`, `TypeDataPhone` | `VARCHAR(250)` | `''` |
+| `TypeDataShortText`, `TypeDataKey`, `TypeDataState`, `TypeDataRelation`, `TypeDataRollup` | `VARCHAR(80)` | `''` |
+| `TypeDataMemo`, `TypeDataFilesMedia`, `TypeDataUrl`, `TypeDataAddress`, `TypeDataFullText` | `TEXT` | `''` |
+| `TypeDataNumber` | `DECIMAL(18,2)` | `0.0` |
+| `TypeDataInt` | `BIGINT` | `0` |
+| `TypeDataPrecision` | `DOUBLE PRECISION` | `''` |
+| `TypeDataDateTime` | `TIMESTAMP` | `''` |
+| `TypeDataCheckbox` | `BOOLEAN` | `false` |
+| `TypeDataBytes` | `BYTEA` | `''` |
+| `TypeDataObject` | `JSONB` | `{}` |
+| `TypeDataMultiSelect` | `JSONB` | `[]` |
+| `TypeDataGeometry` | `JSONB` | `{"type": "Point", "coordinates": [0, 0]}` |
+
+`TypeDataFullText` es obsoleto: es texto plano; para buscar usa `DefineSearch`. SQLite y Oracle usan sus equivalentes (ver la tabla de dialectos).
 
 Modificadores de `*Column`: `SetDefaultValue`, `SetHidden`, `SetMax`, `SetMin`.
+
+**Ocultos (`DefineHidden`).** Marca columnas como ocultas (`Column.Hidden`). Una consulta sin `Select`/`Data` explícito (también `RunQuery` sin `selects`) no trae las **columnas** ocultas; salen solo si se piden por nombre. Tres matices verificados: un **atributo** oculto (`DefineAtribute`) sigue saliendo, porque viaja dentro de `_data`; `RunQuery` acepta una columna oculta en `selects` y en `wheres` (no la rechaza); y `Ql.Hidden(campos...)` oculta campos solo en esa consulta.
+
+**Calculados (`DefineCalc`, `DefineCalcTx`).** Agregan una columna virtual (`TpCalc`) y guardan la función en `Model.CalcFunction` / `Model.CalcFunctionTx`, pero **ninguna consulta ejecuta esas funciones**: `getDetailsTx` solo resuelve rollups, así que `Detail("campo")` o `Select("campo")` no agregan el valor. Para un dato calculado, complétalo en tu código después de `One()`/`All()`, o usa un rollup (`DefineRollup`/`NewRollup`) si sale de otra tabla.
 
 ```go
 schema := jdb.NewSchema(db, "public")
@@ -164,6 +187,18 @@ if err := users.Init(); err != nil {
     panic(err)
 }
 ```
+
+### Índices
+
+| Método | Qué crea en PostgreSQL |
+| --- | --- |
+| `DefineIndex(sort, cols...)` | Un índice `<modelo>_<col>_idx` por columna: B-tree en columnas, GIN `jsonb_path_ops` en `TypeDataObject` y un índice de expresión `(_data#>>'{attr}')` en atributos (con `DB_VERSION` ≥ 13). `sort` se guarda en el modelo pero no cambia el DDL. |
+| `DefineUnique(cols...)` | `CREATE UNIQUE INDEX` por columna (solo columnas reales, no atributos). |
+| `DefinePrimaryKey(cols...)` | Restricción `<modelo>_pk`. |
+| `DefineForeignKey(fks, with, onDelete, onUpdate)` | `FOREIGN KEY ... REFERENCES` con `ON DELETE/UPDATE CASCADE` opcionales. |
+| `DefineSearch(cols...)` | Índice GIN de trigramas de la búsqueda (ver [Búsqueda](#búsqueda-definesearch)). |
+
+Los índices, llaves y columnas nuevas se aplican **solo cuando `Init()` crea la tabla** (o con `db.MutateModel(model)`, que copia la tabla a una nueva). Si la tabla ya existe, `Init()` no agrega columnas ni índices: solo asegura el índice de búsqueda. Un `DefineIndex` agregado a un modelo existente hay que crearlo a mano o con `MutateModel`.
 
 ### Consultas (`*Ql`)
 
@@ -199,6 +234,12 @@ list, err := users.Where("age").More(0).OrderByDesc("created_at").List(2, 20)
 n, err := users.Where("age").Less(18).Counted()
 ok, err := users.Where("email").Eq("x@y.com").ItExists()
 
+// Distinto de, en una lista
+items, err = users.Where("status").Neg("deleted").And("role").In("admin", "editor").All()
+
+// Data arma el resultado como objeto JSON; con jdb.SOURCE (_data) entre los campos, los agrega al contenido de la fuente
+item, err = users.Data(jdb.SOURCE, "id", "name").Where("id").Eq("u1").One()
+
 // Join (con *Model)
 items, err = jdb.From(users).Join(profiles, "id", "=", "user_id").All()
 
@@ -207,6 +248,8 @@ items, err = scheduling.Where("customer_id").Eq(customerId).
 	And("_data->'sync_external'->>'oss_order_id'").Eq(ossOrderId). // igual a "_data.sync_external.oss_order_id" o "sync_external.oss_order_id"
 	OrderByDesc("start_date").All()
 ```
+
+Resultados: `All()` devuelve `et.Items` (`Ok`, `Count`, `Result`); `One()` devuelve `et.Item` y, si no hay fila, `Ok == false` sin error (no devuelve `ErrNotFound`). `Counted()` hace un `COUNT` con las mismas condiciones y `ItExists()` un `EXISTS`. `Select(campos...)` y `Data(campos...)` devuelven solo esos campos; `Data` los arma como objeto JSON y, si entre ellos va `jdb.SOURCE` (`_data`), los agrega al contenido de la fuente. `Where`, `And` y `Or` abren la condición y el operador siguiente (`Eq`, `Neg`, `In`, …) la completa; un nombre que no es campo se envía como texto literal (`'age'`), no como columna.
 
 Las llaves de una ruta JSON solo admiten letras, números, `_` y `-`; si no, el nombre no se resuelve como campo. En Postgres la ruta se lee como texto y se convierte a `numeric` o `boolean` cuando el valor comparado es un número o un booleano.
 
@@ -229,11 +272,11 @@ items, err = customers.Where("kind").Eq("lead").WhereSearch("gomez").All()
 list, err := jdb.RunQuery(customers, et.Json{"search": "ana gomez", "page": 1, "rows": 30})
 ```
 
-En Postgres la condición es `jdb_unaccent(lower(campos unidos)) LIKE '%' || jdb_unaccent(lower(palabra)) || '%'`: no distingue tildes ni mayúsculas y usa un índice GIN de trigramas (`pg_trgm`). Al iniciar el modelo el driver crea, si no existen, las extensiones `pg_trgm` y `unaccent`, la función `public.jdb_unaccent` (unaccent marcada `IMMUTABLE`) y el índice `<tabla>_search_<hash>` con la misma expresión, también en tablas ya creadas. Requisitos: permiso `CREATE` en la base (desde Postgres 13 las dos extensiones no exigen superusuario); con palabras de menos de 3 letras el índice ayuda poco. Si cambian los campos se crea otro índice y el anterior queda: se borra a mano. En SQLite y Oracle es un `LIKE` sobre los campos unidos, sin índice ni manejo de tildes. `%` y `_` en el texto actúan como comodines. El operador `search` sobre un solo campo sigue siendo `ILIKE '%v%'` sin índice.
+En Postgres la condición es `jdb_unaccent(lower(campos unidos)) LIKE '%' || jdb_unaccent(lower(palabra)) || '%'`: no distingue tildes ni mayúsculas y usa un índice GIN de trigramas (`pg_trgm`). Al iniciar el modelo el driver crea, si no existen, las extensiones `pg_trgm` y `unaccent`, la función `public.jdb_unaccent` (unaccent marcada `IMMUTABLE`) y el índice `<tabla>_search_<hash>` con la misma expresión, también en tablas ya creadas. Requisitos: permiso `CREATE` en la base (desde Postgres 13 las dos extensiones no exigen superusuario); con palabras de menos de 3 letras el índice ayuda poco. Los campos que mandan son los de `DefineSearch` de cada arranque (no los del modelo guardado): si cambian, se crea el índice nuevo y se borran los `<tabla>_search_<hash>` anteriores de esa tabla (sin campos, se borran todos); los demás índices no se tocan. En SQLite y Oracle es un `LIKE` sobre los campos unidos, sin índice ni manejo de tildes. `%` y `_` en el texto actúan como comodines. El operador `search` sobre un solo campo sigue siendo `ILIKE '%v%'` sin índice.
 
 ### Consultas en JSON (`RunQuery`)
 
-`RunQuery(model, query, rollups...)` arma la consulta desde un `et.Json` y devuelve `et.List` (`all`, `count`, `page`, `start`, `end`, `result`). `wheres` es una lista ordenada con una condición por elemento (`{campo: {op: valor}}`, `{"and": {...}}`, `{"or": {...}}`, `{"concat": {"fields": [...], op: valor}}`); `search` busca texto libre en los campos de `DefineSearch`; `rows` (alias `limit`) vale 100 por defecto y como máximo 1000. El detalle de todos los formatos, con el SQL que generan, está en [jsql.md](jsql.md).
+`RunQuery(model, query, rollups...)` arma la consulta desde un `et.Json` y devuelve una página `et.List` con el total. Es el contrato de los `POST /query` de los servicios (catalog, vcore). El detalle de todos los formatos, con el SQL que generan, está en [jsql.md](jsql.md).
 
 ```go
 list, err := jdb.RunQuery(users, et.Json{
@@ -241,6 +284,7 @@ list, err := jdb.RunQuery(users, et.Json{
         {"age": et.Json{"moreEq": 18}},
         {"or": et.Json{"name": et.Json{"like": "%Ana%"}}},
     },
+    "search":   "ana gomez",
     "selects":  []string{"id", "name", "age"},
     "order_by": et.Json{"desc": []string{"age"}},
     "page":     1,
@@ -248,7 +292,47 @@ list, err := jdb.RunQuery(users, et.Json{
 })
 ```
 
-Operadores (sensibles a mayúsculas): `eq`, `neg`, `more`, `less`, `moreEq`, `lessEq`, `like`, `in`, `notIn`, `between`, `isNull`, `notNull`.
+| Llave | Formato | Comportamiento |
+| --- | --- | --- |
+| `wheres` | lista de condiciones | Se aplican en orden. Cada elemento es `{campo: {op: valor}}` (une con `AND`), `{"and": {campo: {op: valor}}}`, `{"or": {campo: {op: valor}}}` o `{"concat": {"fields": [...], op: valor}}` (los campos unidos por un espacio). Sin paréntesis: `AND` va antes que `OR`. |
+| `search` | **texto** | Busca cada palabra (hasta 10) en los campos de `DefineSearch`; se aplica con `AND` después de `wheres`. Vacío no filtra. Si el modelo no declaró campos, no devuelve filas. |
+| `selects` | lista de nombres | Campos a devolver. Sin `selects`, el registro completo sin las columnas ocultas. |
+| `order_by` | `{"asc": [...], "desc": [...]}` | Aplica primero `asc` y luego `desc`. Un nombre que no es campo devuelve el error `Columna no válida en el query (x)`. |
+| `page` | entero | Desde 1; por defecto 1. |
+| `rows` | entero | Filas por página; alias `limit`. Por defecto `QUERY_DEFAULT_LIMIT` (100) y como máximo `QUERY_MAX_LIMIT` (1000). |
+| `join`, `left_join`, `right_join`, `full_join` | lista | Se leen, pero hoy no generan el `JOIN`. |
+
+Operadores de `wheres` (distinguen mayúsculas): `eq`, `neg`, `more`, `less`, `moreEq`, `lessEq`, `like` (en Postgres `ILIKE`), `in` (lista), `search` (contiene el texto, sin índice), `isNull` y `notNull` (el valor se ignora). `notIn` y `between` **no** están soportados (ver Limitaciones). Va un operador por condición: dos operadores en el mismo objeto escriben sobre la misma condición.
+
+`search` es un texto, no un objeto. El formato `{"search": {"value": "...", "fields": [...]}}` de los `/query` de catalog lo traduce catalog a condiciones `concat` antes de llamar a `RunQuery`; si se pasa tal cual a jdb, se convierte a texto (`map[...]`) y la consulta no devuelve filas, sin error.
+
+Respuesta (`et.List`):
+
+```json
+{ "rows": 20, "all": 57, "count": 20, "page": 1, "start": 1, "end": 20, "result": [ { "id": "u1", "name": "Ana", "age": 31 } ] }
+```
+
+`all` es el total que cumple los filtros, `count` lo que trae la página y `start`/`end` las posiciones de la página contando desde 1.
+
+#### `jdb.RunQuery` y `linq.RunQuery` de elvis
+
+`linq.RunQuery(model, query, wheres...)` (`elvis/linq/jsql.go`, aún sin publicar en elvis) replica este contrato para los modelos `linq` de elvis. Las diferencias, leídas en el código de ambos:
+
+| Tema | `jdb.RunQuery` | `linq.RunQuery` (elvis) |
+| --- | --- | --- |
+| `wheres` con `eq`, `neg`, `more`, `less`, `moreEq`, `lessEq`, `like`, `in`, `and`, `or`, `concat` | Sí | Sí |
+| `isNull`, `notNull` | Sí | No (se ignoran) |
+| Operador `search` por campo y llave raíz `search` | Sí | No (se ignoran) |
+| `notIn`, `between` | No (`notIn` devuelve 0 filas, `between` todas) | No (se ignoran) |
+| Varios operadores en una condición | Uno solo (el último que recorre el mapa) | Cada uno es una condición `AND` |
+| Precedencia con `or` | Sin paréntesis (`AND` antes que `OR`) | Las condiciones de `wheres` van entre paréntesis si hay un `or` |
+| Campo desconocido en `wheres` | Se ignora | Se ignora (también si es oculto) |
+| Campo desconocido u oculto en `selects` | Se ignora / se devuelve | Error `Columna no valida en la consulta (x)` |
+| `order_by` desconocido | Error | Error (también si es oculto) |
+| `page`, `rows`/`limit`, 100 por defecto y máximo 1000, respuesta `et.List` | Sí | Sí |
+| Tercer argumento | `rollups ...*Rollup` | `wheres ...*Where`: condiciones fijas del llamador que se aplican con `AND` |
+| `join`, `left_join`, … | Se leen y se ignoran | No se leen |
+| Valores | Literales en el SQL con `'` duplicada | Literales con `'` duplicada; solo texto, número o booleano |
 
 ### Rollups
 
@@ -267,7 +351,7 @@ items, err := users.Select("id", "name", "city_name").All()
 | `Bulk([]et.Json)` | Inserta varias filas                       |
 | `Update(et.Json)` | Actualiza las filas que cumplen el `Where` |
 | `Delete(field)`   | Elimina; abre la condición sobre `field`   |
-| `Upsert(et.Json)` | Inserta o actualiza                        |
+| `Upsert(et.Json)` | Busca por la llave primaria de los datos: si existe actualiza, si no inserta |
 
 | Método                                                    | Descripción                                     |
 | --------------------------------------------------------- | ----------------------------------------------- |
@@ -288,11 +372,37 @@ items, err = users.Bulk([]et.Json{
     {"id": "u2", "name": "Carlos", "email": "carlos@example.com"},
     {"id": "u3", "name": "María", "email": "maria@example.com"},
 }).Exec()
+
+items, err = users.Upsert(et.Json{"id": "u1", "name": "Ana María"}).Exec()
+```
+
+`Exec()` devuelve `et.Items` con las filas escritas. `Update` y `Delete` primero leen las filas que cumplen el `Where` (sin `Where` devuelven error) y ejecutan los hooks por cada una. Si no hay filas que escribir, el resultado trae `Ok == false` y **no hay error**. `Bulk` inserta todas las filas, pero `Result` trae solo la última.
+
+### Errores
+
+`jdb` exporta `ErrNotInserted` (`record not inserted`), `ErrNotUpdated`, `ErrNotFound` (`record not found`) y `ErrNotUpserted`, pero **la librería no los devuelve en ningún camino**: un `One()` sin fila o un `Update` sin coincidencias responden `Ok == false` sin error. Son centinelas para que el código del consumidor los devuelva desde un hook y los compare después:
+
+```go
+_, err := users.Update(data).
+    BeforeUpdate(func(tx *jdb.Tx, data et.Json) error {
+        ok, err := users.Where("id").Eq(id).ItExistsTx(tx)
+        if err != nil {
+            return err
+        }
+        if !ok {
+            return jdb.ErrNotFound
+        }
+        return nil
+    }).
+    Where("id").Eq(id).Exec()
+if errors.Is(err, jdb.ErrNotFound) {
+    // 404
+}
 ```
 
 ### Hooks
 
-Disponibles en `*Model` (aplican a todos los comandos) y en `*Command` (solo a ese comando).
+Disponibles en `*Model` (aplican a todos los comandos) y en `*Command` (solo a ese comando). Por cada fila corren en este orden: `Before*` del modelo, `Before*Trigger` del modelo, `Before*` del comando, `Before*Trigger` del comando, la escritura y luego los `After*` en el mismo orden. Los `Before*` reciben los datos que se van a escribir y pueden modificarlos; un error de cualquier hook detiene el comando; con `Exec()` la transacción propia se revierte y con `ExecTx(tx)` decide quien la abrió. `BeforeInsertOrUpdate` registra la misma función en insert y update. Con `Upsert` corren los hooks de insert o de update según el caso.
 
 | Método                                                                 | Firma de la función                        |
 | ---------------------------------------------------------------------- | ------------------------------------------ |
@@ -316,20 +426,20 @@ users.BeforeUpdateTrigger(func(tx *jdb.Tx, old, new et.Json) error {
 
 ### Transacciones
 
-`jdb.Tx` envuelve un `*sql.Tx`. Sin transacción (`Exec()`), cada comando abre y confirma la suya.
+`jdb.Tx` envuelve un `*sql.Tx`. Sin transacción (`Exec()`, `All()`, …), cada comando o consulta abre la suya y la confirma o revierte según el error. Para agrupar varias escrituras, abre una con `db.Begin()`, pásala a las variantes `…Tx` y ciérrala con `tx.End(err)` (revierte si `err` no es nil; si no, confirma y devuelve el error del commit). También están `tx.Commit()` y `tx.Rollback()`. Los hooks reciben el `tx` en curso: úsalo en las consultas que hagan dentro del hook.
 
 ```go
-sqlTx, err := db.Db.Begin()
+tx, err := db.Begin()
 if err != nil {
-    panic(err)
+    return err
 }
-tx := &jdb.Tx{Tx: sqlTx}
 
-if _, err := users.Insert(et.Json{"id": "u4", "name": "Luis", "email": "luis@example.com"}).ExecTx(tx); err != nil {
-    sqlTx.Rollback()
-    panic(err)
+_, err = users.Insert(et.Json{"id": "u4", "name": "Luis", "email": "luis@example.com"}).ExecTx(tx)
+if err == nil {
+    _, err = profiles.Insert(et.Json{"user_id": "u4"}).ExecTx(tx)
 }
-sqlTx.Commit()
+
+return tx.End(err)
 ```
 
 ### Series y utilidades
@@ -501,9 +611,14 @@ items, err := inbox.GetInboxesByClientId("c1", "app", "pending", 1, 20)
 - `RunQuery` descarta en silencio una llave de `wheres` que no es campo del modelo (un error de tipeo devuelve todas las filas) y no soporta `between` ni `notIn`.
 - `Ql.Query`/`Model.Query`/`ModelQuery`: con `limit > 1` devuelve el ítem en esa posición (o entra en pánico); usa `limit: 0` para todas las filas. `having` no funciona.
 - `ModelCommand`: solo `insert` y `bulk` funcionan; `update`/`delete` no cambian nada.
-- `Model.BeforeInsert*` y `Command.BeforeUpdate` no se ejecutan; los `AfterInsert*` corren dos veces.
+- `DefineCalc`/`DefineCalcTx` no se ejecutan en ninguna consulta (ver [Definición de columnas](#definición-de-columnas-define)).
+- `DefineHidden` oculta columnas, no atributos: un atributo oculto sale dentro de `_data`. `RunQuery` no rechaza campos ocultos en `selects` ni en `wheres`.
+- `Init()` no agrega columnas, índices ni llaves a una tabla que ya existe (solo el índice de búsqueda).
+- `RunQuery` ignora en silencio los nombres desconocidos de `selects` y recibe `search` solo como texto.
+- `ErrNotInserted`, `ErrNotFound` y los demás `ErrNot*` no los devuelve la librería.
+- `Bulk` devuelve solo la última fila insertada.
 - En SQLite, `GetSeries` no incrementa el consecutivo.
-- Búsqueda (`DefineSearch`): si cambian los campos se crea otro índice y el anterior queda (se borra a mano); `%` y `_` en el texto actúan como comodines; no ordena por parecido ni tolera errores de digitación.
+- Búsqueda (`DefineSearch`): `%` y `_` en el texto actúan como comodines; no ordena por parecido ni tolera errores de digitación.
 
 ## Herramientas de `cmd/`
 
@@ -523,6 +638,14 @@ go test ./cmd/create/...                       # plantillas del generador
 ```
 
 Los tests de `drivers/oracle` corren solo si `ORA_TEST_HOST` (+ `ORA_TEST_PORT`, `ORA_TEST_USER`, `ORA_TEST_PASSWORD`, `ORA_TEST_SERVICE`) apunta a un servidor; si no, se saltan.
+
+## Cambios sin publicar
+
+Cambios en el árbol de trabajo posteriores al último tag publicado (el de la insignia de versión), sin commit al 2026-11-17. Al publicar la versión, mueve esta lista a las notas del tag:
+
+- Búsqueda: al cambiar los campos de `DefineSearch`, `Init()` borra los índices `<tabla>_search_<hash>` anteriores de la tabla (sin campos, todos). Los campos que mandan son los de `DefineSearch` del arranque actual, no los guardados.
+- Modelos: `Model.Load()` deja de ser público (pasa a `load`, lo usa `Init()`); `Model.Save()` ya no depende de `Model.UseCore` y guarda la definición cuando el modelo `core` está iniciado; al cargar una definición guardada se recuperan también los rollups que el código no define. `Model` serializa columnas, llaves, índices, únicos y requeridos (antes se omitían), y `Index` serializa `column` y `sorted`.
+- Comentarios de documentación en formato Elvis (`@param` en una línea) en `jdb`, `drivers/postgres` y las plantillas de `cmd/create`.
 
 ## Versionado
 

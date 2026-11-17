@@ -58,12 +58,12 @@ type Model struct {
 	Description         string                    `json:"description"`
 	UseCore             bool                      `json:"use_core"`
 	Integrity           bool                      `json:"integrity"`
-	Columns             []*Column                 `json:"-"`
-	PrimaryKeys         map[string]*Column        `json:"-"`
-	ForeignKeys         map[string]*Relation      `json:"-"`
-	Indices             map[string]*Index         `json:"-"`
-	Uniques             map[string]*Column        `json:"-"`
-	Required            map[string]bool           `json:"-"`
+	Columns             []*Column                 `json:"columns"`
+	PrimaryKeys         map[string]*Column        `json:"primary_keys"`
+	ForeignKeys         map[string]*Relation      `json:"foreign_keys"`
+	Indices             map[string]*Index         `json:"indeces"`
+	Uniques             map[string]*Column        `json:"uniques"`
+	Required            map[string]bool           `json:"required"`
 	Detail              map[string]*Relation      `json:"detail"`
 	Rollup              map[string]*Rollup        `json:"rollup"`
 	SearchFields        []string                  `json:"search_fields"`
@@ -290,16 +290,67 @@ func (s *Model) Describe() et.Json {
 	return result
 }
 
-func (s *Model) Load() error {
+/**
+* Init
+* @return error
+**/
+func (s *Model) Init() error {
+	if s.isInit {
+		return nil
+	}
+
+	if s.SourceField != nil {
+		idx := s.SourceField.idx()
+		if idx != len(s.GetColumns())-1 && idx != -1 {
+			s.moveColumnToEnd(s.SourceField, idx)
+		}
+	}
+
+	if s.SystemKeyField != nil {
+		idx := s.SystemKeyField.idx()
+		if idx != len(s.GetColumns())-1 && idx != -1 {
+			s.moveColumnToEnd(s.SystemKeyField, idx)
+		}
+	}
+
+	if s.IndexField != nil {
+		idx := s.IndexField.idx()
+		if idx != len(s.GetColumns())-1 && idx != -1 {
+			s.moveColumnToEnd(s.IndexField, idx)
+		}
+	}
+
+	go func() {
+		for message := range s.eventEmiterChannel {
+			s.eventEmiter(message)
+		}
+	}()
+
+	_, err := s.Db.LoadModel(s)
+	if err != nil {
+		return err
+	}
+
 	current, err := s.Db.getModel("model", s.Name)
 	if err != nil {
 		return err
 	}
 
 	if !current.Ok {
-		return nil
+		err = s.Save()
+	} else {
+		err = s.load(current)
 	}
 
+	if err != nil {
+		return err
+	}
+
+	s.isInit = true
+	return nil
+}
+
+func (s *Model) load(current et.Item) error {
 	var ref Model
 	define, err := current.Byte("definition")
 	if err != nil {
@@ -311,9 +362,8 @@ func (s *Model) Load() error {
 		return err
 	}
 
-	if ref.SearchFields != nil {
-		s.SearchFields = ref.SearchFields
-	}
+	// SearchFields no se restaura: mandan los de DefineSearch (codigo o config), los mismos con que LoadModel
+	// armo el indice de busqueda; los guardados son los del primer arranque.
 
 	// Columnas guardadas que el codigo ya no define: se agregan al modelo para no perderlas.
 	for _, col := range ref.Columns {
@@ -325,6 +375,16 @@ func (s *Model) Load() error {
 		s.addColumn(col)
 	}
 
+	// Rollups guardados que el codigo no define; With se resuelve al consultar por WithName (getWith).
+	for name, rollup := range ref.Rollup {
+		_, exists := s.Rollup[name]
+		if exists {
+			continue
+		}
+
+		s.Rollup[name] = rollup
+	}
+
 	return nil
 }
 
@@ -333,7 +393,7 @@ func (s *Model) Load() error {
 * @return error
 **/
 func (s *Model) Save() error {
-	if s == nil || !s.UseCore || !s.Db.isInit {
+	if s == nil {
 		return nil
 	}
 
@@ -346,8 +406,6 @@ func (s *Model) Save() error {
 	if err != nil {
 		return err
 	}
-
-	s.isInit = true
 
 	return nil
 }
@@ -386,61 +444,6 @@ func (s *Model) Empty() {
 	}
 
 	s.Db.EmptyModel(s)
-}
-
-/**
-* Init
-* @return error
-**/
-func (s *Model) Init() error {
-	if s.isInit {
-		return nil
-	}
-
-	if s.SourceField != nil {
-		idx := s.SourceField.idx()
-		if idx != len(s.GetColumns())-1 && idx != -1 {
-			s.moveColumnToEnd(s.SourceField, idx)
-		}
-	}
-
-	if s.SystemKeyField != nil {
-		idx := s.SystemKeyField.idx()
-		if idx != len(s.GetColumns())-1 && idx != -1 {
-			s.moveColumnToEnd(s.SystemKeyField, idx)
-		}
-	}
-
-	if s.IndexField != nil {
-		idx := s.IndexField.idx()
-		if idx != len(s.GetColumns())-1 && idx != -1 {
-			s.moveColumnToEnd(s.IndexField, idx)
-		}
-	}
-
-	go func() {
-		for message := range s.eventEmiterChannel {
-			s.eventEmiter(message)
-		}
-	}()
-
-	exist, err := s.Db.LoadModel(s)
-	if err != nil {
-		return err
-	}
-
-	if !exist {
-		err = s.Save()
-	} else {
-		err = s.Load()
-	}
-
-	if err != nil {
-		return err
-	}
-
-	s.isInit = true
-	return nil
 }
 
 /**

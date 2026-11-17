@@ -7,8 +7,7 @@ import (
 
 /**
 * SQLDDL return a sql string with the args
-* @param sql string
-* @param args ...any
+* @param sql string, args ...any
 * @return string
 **/
 func sqlDDL(sql string, args ...any) string {

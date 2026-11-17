@@ -221,7 +221,8 @@ func (s *Params) LoadModel(model *jdb.Model) (bool, error) {
 
 	sqlSearch := ddlSearch(model)
 	if exist {
-		// La busqueda (DefineSearch) se asegura tambien en tablas ya creadas: su DDL es idempotente.
+		// La busqueda (DefineSearch) se asegura tambien en tablas ya creadas (indice de los campos actuales y borrado
+		// de los de campos anteriores): su DDL es idempotente.
 		if sqlSearch == "" {
 			return true, nil
 		}

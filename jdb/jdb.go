@@ -483,8 +483,7 @@ func commandsTx(tx *Tx, params et.Json) (et.Items, error) {
 
 /**
 * ModelDefine
-* @param w http.ResponseWriter
-* @param r *http.Request
+* @param w http.ResponseWriter, r *http.Request
 **/
 func ModelDefine(w http.ResponseWriter, r *http.Request) {
 	body, err := response.GetBody(r)
@@ -505,8 +504,7 @@ func ModelDefine(w http.ResponseWriter, r *http.Request) {
 
 /**
 * modelQuery
-* @param w http.ResponseWriter
-* @param r *http.Request
+* @param w http.ResponseWriter, r *http.Request
 **/
 func ModelQuery(w http.ResponseWriter, r *http.Request) {
 	body, err := response.GetBody(r)
@@ -534,8 +532,7 @@ func ModelQuery(w http.ResponseWriter, r *http.Request) {
 
 /**
 * modelCommand
-* @param w http.ResponseWriter
-* @param r *http.Request
+* @param w http.ResponseWriter, r *http.Request
 **/
 func ModelCommand(w http.ResponseWriter, r *http.Request) {
 	body, err := response.GetBody(r)
@@ -555,8 +552,7 @@ func ModelCommand(w http.ResponseWriter, r *http.Request) {
 
 /**
 * ModelDescribe
-* @param w http.ResponseWriter
-* @param r *http.Request
+* @param w http.ResponseWriter, r *http.Request
 **/
 func ModelDescribe(w http.ResponseWriter, r *http.Request) {
 	body, err := response.GetBody(r)
@@ -578,8 +574,7 @@ func ModelDescribe(w http.ResponseWriter, r *http.Request) {
 
 /**
 * JSQL
-* @param w http.ResponseWriter
-* @param r *http.Request
+* @param w http.ResponseWriter, r *http.Request
 **/
 func JSQL(w http.ResponseWriter, r *http.Request) {
 	body, err := response.GetBody(r)

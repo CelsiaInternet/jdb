@@ -115,8 +115,8 @@ list, err := jdb.RunQuery(customers, query)
 | --- | --- | --- |
 | `wheres` | lista de condiciones | Se aplican **en orden**. El primer elemento abre el `WHERE` y los siguientes sin conector se unen con `AND`. |
 | `{ "and": {...} }` / `{ "or": {...} }` | elemento de `wheres` | Une la condición con `AND` u `OR`. Va **un objeto** con una condición, no una lista. |
-| `search` | texto | Búsqueda en los campos de `DefineSearch` del modelo: una condición `AND` por palabra (hasta 10; vacío no filtra). En Postgres sin tildes ni mayúsculas y con índice de trigramas. Si el modelo no declaró campos, no devuelve nada. Ver README › Búsqueda. |
-| `selects` | lista de nombres | Columnas a devolver. Si se omite, devuelve el registro completo con los atributos de `_data`. |
+| `search` | texto (no objeto) | Búsqueda en los campos de `DefineSearch` del modelo: una condición `AND` por palabra (hasta 10; vacío no filtra). En Postgres sin tildes ni mayúsculas y con índice de trigramas. Si el modelo no declaró campos, no devuelve nada. Ver README › Búsqueda. |
+| `selects` | lista de nombres | Columnas a devolver. Si se omite, devuelve el registro completo con los atributos de `_data`, sin las columnas ocultas (`DefineHidden`). Un nombre que no existe se ignora; una columna oculta pedida por nombre sí sale. |
 | `order_by` | `{ "asc": [...], "desc": [...] }` | Cada columna se valida: un nombre que no existe devuelve el error `Columna no válida en el query (x)`. Aplica primero `asc` y luego `desc`. |
 | `page` | entero | Página, desde 1. Por defecto 1. |
 | `rows` | entero | Filas por página. Por defecto **100** y máximo **1000**. `limit` se acepta como alias. |
@@ -167,7 +167,13 @@ rollup := jdb.NewRollup("team_name", teams, map[string]string{"team_id": jdb.KEY
 list, err := jdb.RunQuery(roles, query, rollup)
 ```
 
+> ⚠️ **`search` es texto.** `{ "search": { "value": "ana", "fields": ["name"] } }` (el formato de los `/query` de catalog, que catalog traduce a condiciones `concat` antes de llamar a jdb) llega a `RunQuery` convertido en el texto `map[...]` y la consulta devuelve 0 filas sin error (verificado 2026-11-17 en SQLite).
+
 > ⚠️ **Un campo que no existe se ignora sin error.** `{ "wheres": [{ "nope": { "eq": "x" } }] }` devuelve **todos** los registros. Valida los nombres de campo antes de llamar a `RunQuery` si vienen del usuario.
+
+### `linq.RunQuery` de elvis
+
+`elvis/linq/jsql.go` replica este contrato para los modelos `linq` de elvis, sin `search`, `isNull`, `notNull`, `notIn`, `between` ni `join`, con paréntesis alrededor de las condiciones cuando hay un `or` y con error ante un campo desconocido u oculto en `selects`. La comparación completa está en el README › Consultas en JSON (`RunQuery`).
 
 ---
 
@@ -341,6 +347,8 @@ Devuelven el `Describe()` del objeto: columnas con `name`, `type_column`, `type_
 | `RunQuery` | Un campo inexistente en `wheres` se ignora y la consulta devuelve todo. |
 | `RunQuery` | `between` se ignora (devuelve todo) y `notIn` devuelve 0 filas. |
 | `RunQuery` | Las rutas JSON (`_data.x`) no se aceptan como campo. |
+| `RunQuery` | Un nombre desconocido en `selects` se ignora; `selects` y `wheres` aceptan columnas ocultas. |
+| `RunQuery` | `search` como objeto (`{ value, fields }`) devuelve 0 filas. |
 | `RunQuery` / `Query` | `join` no genera el `JOIN`. |
 | `Query` | `limit` mayor que 1, o sin `limit`: respuesta vacía, o caída del proceso si hay al menos `limit` filas. |
 | `Query` | `page` con `limit: 0` devuelve vacío. |

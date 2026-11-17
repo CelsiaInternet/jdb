@@ -1,8 +1,8 @@
 package jdb
 
 type Index struct {
-	Column *Column
-	Sorted bool
+	Column *Column `json:"column"`
+	Sorted bool    `json:"sorted"`
 }
 
 /**

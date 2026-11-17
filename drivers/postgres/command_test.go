@@ -10,8 +10,7 @@ import (
 
 /**
 * newTestModel: Crea un modelo en memoria, sin conexión, con source y una columna name.
-* @param name string
-* @param integrity bool
+* @param name string, integrity bool
 * @return *jdb.Model
 **/
 func newTestModel(name string, integrity bool) *jdb.Model {
@@ -29,8 +28,7 @@ func newTestModel(name string, integrity bool) *jdb.Model {
 
 /**
 * sourceArg: Devuelve el argumento jsonb del source como et.Json.
-* @param t *testing.T
-* @param args []any
+* @param t *testing.T, args []any
 * @return et.Json
 **/
 func sourceArg(t *testing.T, args []any) et.Json {

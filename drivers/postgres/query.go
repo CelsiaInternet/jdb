@@ -692,8 +692,7 @@ func whereValue(val interface{}) string {
 
 /**
 * whereOperator
-* @param condition *jdb.QlCondition
-* @param val interface{}
+* @param condition *jdb.QlCondition, val interface{}
 * @return string
 **/
 func whereOperator(condition *jdb.QlCondition, val interface{}) string {

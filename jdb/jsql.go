@@ -14,9 +14,9 @@ const (
 
 /**
 * RunQuery: Crea la consulta sobre model a partir de query y devuelve la página pedida con el total de registros.
-* @param model *Model
-* @param query et.Json   (wheres, search, selects, order_by, page, rows; limit se acepta como alias de rows)
-* @param rollups ...*Rollup   rollups extra (NewRollup) que se resuelven en cada fila
+* query admite wheres, search, selects, order_by, page y rows (limit es alias de rows); rollups son
+* rollups extra (NewRollup) que se resuelven en cada fila.
+* @param model *Model, query et.Json, rollups ...*Rollup
 * @return et.List, error
 **/
 func RunQuery(model *Model, query et.Json, rollups ...*Rollup) (et.List, error) {

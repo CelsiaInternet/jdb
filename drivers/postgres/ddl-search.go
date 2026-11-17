@@ -103,8 +103,23 @@ func searchCondition(search jdb.TextSearch, val interface{}) string {
 }
 
 /**
+* searchIndexPrefix: Inicio del nombre de los indices de busqueda de la tabla (<tabla>_search_), con la tabla
+* recortada a 40 letras para no pasar el limite de nombres de postgres.
+* @param model *jdb.Model
+* @return string
+**/
+func searchIndexPrefix(model *jdb.Model) string {
+	table := model.Table
+	if len(table) > 40 {
+		table = table[:40]
+	}
+
+	return fmt.Sprintf("%s_search_", table)
+}
+
+/**
 * searchIndexName: Nombre del indice de busqueda de la tabla, con un hash de la expresion: si cambian los campos
-* se crea otro indice (el anterior queda y se borra a mano).
+* cambia el nombre, se crea otro indice y ddlSearchDrop borra el anterior.
 * @param model *jdb.Model, expr string
 * @return string
 **/
@@ -112,17 +127,45 @@ func searchIndexName(model *jdb.Model, expr string) string {
 	hash := fnv.New32a()
 	hash.Write([]byte(expr))
 	sum := hash.Sum32()
-	table := model.Table
-	if len(table) > 40 {
-		table = table[:40]
-	}
-
-	return fmt.Sprintf("%s_search_%08x", table, sum)
+	prefix := searchIndexPrefix(model)
+	return fmt.Sprintf("%s%08x", prefix, sum)
 }
 
 /**
-* ddlSearch: Extensiones, funcion e indice GIN de trigramas de los campos de busqueda del modelo (DefineSearch);
-* "" si no declaro campos. Todo es idempotente: se ejecuta en cada inicio, tambien con la tabla ya creada.
+* ddlSearchDrop: Borra los indices de busqueda de la tabla (<tabla>_search_<8 hex>, los que crea ddlSearch) que no
+* son keep: quedan de campos anteriores. Con keep "" los borra todos (el modelo ya no declara campos). No toca otros
+* indices de la tabla.
+* @param model *jdb.Model, keep string
+* @return string
+**/
+func ddlSearchDrop(model *jdb.Model, keep string) string {
+	schema := strings.ReplaceAll(model.Schema, "'", "''")
+	table := strings.ReplaceAll(model.Table, "'", "''")
+	prefix := searchIndexPrefix(model)
+	prefix = strings.ReplaceAll(prefix, "'", "''")
+	keep = strings.ReplaceAll(keep, "'", "''")
+	size := len(prefix)
+	hashStart := size + 1
+	return fmt.Sprintf(`
+DO $jdb$
+DECLARE
+	idx record;
+BEGIN
+	FOR idx IN SELECT schemaname, indexname FROM pg_indexes
+		WHERE lower(schemaname) = lower('%s') AND lower(tablename) = lower('%s')
+		AND left(lower(indexname), %d) = lower('%s') AND substr(indexname, %d) ~ '^[0-9a-f]{8}$'
+		AND lower(indexname) <> lower('%s')
+	LOOP
+		EXECUTE format('DROP INDEX IF EXISTS %%I.%%I', idx.schemaname, idx.indexname);
+	END LOOP;
+END
+$jdb$;`, schema, table, size, prefix, hashStart, keep)
+}
+
+/**
+* ddlSearch: Extensiones, funcion e indice GIN de trigramas de los campos de busqueda del modelo (DefineSearch) y
+* borrado de los indices de busqueda de campos anteriores; sin campos, solo ese borrado. Todo es idempotente: se
+* ejecuta en cada inicio, tambien con la tabla ya creada.
 * @param model *jdb.Model
 * @return string
 **/
@@ -137,11 +180,13 @@ func ddlSearch(model *jdb.Model) string {
 
 	expr := searchExpr(fields)
 	if expr == "" {
-		return ""
+		return ddlSearchDrop(model, "")
 	}
 
 	name := searchIndexName(model, expr)
 	table := tableName(model)
 	index := fmt.Sprintf(`CREATE INDEX IF NOT EXISTS %s ON %s USING GIN ((%s) gin_trgm_ops);`, name, table, expr)
-	return strs.Append(ddlSearchSetup, index, "\n")
+	drop := ddlSearchDrop(model, name)
+	result := strs.Append(ddlSearchSetup, index, "\n")
+	return strs.Append(result, drop, "\n")
 }

@@ -177,8 +177,7 @@ func (s *Params) ddlTable(model *jdb.Model) string {
 
 /**
 * ddlTableRename
-* @param oldName string
-* @param newName string
+* @param oldName string, newName string
 * @return string
 **/
 func (s *Params) ddlTableRename(oldName, newName string) string {
@@ -189,8 +188,7 @@ func (s *Params) ddlTableRename(oldName, newName string) string {
 
 /**
 * ddlTableInsertTo
-* @param model *jdb.Model
-* @param tableOrigin string
+* @param model *jdb.Model, tableOrigin string
 * @return string
 **/
 func (s *Params) ddlTableInsertTo(model *jdb.Model, tableOrigin string) string {

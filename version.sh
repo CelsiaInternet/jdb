@@ -87,6 +87,23 @@ build_version() {
   NEW_VERSION="v${version_parts[0]}.${version_parts[1]}.${version_parts[2]}"
 }
 
+# Cambia la versión del comando de instalación (…@vX.Y.Z) por la nueva en README.md y README.es.md, si existen.
+# Solo toca el patrón @vX.Y.Z para no cambiar otras menciones de versiones (por ejemplo, "desde v1.1.324").
+update_readmes() {
+  local file
+  for file in README.md README.es.md; do
+    [ -f "$file" ] || continue
+    if grep -Eq '@v[0-9]+\.[0-9]+\.[0-9]+' "$file"; then
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' -E "s/@v[0-9]+\.[0-9]+\.[0-9]+/@$NEW_VERSION/g" "$file"
+      else
+        sed -i -E "s/@v[0-9]+\.[0-9]+\.[0-9]+/@$NEW_VERSION/g" "$file"
+      fi
+      echo "$file: versión actualizada a $NEW_VERSION (sin commit)"
+    fi
+  done
+}
+
 update_version() {
   # Si HEAD ya tiene versión (por ejemplo, llegó con un merge fast-forward) no se crea otra
   local head_tag
@@ -101,6 +118,8 @@ update_version() {
   echo "Versión actual de la rama: $CURRENT_VERSION"
   echo "Versión más alta del repo: $(latest_version)"
   echo "Nueva versión: $NEW_VERSION"
+
+  update_readmes
 
   git tag -a "$NEW_VERSION" -m "$NEW_VERSION"
   git push origin "$NEW_VERSION"                              # Solo el tag nuevo, no todos los locales

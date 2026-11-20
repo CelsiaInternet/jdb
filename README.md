@@ -11,7 +11,7 @@
 # En una carpeta nueva
 go mod init github.com/<organizacion>/<proyecto>
 
-go get github.com/celsiainternet/jdb@v1.0.122
+go get github.com/celsiainternet/jdb@v1.0.123
 go run github.com/celsiainternet/jdb/cmd/install
 go run github.com/celsiainternet/jdb/cmd/create go
 ```

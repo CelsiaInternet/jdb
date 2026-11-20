@@ -400,6 +400,14 @@ if errors.Is(err, jdb.ErrNotFound) {
 }
 ```
 
+Los errores de la base dicen en qué modelo ocurrieron: consultas (`All`, `One`, `ItExists`, `Counted`…), escrituras (`Insert`, `Update`, `Delete`, `Upsert`) y la carga del modelo (`Init`) anteponen `schema.tabla` y, en consultas y escrituras, el alias:
+
+```text
+projects.components (a): pq: column a.kind does not exist at position 13:9 (42703)
+```
+
+El error original queda envuelto, así que `errors.Is` y `errors.As` (por ejemplo, para leer el `*pq.Error`) siguen funcionando. Los errores que devuelve un hook no cambian. `DB.Query` con SQL a mano no tiene modelo y sigue igual.
+
 ### Hooks
 
 Disponibles en `*Model` (aplican a todos los comandos) y en `*Command` (solo a ese comando). Por cada fila corren en este orden: `Before*` del modelo, `Before*Trigger` del modelo, `Before*` del comando, `Before*Trigger` del comando, la escritura y luego los `After*` en el mismo orden. Los `Before*` reciben los datos que se van a escribir y pueden modificarlos; un error de cualquier hook detiene el comando; con `Exec()` la transacción propia se revierte y con `ExecTx(tx)` decide quien la abrió. `BeforeInsertOrUpdate` registra la misma función en insert y update. Con `Upsert` corren los hooks de insert o de update según el caso.

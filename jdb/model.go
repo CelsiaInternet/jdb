@@ -326,14 +326,15 @@ func (s *Model) Init() error {
 		}
 	}()
 
+	// Los errores de la carga dicen el modelo (schema.tabla): un panic al arrancar no lo traia
 	_, err := s.Db.LoadModel(s)
 	if err != nil {
-		return err
+		return withModel(modelLabel(s), err)
 	}
 
 	current, err := s.Db.getModel("model", s.Name)
 	if err != nil {
-		return err
+		return withModel(modelLabel(s), err)
 	}
 
 	if !current.Ok {
@@ -343,7 +344,7 @@ func (s *Model) Init() error {
 	}
 
 	if err != nil {
-		return err
+		return withModel(modelLabel(s), err)
 	}
 
 	s.isInit = true

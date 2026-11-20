@@ -435,7 +435,12 @@ func (s *DB) Select(ql *Ql) (et.Items, error) {
 		return et.Items{}, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
-	return s.driver.Select(ql)
+	result, err := s.driver.Select(ql)
+	if err != nil {
+		return et.Items{}, withModel(ql.Froms.describe(), err)
+	}
+
+	return result, nil
 }
 
 /**
@@ -448,7 +453,12 @@ func (s *DB) Count(ql *Ql) (int, error) {
 		return 0, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
-	return s.driver.Count(ql)
+	result, err := s.driver.Count(ql)
+	if err != nil {
+		return 0, withModel(ql.Froms.describe(), err)
+	}
+
+	return result, nil
 }
 
 /**
@@ -461,7 +471,12 @@ func (s *DB) Exists(ql *Ql) (bool, error) {
 		return false, fmt.Errorf(MSG_DRIVER_NOT_DEFINED)
 	}
 
-	return s.driver.Exists(ql)
+	result, err := s.driver.Exists(ql)
+	if err != nil {
+		return false, withModel(ql.Froms.describe(), err)
+	}
+
+	return result, nil
 }
 
 /**
@@ -476,11 +491,13 @@ func (s *DB) Command(command *Command) (et.Items, error) {
 
 	result, err := s.driver.Command(command)
 	if err != nil {
+		model := command.From.describe()
 		logs.Error("command", errors.New(et.Json{
+			"model": model,
 			"sql":   command.Sql,
 			"error": err.Error(),
 		}.ToString()))
-		return et.Items{}, err
+		return et.Items{}, withModel(model, err)
 	}
 
 	return result, nil
